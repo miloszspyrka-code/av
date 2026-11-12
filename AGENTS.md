@@ -318,9 +318,9 @@ npm run test:docs
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | PWA produkcja | manifest 200 `application/manifest+json`, SW 200 `no-cache`, ikony `/assets/pwa/*` 200; `Page.getInstallabilityErrors` bez błędów |
 | PWA na fizycznym telefonie | **niezweryfikowane** — wymaga instalacji i zgody na powiadomienia |
-| Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; Oura/Whoop/Garmin czekają na sekrety OAuth |
+| Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; **Oura skonfigurowana** (`ouraConfigured=true`, deploy 3.8.0 z 2026-11-12); Whoop/Garmin czekają na sekrety OAuth |
 | Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
-| Cron urządzeń | `cron/sync-wearables.sh` wdrożony i uruchomiony ręcznie (0 połączeń); wpis w panelu LH do dodania |
+| Cron urządzeń | `cron/sync-wearables.sh` wdrożony, uruchomiony ręcznie 2026-11-12 (`ok=0 failed=0 total=0`); wpis w panelu LH do dodania |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
@@ -331,9 +331,10 @@ npm run test:docs
 1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
-3. Dodaj sekrety `OURA_*` i `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*`.
-4. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
-5. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+4. Oura: zarejestruj redirect `https://alphavault.pl/auth/wearables/oura/callback` w Oura Cloud i wykonaj interaktywny test połączenia; sekrety `OURA_*` są już wdrożone.
+5. Dodaj sekrety `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*`.
+6. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
+7. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego
 
