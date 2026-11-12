@@ -81,7 +81,7 @@ app/Integrations/
   Normalizer.php        pary, liczby, UTC ISO
   OKXProvider.php       account/config + positions-history + fills-history
   BingXProvider.php     apiPermissions + income + positionHistory
-  WEEXProvider.php      probe read-only + userTrades + rekonstrukcja
+  WEEXProvider.php      account probe + userTrades + rekonstrukcja
   MetaApiProvider.php   provisioning + account-information + history-deals
   PositionReconstructor.php  fills -> zamknięte transakcje
   ConnectionStore.php   szyfrowane połączenia, maski, statusy
