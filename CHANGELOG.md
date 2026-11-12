@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.1.2 — 2026-11-12
+
+### Zmienione
+- Akademia: usunięty countdown „Start za”; karta live ukrywa się bez wydarzenia.
+- „Dołącz” to link do `https://discord.com/events/{guild}/{event}`; usunięty modal z `discord.com/app`.
+- Usunięte noty techniczne o kluczu API tylko do odczytu (Giełdy, Konto).
+
+### Dodane
+- Pole `url` w `/api/events` — kanoniczny link wydarzenia Discord.
+- Testy API/UI/empty: format linku, brak countdownu, ukryta karta live.
+
 ## 3.1.1 — 2026-11-12
 
 ### Produkcja / CI-CD
