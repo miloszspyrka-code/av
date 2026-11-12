@@ -223,15 +223,15 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na gotowość oraz podpowiedzi mentora |
-| Garmin Connect | 🟡 | OAuth2 + backfill `dailies`/`sleeps`/`hrv`; wymaga zatwierdzenia Garmin Health API i konfiguracji `GARMIN_*` |
+| Garmin Connect | 🟡 | OAuth2 PKCE, User ID i uprawnienia; dostarczanie danych push zależy od zatwierdzonego planu i specyfikacji Garmin Developer Portal. Starter nie ma historii, więc kafelek nie udaje danych pull |
 | Apple Watch · Zdrowie | ✅ | kod parowania + `POST /api/wearables/apple/ingest` z tokenem urządzenia; aplikacja iPhone poza repo |
-| Oura Ring | ✅ | OAuth2, `daily_readiness` + `sleep`; wystarczy `OURA_CLIENT_ID`/`OURA_CLIENT_SECRET` |
-| Whoop | ✅ | OAuth2, `recovery` + `activity/sleep`; wystarczy `WHOOP_CLIENT_ID`/`WHOOP_CLIENT_SECRET` |
+| Oura Ring | ✅ | OAuth2 + PKCE, `daily_readiness` + `sleep` (scope `daily`), rotacja refresh tokenów |
+| Whoop | ✅ | OAuth2, API v2 `recovery` + `activity/sleep`, scope `read:recovery read:sleep offline` |
 | Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
 | Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
-| Odłączenie urządzenia | ✅ | usuwa tokeny i metryki z bazy (wycofanie zgody) |
+| Odłączenie urządzenia | ✅ | wycofuje dostęp u dostawcy (jeśli API to wspiera), usuwa tokeny i metryki z bazy |
 
-Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych).
+Pełny E2E: `npm run test:wearables` (42 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych) oraz `tests/wearables-config.test.php` (4/4, brak fallbacku klucza).
 
 ---
 

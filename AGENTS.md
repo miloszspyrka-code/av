@@ -194,7 +194,7 @@ npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
 npm run test:macro       # kalendarz makro DB/sync
 npm run test:quotes      # notowania rynkowe 14/14 (bez sieci i bazy)
-npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
+npm run test:wearables   # urządzenia zdrowotne API + UI 42/42
 npm run test:docs        # linki i spójność dokumentacji
 npm run test:encoding    # UTF-8 i brak mojibake
 ```
@@ -301,7 +301,7 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 23/23, UI 52/52, empty 12/12, events 24/24, macro 21/21, quotes 14/14, wearables 33/33, PWA 20/20, integracje 19/19, UI integracje 11/11 |
+| Testy lokalne | prop 27/27, API 23/23, UI 52/52, empty 12/12, events 24/24, macro 21/21, quotes 14/14, wearables 42/42 + config 4/4, PWA 20/20, integracje 19/19, UI integracje 11/11 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
