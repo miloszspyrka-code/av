@@ -19,6 +19,7 @@ $env:APP_URL = "http://127.0.0.1:4173"
 npm test
 npm run test:macro
 npm run test:ui
+npm run test:tax
 npm run test:pwa
 ```
 
@@ -34,6 +35,21 @@ php -S 127.0.0.1:4174 -t public public/router.php
 $env:APP_URL = "http://127.0.0.1:4174"
 npm run test:ui:empty
 ```
+
+## Podatki PIT-38 — 8 scenariuszy
+
+`npm run test:tax` (`tests/tax.e2e.mjs`) zapisuje deterministyczny stan do MySQL, wczytuje go ponownie i klika panel Podatki:
+
+- przychód, koszty, nadwyżka, dochód i podatek 19% dla roku 2026,
+- zdarzenie z 2025 nie wchodzi do zestawienia 2026,
+- edycja nadwyżki kosztów z poprzedniego roku,
+- neutralne podatkowo (47) i forex/MT5 (2) liczone z dziennika,
+- eksport CSV z podsumowaniem i rokiem w nazwie,
+- wydruk PDF z rokiem, nadwyżką i licznikami,
+- formularz wpłaty/wypłaty wymaga kursu NBP dla EUR i zasila PIT-38,
+- puste konto nie dziedziczy demo 380 zł; brak błędów JS.
+
+Test przywraca poprzedni stan demo po zakończeniu.
 
 ## Urządzenia zdrowotne — 42 scenariusze + 4 testy konfiguracji
 

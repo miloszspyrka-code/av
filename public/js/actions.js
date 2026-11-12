@@ -846,6 +846,20 @@
   AV.bindTax = () => {
     $('#taxCsv')?.addEventListener('click', () => AV.exportTaxCsv());
     $('#taxPdf')?.addEventListener('click', () => AV.exportTaxPdf());
+    $('#taxLossEdit')?.addEventListener('click', () => AV.editTaxCarry());
+  };
+
+  AV.editTaxCarry = () => {
+    const t = AV.taxData(AV.state);
+    AV.promptText('Nadwyżka kosztów z ' + (t.year - 1), 'Kwota w zł (wpisz 0, jeśli brak)', (value) => {
+      const carryLoss = Math.max(0, AV.pnum(value));
+      AV.state.tax = AV.normalizeTax({ ...AV.state.tax, carryLoss }, { migrateDemoSeed: false });
+      AV.saveNow();
+      AV.renderTax();
+      AV.toast('Nadwyżka kosztów z ' + (t.year - 1) + ': ' + AV.fmt(carryLoss, 2) + ' zł');
+    });
+    const input = document.querySelector('#pmInput');
+    if (input) input.value = t.carry ? String(t.carry).replace('.', ',') : '';
   };
 
   /* ---------- kalendarz ---------- */
@@ -1174,26 +1188,35 @@
   /* ---------- wpĹ‚aty ---------- */
   AV.flowModal = () => {
     const accounts = AV.state.accounts;
-    const body = AV.openModal('<div class="eyebrow">Konta i kapitaĹ‚</div><h1 style="font-size:26px;margin-top:6px">Dodaj wpĹ‚atÄ™ lub wypĹ‚atÄ™</h1>' +
-      '<div class="grid g2" style="margin-top:14px"><div><span class="label">Typ</span><select class="input" id="flType"><option>WpĹ‚ata</option><option>WypĹ‚ata</option></select></div><div><span class="label">Konto</span><select class="input" id="flAcc">' + accounts.map((a) => '<option value="' + AV.attr(a.name) + '">' + AV.esc(a.name) + '</option>').join('') + '</select></div>' +
+    const body = AV.openModal('<div class="eyebrow">Konta i kapitał</div><h1 style="font-size:26px;margin-top:6px">Dodaj wpłatę lub wypłatę</h1>' +
+      '<div class="grid g2" style="margin-top:14px"><div><span class="label">Typ</span><select class="input" id="flType"><option>Wpłata</option><option>Wypłata</option></select></div><div><span class="label">Konto</span><select class="input" id="flAcc">' + accounts.map((a) => '<option value="' + AV.attr(a.name) + '">' + AV.esc(a.name) + '</option>').join('') + '</select></div>' +
       '<div><span class="label">Data</span><input class="input mono" id="flDate" value="' + AV.dateKey(new Date()) + '"></div><div><span class="label">Kwota USDT</span><input class="input mono" id="flAmount" placeholder="0,00"></div>' +
       '<div><span class="label">Waluta fiat</span><select class="input" id="flCur"><option>PLN</option><option>EUR</option><option>USD</option></select></div><div><span class="label">Kwota fiat</span><input class="input mono" id="flFiat" placeholder="0,00"></div>' +
-      '<div><span class="label">Kurs</span><input class="input mono" id="flFx" value="1"></div><div><span class="label">Opis</span><input class="input" id="flOp" value="P2P"></div></div>' +
+      '<div><span class="label">Kurs NBP</span><input class="input mono" id="flFx" value="1"></div><div><span class="label">Opis</span><input class="input" id="flOp" value="P2P"></div></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="flSave">Zapisz</button></div>', { maxWidth: '620px' });
     $('#flSave', body).onclick = () => {
       const type = $('#flType', body).value, acc = $('#flAcc', body).value;
-      const amount = AV.pnum($('#flAmount', body).value), fiat = AV.pnum($('#flFiat', body).value), fx = AV.pnum($('#flFx', body).value) || 1;
-      if (!amount || !fiat) { AV.toast('Podaj kwotÄ™ USDT i kwotÄ™ fiat'); return; }
+      const amount = AV.pnum($('#flAmount', body).value);
+      const fiat = AV.pnum($('#flFiat', body).value);
+      const currency = $('#flCur', body).value;
+      const fx = currency === 'PLN' ? 1 : AV.pnum($('#flFx', body).value);
+      if (!amount || !fiat) { AV.toast('Podaj kwotę USDT i kwotę fiat'); return; }
+      if (currency !== 'PLN' && (!fx || fx <= 1)) { AV.toast('Podaj kurs NBP z dnia roboczego przed transakcją'); return; }
+      const date = $('#flDate', body).value || AV.dateKey(new Date());
       const flow = {
-        id: AV.uid('flow'), date: $('#flDate', body).value || AV.dateKey(new Date()), account: acc,
-        type, op: $('#flOp', body).value + (type === 'WpĹ‚ata' ? ' Â· zakup USDT' : ' Â· sprzedaĹĽ USDT'),
-        amount, currency: $('#flCur', body).value, fiat, fx, tax: type === 'WpĹ‚ata' ? 'cost' : 'income'
+        id: AV.uid('flow'), date, account: acc,
+        type, op: $('#flOp', body).value + (type === 'Wpłata' ? ' · zakup USDT' : ' · sprzedaż USDT'),
+        amount, currency, fiat, fx, tax: type === 'Wpłata' ? 'cost' : 'income'
       };
       AV.state.flows.push(flow);
       const a = AV.state.accounts.find((x) => x.name === acc);
-      if (a) a.balance += type === 'WpĹ‚ata' ? amount : -amount;
+      if (a) a.balance += type === 'Wpłata' ? amount : -amount;
       AV.saveNow(); AV.closeModal(); AV.renderFlows(); AV.renderAccounts(); AV.renderTax(); AV.renderSettings(); AV.renderDashboard();
-      AV.toast(type + ' zapisana');
+      if (Number(String(date).slice(0, 4)) !== AV.taxYear(AV.state)) {
+        AV.toast(type + ' zapisana poza rokiem ' + AV.taxYear(AV.state) + ' — nie wejdzie do zestawienia PIT-38', 5000);
+      } else {
+        AV.toast(type + ' zapisana');
+      }
     };
   };
 
@@ -1212,28 +1235,42 @@
   AV.exportTaxCsv = () => {
     const t = AV.taxData(AV.state);
     const rows = [['Data', 'Operacja', 'Rodzaj', 'Waluta', 'Kwota', 'Kurs NBP', 'W PLN']];
-    t.ev.forEach((e) => rows.push([new Date(e.date).toLocaleDateString('pl-PL'), e.op, e.kind === 'cost' ? 'koszt' : 'przychĂłd', e.currency, e.amount, e.fx, e.pln]));
+    t.ev.forEach((e) => rows.push([new Date(e.date).toLocaleDateString('pl-PL'), e.op, e.kind === 'cost' ? 'koszt' : 'przychód', e.currency, e.amount, e.fx, e.pln]));
     rows.push([]);
-    rows.push(['PrzychĂłd', '', '', '', '', '', t.revenue]);
+    rows.push(['Przychód', '', '', '', '', '', t.revenue]);
     rows.push(['Koszty', '', '', '', '', '', t.costs]);
-    rows.push(['NadwyĹĽka z 2025', '', '', '', '', '', t.carry]);
-    rows.push(['DochĂłd', '', '', '', '', '', t.income]);
+    rows.push(['Nadwyżka kosztów z ' + (t.year - 1), '', '', '', '', '', t.carry]);
+    rows.push(['Dochód', '', '', '', '', '', t.income]);
     rows.push(['Podatek 19%', '', '', '', '', '', t.due]);
-    AV.download('alpha-vault-PIT-38-2026.csv', AV.toCsv(rows));
+    rows.push(['Do przeniesienia na ' + (t.year + 1), '', '', '', '', '', t.carryForward]);
+    rows.push(['Neutralne podatkowo (transakcje)', '', '', '', '', '', t.neutral]);
+    rows.push(['Forex i CFD MT4/MT5 (transakcje)', '', '', '', '', '', t.forex]);
+    AV.download('alpha-vault-PIT-38-' + t.year + '.csv', AV.toCsv(rows));
     AV.toast('CSV podatkowy gotowy');
   };
 
   AV.taxPrintHtml = () => {
     const t = AV.taxData(AV.state), s = AV.state;
-    const rows = t.ev.map((e) => '<tr><td>' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td>' + (e.kind === 'cost' ? 'koszt' : 'przychĂłd') + '</td><td>' + AV.fmt(e.amount, 2) + ' ' + e.currency + '</td><td>' + (e.fx === 1 ? 'â€“' : AV.fmt(e.fx, 4)) + '</td><td>' + AV.fmt(e.pln, 2) + ' zĹ‚</td></tr>').join('');
-    return '<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>PIT-38 Â· Alpha Vault</title><style>body{font-family:Arial,sans-serif;color:#111;margin:32px;font-size:13px}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f1ec}.sum{margin-top:20px;width:320px}.sum div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}.sum b{font-size:16px}.note{color:#666;font-size:11px;margin-top:24px;line-height:1.5}</style></head><body><h1>Zestawienie do PIT-38 Â· ' + s.tax.year + '</h1><p>' + AV.esc(s.user.name) + ' Â· wygenerowano ' + AV.nowStamp() + '</p><table><thead><tr><th>Data</th><th>Operacja</th><th>Rodzaj</th><th>Kwota</th><th>Kurs</th><th>W PLN</th></tr></thead><tbody>' + rows + '</tbody></table><div class="sum"><div><span>PrzychĂłd</span><b>' + AV.fmt(t.revenue, 2) + ' zĹ‚</b></div><div><span>Koszty</span><b>' + AV.fmt(t.costs, 2) + ' zĹ‚</b></div><div><span>NadwyĹĽka kosztĂłw z 2025</span><b>' + AV.fmt(t.carry, 2) + ' zĹ‚</b></div><div><span>DochĂłd</span><b>' + AV.fmt(t.income, 2) + ' zĹ‚</b></div><div><span>Podatek 19%</span><b>' + AV.fmt(t.due, 2) + ' zĹ‚</b></div></div><p class="note">Zestawienie pomocnicze, nie porada podatkowa. Przed zĹ‚oĹĽeniem PIT-38 zweryfikuj dane z ksiÄ™gowÄ… lub doradcÄ… podatkowym. Alpha Vault Â· dane wyĹ‚Ä…cznie uĹĽytkownika.</p><script>window.print()<\/script></body></html>';
+    const rows = t.ev.map((e) => '<tr><td>' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td>' + (e.kind === 'cost' ? 'koszt' : 'przychód') + '</td><td>' + AV.fmt(e.amount, 2) + ' ' + e.currency + '</td><td>' + (e.fx === 1 ? '–' : AV.fmt(e.fx, 4)) + '</td><td>' + AV.fmt(e.pln, 2) + ' zł</td></tr>').join('');
+    const summary = [
+      ['Przychód', t.revenue],
+      ['Koszty', t.costs],
+      ['Nadwyżka kosztów z ' + (t.year - 1), t.carry],
+      ['Dochód', t.income],
+      ['Podatek 19%', t.due],
+      ['Do przeniesienia na ' + (t.year + 1), t.carryForward]
+    ].map(([label, value]) => '<div><span>' + label + '</span><b>' + AV.fmt(value, 2) + ' zł</b></div>').join('');
+    const neutral = t.neutral + ' ' + AV.plural(t.neutral, 'transakcja', 'transakcje', 'transakcji');
+    const forex = t.forex + ' ' + AV.plural(t.forex, 'transakcja', 'transakcje', 'transakcji');
+    return '<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>PIT-38 · Alpha Vault</title><style>body{font-family:Arial,sans-serif;color:#111;margin:32px;font-size:13px}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f1ec}.sum{margin-top:20px;width:320px}.sum div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}.sum b{font-size:16px}.note{color:#666;font-size:11px;margin-top:24px;line-height:1.5}</style></head><body><h1>Zestawienie do PIT-38 · ' + t.year + '</h1><p>' + AV.esc(s.user.name) + ' · wygenerowano ' + AV.nowStamp() + '</p><table><thead><tr><th>Data</th><th>Operacja</th><th>Rodzaj</th><th>Kwota</th><th>Kurs</th><th>W PLN</th></tr></thead><tbody>' + rows + '</tbody></table><div class="sum">' + summary + '</div><p class="note">Neutralne podatkowo: ' + neutral + '. Forex i CFD (MT4/MT5): ' + forex + '.</p><p class="note">Zestawienie pomocnicze, nie porada podatkowa. Przed złożeniem PIT-38 zweryfikuj dane z księgową lub doradcą podatkowym. Alpha Vault · dane wyłącznie użytkownika.</p><script>window.print()<\/script></body></html>';
   };
 
   AV.exportTaxPdf = () => {
+    const year = AV.taxYear(AV.state);
     const w = window.open('', '_blank');
-    if (!w) { AV.download('alpha-vault-PIT-38-2026.html', AV.taxPrintHtml(), 'text/html;charset=utf-8'); AV.toast('Popup zablokowany â€” pobrano plik do wydruku'); return; }
+    if (!w) { AV.download('alpha-vault-PIT-38-' + year + '.html', AV.taxPrintHtml(), 'text/html;charset=utf-8'); AV.toast('Popup zablokowany — pobrano plik do wydruku'); return; }
     w.document.open(); w.document.write(AV.taxPrintHtml()); w.document.close();
-    AV.toast('Otwieram wydruk â€” wybierz â€žZapisz jako PDFâ€ť');
+    AV.toast('Otwieram wydruk — wybierz „Zapisz jako PDF”');
   };
 
   AV.downloadAll = () => {
