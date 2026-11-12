@@ -164,7 +164,7 @@
     if (!box) return;
     const arr = today.closed.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
     if (!arr.length) {
-      AV.setHTML(box, '<div class="sech" style="margin:0"><span class="tag praise">Mentor · spokój</span><span class="link" data-go="mentor">Wszystkie uwagi ' + AV.ic('arrow', 'width:14px;height:14px') + '</span></div><h3>Dziś jeszcze nie ma transakcji</h3><p>Dobry moment, żeby najpierw zrobić plan i check-in. Mentor oceni dzień, kiedy pojawią się transakcje.</p><div class="step"><b>Krok:</b> plan dnia przed pierwszą transakcją.</div>');
+      AV.setHTML(box, '<div class="sech" style="margin:0"><span class="tag praise">Mentor · spokój</span><span class="link" data-go="mentor">Wszystkie uwagi ' + AV.ic('arrow', 'width:14px;height:14px') + '</span></div><h3>Dziś jeszcze nie ma transakcji</h3><p>Dobry moment, żeby najpierw zrobić plan i check-in. Mentor oceni dzień, kiedy pojawią się transakcje.</p><div class="step" data-go="plan" style="cursor:pointer"><b>Krok:</b> plan dnia przed pierwszą transakcją. <span class="link" style="margin-left:6px">Uzupełnij plan ' + AV.ic('arrow', 'width:14px;height:14px') + '</span></div>');
       return;
     }
     const last = arr[0];

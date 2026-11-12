@@ -295,7 +295,7 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 | Synchronizacja Discord | gotowa, test realny 3/3 VOICE |
 | Testy DB/sync | PASS |
 | API / UI / empty-state | PASS |
-| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 23/23`, `UI 53/53`; deploy po merge |
+| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 23/23`, `UI 54/54`; deploy po merge |
 | Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
 | Deploy na `alphavault.pl` | **200** — wdrożony |
 | App path | `~/public_html/alphavault.pl/.app` (open_basedir, deny) |
