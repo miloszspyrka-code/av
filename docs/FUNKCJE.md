@@ -233,21 +233,23 @@ Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca 
 
 ---
 
-## 14. Giełdy i API
+## 14. Giełdy, MetaTrader i API
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| WEEX/OKX/BingX — formularz klucza | 🟡 | walidacja, zapis zamaskowanego klucza |
-| Połączenie/odłączenie | 🟡 | status w UI, `lastSync` |
-| Synchronizuj teraz | 🟡 | aktualizuje czas; nie pobiera transakcji z giełdy |
-| MetaTrader — hasło inwestora | 🟡 | walidacja, zapis loginu/serwera (bez hasła) |
-| Kod parowania EA | ✅ | generowany, kopiowanie, instrukcja TXT |
-| Import CSV | ✅ | prawdziwy parser i zapis transakcji |
-| Import XLS | ⚪ | komunikat „zapisz jako CSV” |
+| WEEX/OKX/BingX — połączenie klucza | E2E | `POST /api/connections`; walidacja na żywo, szyfrowanie AES-256-GCM, brak sekretów w UI |
+| Weryfikacja tylko-do-odczytu | E2E | OKX `perm`, BingX `apiPermissions`, WEEX bezpieczna próba zlecenia na nieistniejącym symbolu |
+| Synchronizacja transakcji | E2E | OKX: zamknięte pozycje + spot fills; BingX: positionHistory; WEEX: fills → rekonstrukcja rund |
+| Automatyczny import | E2E | wywoływany przez istniejący LH Cron (co 5 min) z blokadą „co 25 min”; ręcznie `bin/sync-exchange-trades.php` |
+| Deduplikacja | E2E | `exchange_imports.external_id` + `extId` w transakcji; ponowna synchronizacja nie tworzy duplikatów |
+| MetaTrader — hasło inwestora | E2E (wymaga `METAAPI_TOKEN`) | MetaApi cloud, wyłącznie `investorMode:true`; hasło z prawem handlu odrzucane |
+| MetaTrader — EA | E2E | kod parowania `AV-XXXX-XXXX`, endpoint `POST /api/mt/ea`, EA w `integrations/mt5/AlphaVault.mq5` |
+| Odłączenie | E2E | usuwa połączenie i poświadczenia; transakcje zostają w dzienniku |
+| Import CSV | E2E | parser WEEX/OKX/BingX/Bybit/MT w przeglądarce, podgląd i deduplikacja |
+| Import XLS/XLSX | — | komunikat „zapisz jako CSV” |
+| Błąd dostawcy | E2E | status `error` i komunikat w panelu; ostatni dobry zestaw transakcji pozostaje |
 
-Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera — poza zakresem tego MVP.
-
----
+Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy nie wracają do przeglądarki. Panel pokazuje wyłącznie maskę klucza i status.
 
 ## 15. Konto i zasady
 

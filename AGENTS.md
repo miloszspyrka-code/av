@@ -288,7 +288,7 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, wearables 33/33, PWA 20/20 |
+| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, wearables 33/33, PWA 20/20 |, integracje 19/19, UI integracje 11/11
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (14), w tym 4 tabele `wearable_*`, login OK |
 | `https://alphavault.pl` | **200** — wdrożona |

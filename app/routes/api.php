@@ -3,8 +3,40 @@ declare(strict_types=1);
 
 namespace AlphaVault;
 
+use AlphaVault\Integrations\IntegrationException;
+use AlphaVault\Integrations\Integrations;
+
+function av_integration_sync_state(Config $config, Db $db): ?array
+{
+    if (!$config->integrationsConfigured) {
+        return null;
+    }
+    try {
+        $row = $db->queryOne('SELECT last_attempt_at, last_success_at, last_status, last_error, connections_count, imported_count FROM exchange_sync_state WHERE id = 1');
+        if ($row === null) {
+            return null;
+        }
+        return [
+            'status' => (string) ($row['last_status'] ?? 'never'),
+            'lastAttemptAt' => $row['last_attempt_at'] ?? null,
+            'lastSuccessAt' => $row['last_success_at'] ?? null,
+            'connections' => (int) ($row['connections_count'] ?? 0),
+            'imported' => (int) ($row['imported_count'] ?? 0),
+            'lastError' => $row['last_error'] ?? null,
+        ];
+    } catch (\Throwable) {
+        return null;
+    }
+}
+
 function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string $method, string $path): void
 {
+    if (str_starts_with($path, '/api/mcp')) {
+        require_once __DIR__ . '/mcp.php';
+        av_handle_mcp_api($config, $db, $auth, $user, $method, $path);
+        return;
+    }
+
     try {
         if ($path === '/api/health' && $method === 'GET') {
             try {
@@ -43,6 +75,11 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
                 'sync' => $sync,
+                'integrations' => [
+                    'configured' => $config->integrationsConfigured,
+                    'metaApiConfigured' => $config->metaApiToken !== '',
+                    'sync' => av_integration_sync_state($config, $db),
+                ],
             ]);
         }
 
@@ -182,6 +219,138 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             header('Content-Disposition: attachment; filename="alpha-vault-' . gmdate('Y-m-d') . '.json"');
             echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
             exit;
+        }
+
+        if ($path === '/api/mt/ea' && $method === 'POST') {
+            $auth->rateLimit('mt-ea', 60, 60000);
+            $body = Http::readJsonBody(1024 * 1024);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $code = trim((string) ($body['code'] ?? ''));
+            $trades = is_array($body['trades'] ?? null) ? $body['trades'] : [];
+            try {
+                $result = $bundle['mt']->ingest($code, $trades);
+                Http::json(['ok' => true, ...$result]);
+            } catch (IntegrationException $err) {
+                Http::json(['error' => $err->errorCode, 'message' => $err->getMessage()], $err->httpStatus);
+            }
+        }
+
+        if ($path === '/api/connections' && $method === 'GET') {
+            $current = $auth->requireAuth($user);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json([
+                    'configured' => false,
+                    'metaApiConfigured' => $config->metaApiToken !== '',
+                    'connections' => [],
+                ]);
+            }
+            Http::json([
+                'configured' => true,
+                'metaApiConfigured' => $config->metaApiToken !== '',
+                'connections' => $bundle['store']->listForUser((int) $current['id']),
+            ]);
+        }
+
+        if ($path === '/api/connections' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-connect', 12, 60000);
+            $body = Http::readJsonBody(65536);
+            $provider = strtolower(trim((string) ($body['provider'] ?? '')));
+            $fields = is_array($body['fields'] ?? null) ? $body['fields'] : [];
+            if ($provider === 'mt') {
+                $provider = strtolower(trim((string) ($fields['platform'] ?? 'mt5')));
+            }
+            if (!in_array($provider, ['weex', 'okx', 'bingx', 'mt4', 'mt5'], true)) {
+                Http::json(['error' => 'bad_provider', 'message' => 'Nieznana giełda lub broker.'], 422);
+            }
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            try {
+                $adapterResult = match ($provider) {
+                    'okx' => (new \AlphaVault\Integrations\OKXProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases))->connect($fields, (int) $current['id']),
+                    'bingx' => (new \AlphaVault\Integrations\BingXProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases))->connect($fields, (int) $current['id']),
+                    'weex' => (new \AlphaVault\Integrations\WEEXProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases))->connect($fields, (int) $current['id']),
+                    default => (new \AlphaVault\Integrations\MetaApiProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases, $config->metaApiToken))->connect($fields, (int) $current['id']),
+                };
+                $saved = $bundle['store']->save(
+                    (int) $current['id'],
+                    $provider,
+                    $adapterResult,
+                    is_array($adapterResult['credentials'] ?? null) ? $adapterResult['credentials'] : []
+                );
+                Http::json(['ok' => true, 'connection' => $saved], 201);
+            } catch (IntegrationException $err) {
+                Http::json(['error' => $err->errorCode, 'message' => $err->getMessage()], $err->httpStatus);
+            }
+        }
+
+        if ($path === '/api/connections/sync' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-sync', 20, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $body = Http::readJsonBody(8192);
+            $only = isset($body['provider']) ? strtolower(trim((string) $body['provider'])) : null;
+            if ($only === 'mt') {
+                $only = null;
+            }
+            Http::json($bundle['sync']->syncUser((int) $current['id'], $only));
+        }
+
+        if ($path === '/api/connections/mt/pair' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-pair', 10, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $body = Http::readJsonBody(8192);
+            $platform = strtolower(trim((string) ($body['platform'] ?? 'mt5')));
+            $pair = $bundle['mt']->pair((int) $current['id'], $platform);
+            Http::json(['ok' => true, 'code' => $pair['code'], 'connectionId' => $pair['id']], 201);
+        }
+
+        if (preg_match('#^/api/connections/(\d+)/sync$#', $path, $m) && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connection-sync', 30, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            try {
+                Http::json(['ok' => true, 'result' => $bundle['sync']->syncUserConnection((int) $current['id'], (int) $m[1])]);
+            } catch (IntegrationException $err) {
+                Http::json(['error' => $err->errorCode, 'message' => $err->getMessage()], $err->httpStatus);
+            }
+        }
+
+        if (preg_match('#^/api/connections/(\d+)$#', $path, $m) && $method === 'DELETE') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-delete', 20, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $row = $bundle['store']->findForUser((int) $current['id'], (int) $m[1]);
+            if ($row === null) {
+                Http::json(['error' => 'not_found', 'message' => 'Nie znaleziono połączenia.'], 404);
+            }
+            $bundle['sync']->disconnect($row);
+            $bundle['store']->delete((int) $current['id'], (int) $m[1]);
+            Http::json(['ok' => true]);
         }
 
         if ($path === '/api/events' && $method === 'GET') {

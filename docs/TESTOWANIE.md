@@ -234,3 +234,13 @@ Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy u�
 - testów obciążeniowych.
 
 Testy Discord wykonuj ręcznie na koncie z rolą Alpha, bez roli i spoza serwera. Nie deklaruj wyniku bez rzeczywistego udziału użytkownika.
+﻿## Integracje giełd, MetaTrader i API
+
+```powershell
+npm run test:integrations      # API + mocki OKX/BingX/WEEX/MetaApi/EA
+npm run test:ui:integrations   # Playwright: formularze i dziennik
+```
+
+Wymagania: `tests/config.integrations.json` (kopiuj z `config.test.json` i dodaj `INTEGRATIONS_KEY`, `METAAPI_TOKEN` oraz adresy `*_BASE` na lokalny mock). Testy uruchamiają własny serwer mocków na `127.0.0.1:4191` i aplikację na `4175`.
+
+Zakres: OKX read-only i odrzucenie handlu, BingX `apiPermissions`, WEEX probe + rekonstrukcja fills, MetaApi `investorMode` i odrzucenie hasła z handlem, EA kod parowania + ingest + deduplikacja, UI formularze i licznik transakcji.

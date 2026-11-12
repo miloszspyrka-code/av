@@ -26,6 +26,10 @@ final class Config
         public readonly array $adminDiscordIds,
         public readonly array $discordEventRules,
         public readonly array $wearables,
+        public readonly string $integrationsKey,
+        public readonly bool $integrationsConfigured,
+        public readonly string $metaApiToken,
+        public readonly array $integrationBases,
         public readonly string $version,
     ) {
     }
@@ -165,6 +169,17 @@ final class Config
             }
         }
 
+        $integrationsKey = (string) $env('INTEGRATIONS_KEY', '');
+        $metaApiToken = (string) $env('METAAPI_TOKEN', '');
+        $integrationBases = [
+            'okx' => rtrim((string) $env('OKX_BASE', 'https://www.okx.com'), '/'),
+            'bingx' => rtrim((string) $env('BINGX_BASE', 'https://open-api.bingx.com'), '/'),
+            'weex_spot' => rtrim((string) $env('WEEX_SPOT_BASE', 'https://api-spot.weex.com'), '/'),
+            'weex_futures' => rtrim((string) $env('WEEX_FUTURES_BASE', 'https://api-contract.weex.com'), '/'),
+            'metaapi' => rtrim((string) $env('METAAPI_BASE', 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai'), '/'),
+            'metaapi_client' => (string) $env('METAAPI_CLIENT_BASE', 'https://mt-client-api-v1.{region}.agiliumtrade.agiliumtrade.ai'),
+        ];
+
         return new self(
             root: $root,
             appUrl: $appUrl,
@@ -186,7 +201,11 @@ final class Config
             adminDiscordIds: $adminDiscordIds,
             discordEventRules: $rules,
             wearables: $wearables,
-            version: '3.3.0',
+            integrationsKey: $integrationsKey,
+            integrationsConfigured: strlen($integrationsKey) >= 32,
+            metaApiToken: $metaApiToken,
+            integrationBases: $integrationBases,
+            version: '3.4.0',
         );
     }
 }

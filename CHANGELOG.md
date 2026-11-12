@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.4.0 — 2026-11-12
+
+### Dodane
+- Integracje giełd: WEEX, OKX i BingX — klucze tylko do odczytu, szyfrowanie AES-256-GCM, walidacja uprawnień i automatyczna synchronizacja transakcji.
+- MetaTrader 4/5 przez MetaApi (hasło inwestora, `investorMode`) oraz przez EA z kodem parowania (`integrations/mt5/AlphaVault.mq5`).
+- Endpointy `/api/connections*`, `/api/mt/ea`, worker `bin/sync-exchange-trades.php` i tabela deduplikacji `exchange_imports`.
+- Testy: integracje 19/19, UI integracje 11/11; dokumentacja API, bazy, deployu i testów.
+
 ## 3.3.0 — 2026-11-12
 
 ### Dodane

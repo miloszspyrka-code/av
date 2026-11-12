@@ -764,3 +764,53 @@ npm run test:docs   # sprawdza linki, sekcje i brak dryfu
 | `manual_category` | ręczne przypisanie, ma pierwszeństwo nad regułami |
 | `raw_payload` | pełny JSON z Discorda, tylko do diagnostyki |
 | DST | zmiana czasu letni/zimowy |
+
+## 20. Integracje giełd, MetaTrader i API
+
+### 20.1. Warstwy
+
+```text
+public/js/state.js          loadConnections, connectExchange, syncConnections, reloadStateFromServer
+public/js/render2.js        panel Giełdy, formularze WEEX/OKX/BingX, MetaTrader, EA
+app/Integrations/           Crypto, HttpClient, providers, ConnectionStore, ExchangeSync, MtEa
+app/routes/api.php          /api/connections*, /api/mt/ea
+bin/sync-exchange-trades.php  ręczny/CRON worker
+```
+
+### 20.2. Połączenie klucza
+
+1. Przeglądarka wysyła `POST /api/connections` z polami klucza.
+2. Serwer waliduje klucz u dostawcy i sprawdza uprawnienia.
+3. Klucz z prawem handlu/wypłat jest odrzucany (`read_only_required`).
+4. Poświadczenia są szyfrowane AES-256-GCM kluczem `INTEGRATIONS_KEY` i zapisywane w `exchange_connections`.
+5. Do UI wraca wyłącznie maska, status i liczniki.
+
+### 20.3. Synchronizacja
+
+- Pierwsze 30 dni pobierane jest od razu, starsze paczki (do 90 dni) w kolejnych przebiegach.
+- Kolejne przebiegi pobierają okno od ostatniej synchronizacji minus 1 dzień.
+- Każda transakcja ma `extId`; `exchange_imports` gwarantuje idempotencję.
+- Transakcja trafia do `user_states.state.trades` i jest widoczna w dzienniku.
+- Błąd dostawcy nie usuwa ostatniego dobrego zestawu; połączenie dostaje status `error` i komunikat.
+
+### 20.4. Harmonogram
+
+`bin/sync-exchange-trades.php` jest wywoływany z istniejącego zadania LH Cron (co 5 min) i sam pilnuje, żeby realna synchronizacja nie częściej niż co 25 min. Ręcznie:
+
+```bash
+/usr/bin/php ~/public_html/alphavault.pl/.app/bin/sync-exchange-trades.php --force
+tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log
+```
+
+### 20.5. MetaTrader
+
+- Hasło inwestora: MetaApi cloud; akceptacja tylko przy `investorMode:true`.
+- EA: kod parowania `AV-XXXX-XXXX` (w bazie tylko SHA-256), endpoint `POST /api/mt/ea`, plik `integrations/mt5/AlphaVault.mq5`.
+- EA wysyła wyłącznie zamknięte transakcje; nie handluje.
+
+### 20.6. Bezpieczeństwo
+
+- `INTEGRATIONS_KEY` i `METAAPI_TOKEN` tylko po stronie serwera.
+- Brak publicznego endpointu uruchamiającego synchronizację; `/api/mt/ea` wymaga kodu parowania.
+- API nie zwraca sekretów; maska klucza jest jedynym identyfikatorem w UI.
+- Rate limiting: połączenia 12/min, synchronizacja 20/min, EA 60/min.

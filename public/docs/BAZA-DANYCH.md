@@ -24,6 +24,10 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) |
 | `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
 | `schema_migrations` | wersje migracji |
+| `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu |
+| `exchange_imports` | deduplikacja transakcji po `(user_id, provider, external_id)` |
+| `exchange_sync_runs` | historia synchronizacji integracji (fetched/imported/error) |
+| `exchange_sync_state` | stan schedulera integracji (ostatnia próba/sukces, liczniki) |
 
 ## Stan JSON
 

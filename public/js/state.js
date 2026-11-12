@@ -27,7 +27,9 @@
     isAdmin: false,
     wearables: null,
     wearablesLoaded: false,
-    wearablesError: null
+    wearablesError: null,
+    integrationsConfigured: false,
+    metaApiConfigured: false
   };
 
   const deepMerge = (base, patch) => {
@@ -178,6 +180,7 @@
         AV.api.revision = 0;
       }
       AV.applyServerUser(me.user);
+      await AV.loadConnections();
       await AV.loadEvents();
       await AV.loadWearables();
       AV.api.ready = true;
@@ -357,6 +360,111 @@
     }
   };
 
+  AV.loadConnections = async () => {
+    if (!AV.api.online || !AV.api.authenticated) return false;
+    try {
+      const res = await AV.apiFetch('/api/connections');
+      if (!res.ok) return false;
+      const data = await res.json();
+      AV.api.integrationsConfigured = data.configured !== false;
+      AV.api.metaApiConfigured = !!data.metaApiConfigured;
+      const c = AV.connections();
+      ['weex', 'okx', 'bingx'].forEach((k) => { c[k] = { connected: false }; });
+      c.mt = { connected: false, platform: (c.mt && c.mt.platform) || 'mt5', pairCode: (c.mt && c.mt.pairCode) || '' };
+      (data.connections || []).forEach((row) => {
+        const key = (row.provider === 'mt4' || row.provider === 'mt5') ? 'mt' : row.provider;
+        c[key] = {
+          connected: row.status === 'connected' || row.status === 'pending',
+          pending: row.status === 'pending',
+          id: row.id,
+          provider: row.provider,
+          label: row.label,
+          lastSync: row.lastSyncAt,
+          imported: row.importedCount,
+          masked: row.keyMask,
+          perms: row.permissions,
+          status: row.status,
+          error: row.lastError,
+          platform: row.platform || ((c[key] && c[key].platform) || 'mt5'),
+          server: row.serverRef || '',
+          pairCode: (c[key] && c[key].pairCode) || ''
+        };
+      });
+      if (AV.renderExchangeList) AV.renderExchangeList();
+      return true;
+    } catch (err) {
+      AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.reloadStateFromServer = async () => {
+    if (!AV.api.online || !AV.api.authenticated) return false;
+    const res = await AV.apiFetch('/api/state');
+    if (!res.ok) return false;
+    const payload = await res.json();
+    if (!payload.state) return false;
+    AV.state = AV.normalizeServer(payload.state);
+    AV.api.revision = payload.revision || 1;
+    try { AV.safeSet(AV.KEY, JSON.stringify(AV.state)); } catch {}
+    if (AV.renderAll) AV.renderAll();
+    return true;
+  };
+
+  AV.connectExchange = async (provider, fields) => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      throw new Error('Połącz się z serwerem, żeby zapisać klucz. Tryb offline nie przyjmuje sekretów.');
+    }
+    const res = await AV.apiFetch('/api/connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, fields })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Nie udało się połączyć (HTTP ' + res.status + ').');
+    await AV.loadConnections();
+    return data.connection;
+  };
+
+  AV.disconnectExchange = async (id) => {
+    if (!id) throw new Error('Brak identyfikatora połączenia.');
+    const res = await AV.apiFetch('/api/connections/' + encodeURIComponent(id), { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Nie udało się odłączyć.');
+    await AV.loadConnections();
+    return true;
+  };
+
+  AV.syncConnections = async (provider) => {
+    const res = await AV.apiFetch('/api/connections/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(provider ? { provider } : {})
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Synchronizacja nie powiodła się.');
+    await AV.reloadStateFromServer();
+    await AV.loadConnections();
+    const results = Array.isArray(data.connections) ? data.connections : [];
+    const imported = results.reduce((sum, row) => sum + (Number(row.imported) || 0), 0);
+    const failed = results.find((row) => row.error);
+    if (failed && failed.message) AV.toast(failed.message, 7000);
+    return { ...data, imported };
+  };
+
+  AV.pairMt = async (platform) => {
+    if (!AV.api.online || !AV.api.authenticated) throw new Error('Połącz się z serwerem, żeby wygenerować kod.');
+    const res = await AV.apiFetch('/api/connections/mt/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Nie udało się wygenerować kodu parowania.');
+    await AV.loadConnections();
+    return data.code;
+  };
+
   AV.serverDemoLogin = async () => {
     const res = await AV.apiFetch('/auth/demo', {
       method: 'POST',
@@ -376,6 +484,13 @@
     AV.api.eventsSync = null;
     AV.api.eventsLoaded = false;
     AV.api.isAdmin = false;
+    AV.api.integrationsConfigured = false;
+    AV.api.metaApiConfigured = false;
+    if (AV.state?.settings?.connections) {
+      ['weex', 'okx', 'bingx'].forEach((k) => { AV.state.settings.connections[k] = { connected: false }; });
+      AV.state.settings.connections.mt = { connected: false, platform: 'mt5' };
+      AV.state.settings.connections.file = { connected: false };
+    }
   };
 
   AV.serverDeleteAccount = async () => {

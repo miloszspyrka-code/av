@@ -296,6 +296,122 @@ GET /auth/wearables/{garmin|oura|whoop}/callback?code=...&state=...
 
 `state` jest jednorazowy (10 min), powiązany z użytkownikiem i dostawcą. Po sukcesie redirect na `/?connected={provider}#cialo`; błąd synchronizacji nie blokuje połączenia i jest widoczny w `lastError`.
 
+### 3.12. `GET /api/connections`
+
+Wymaga sesji. Zwraca połączenia użytkownika bez sekretów — tylko maskę klucza, status, uprawnienia i licznik importu.
+
+```json
+{
+  "configured": true,
+  "metaApiConfigured": true,
+  "connections": [
+    {
+      "id": 12,
+      "provider": "okx",
+      "label": "OKX",
+      "accountRef": "123456",
+      "keyMask": "abcd••••wxyz",
+      "permissions": "read-only",
+      "status": "connected",
+      "lastSyncAt": "2026-11-12 20:00:00",
+      "lastSyncStatus": "success",
+      "lastError": null,
+      "importedCount": 2,
+      "platform": null,
+      "serverRef": null
+    }
+  ]
+}
+```
+
+`configured:false` oznacza brak `INTEGRATIONS_KEY` na serwerze. Endpoint nie zwraca poświadczeń, pełnych kluczy ani hasła inwestora.
+
+### 3.13. `POST /api/connections`
+
+Wymaga sesji i poprawnego `Origin`. Body:
+
+```json
+{
+  "provider": "okx",
+  "fields": { "apiKey": "...", "secretKey": "...", "passphrase": "..." }
+}
+```
+
+Obsługiwane providery: `weex`, `okx`, `bingx`, `mt4`, `mt5`. Dla MetaTrader pola: `platform`, `server`, `login`, `password`, `type`.
+
+Serwer:
+
+1. waliduje klucz na żywo u dostawcy,
+2. odrzuca klucz z prawem handlu lub wypłat (`422 read_only_required`),
+3. szyfruje poświadczenia AES-256-GCM (`INTEGRATIONS_KEY`),
+4. zapisuje połączenie i zwraca `201` z zamaskowanym kluczem.
+
+MetaTrader jest akceptowany wyłącznie przez MetaApi, gdy `investorMode:true`. Hasło z prawem handlu jest odrzucane, a konto usuwane z MetaApi.
+
+### 3.14. `POST /api/connections/sync`
+
+Wymaga sesji i `Origin`. Synchronizuje wszystkie połączenia użytkownika (opcjonalnie `{"provider":"okx"}`). Zwraca podsumowanie per połączenie: `fetched`, `imported`, `skipped`, `done`, `error`.
+
+Import jest idempotentny — deduplikacja po `external_id` w `exchange_imports` i `extId` w stanie dziennika.
+
+### 3.15. `POST /api/connections/{id}/sync`
+
+Synchronizuje jedno połączenie. Używane po podłączeniu klucza i przez przycisk „Synchronizuj teraz”.
+
+### 3.16. `DELETE /api/connections/{id}`
+
+Wymaga sesji i `Origin`. Usuwa połączenie i poświadczenia. Transakcje pozostają w dzienniku; deduplikacja zachowuje się przy ponownym podłączeniu.
+
+### 3.17. `POST /api/connections/mt/pair`
+
+Wymaga sesji i `Origin`. Body `{"platform":"mt5"}`. Zwraca jednorazowo kod `AV-XXXX-XXXX` do EA. W bazie znajduje się tylko SHA-256 kodu.
+
+### 3.18. `POST /api/mt/ea`
+
+Publiczny endpoint dla Expert Advisor, uwierzytelniany kodem parowania (nie sesją). Body:
+
+```json
+{
+  "code": "AV-7K3Q-92XD",
+  "trades": [
+    {
+      "ticket": "123456",
+      "symbol": "EURUSD",
+      "side": "buy",
+      "openTime": 1763000000,
+      "closeTime": 1763003600,
+      "lots": 0.5,
+      "openPrice": 1.1,
+      "closePrice": 1.105,
+      "profit": 250,
+      "commission": -2,
+      "swap": -1
+    }
+  ]
+}
+```
+
+Maks. 200 transakcji w żądaniu. Deduplikacja po `ticket`. Kod można wymienić, generując nowy; nowy kod zastępuje poprzednie połączenie MetaTrader.
+
+### 3.19. `GET /api/health` — integracje
+
+Pole `integrations` zawiera:
+
+```json
+{
+  "configured": true,
+  "metaApiConfigured": true,
+  "sync": {
+    "status": "success",
+    "lastAttemptAt": "2026-11-12 20:00:00",
+    "lastSuccessAt": "2026-11-12 20:00:00",
+    "connections": 3,
+    "imported": 7,
+    "lastError": null
+  }
+}
+```
+
 ## 4. Bezpieczeństwo
 
 - brak haseł użytkowników; tylko Discord OAuth2,

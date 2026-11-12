@@ -112,6 +112,101 @@ paths:
           description: Wyczyszczono
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /api/connections:
+    get:
+      tags: [API]
+      summary: Lista połączeń giełd/brokerów (bez sekretów)
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Brak sesji
+    post:
+      tags: [API]
+      summary: Dodaj klucz giełdy lub konto MetaTrader
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, fields]
+              properties:
+                provider:
+                  type: string
+                  enum: [weex, okx, bingx, mt4, mt5]
+                fields:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Połączono
+        '422':
+          description: Klucz niepoprawny lub nie jest tylko do odczytu
+  /api/connections/sync:
+    post:
+      tags: [API]
+      summary: Synchronizuj wszystkie połączenia
+      responses:
+        '200':
+          description: Podsumowanie synchronizacji
+  /api/connections/{id}/sync:
+    post:
+      tags: [API]
+      summary: Synchronizuj jedno połączenie
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Podsumowanie synchronizacji
+  /api/connections/{id}:
+    delete:
+      tags: [API]
+      summary: Odłącz połączenie
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usunięto
+  /api/connections/mt/pair:
+    post:
+      tags: [API]
+      summary: Wygeneruj kod parowania EA
+      responses:
+        '201':
+          description: Kod AV-XXXX-XXXX
+  /api/mt/ea:
+    post:
+      tags: [API]
+      summary: Ingestion transakcji z Expert Advisor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, trades]
+              properties:
+                code:
+                  type: string
+                trades:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+      responses:
+        '200':
+          description: Import zakończony
+        '401':
+          description: Zły kod parowania
   /api/me/export:
     get:
       tags: [API]

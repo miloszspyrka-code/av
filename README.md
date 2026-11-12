@@ -119,3 +119,11 @@ Ręcznie: `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app
 ## Legacy
 
 `legacy/` zawiera poprzedni backend Express 4 i skrypty lokalnego MySQL. Nie jest częścią produkcyjnego deployu; pozostaje jako referencja migracji.
+﻿## Integracje
+
+```powershell
+npm run test:integrations
+npm run test:ui:integrations
+```
+
+Wymagają lokalnego mocka (`tests/fixtures/mock-providers.php`) i MySQL z `tests/config.test.json`. Szczegóły: [docs/TESTOWANIE.md](docs/TESTOWANIE.md).

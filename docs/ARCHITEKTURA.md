@@ -71,3 +71,22 @@ Puste pola i stany brzegowe: [DOCUMENTATION.md §12](../DOCUMENTATION.md#12-pust
 - deploy: [DEPLOY.md](DEPLOY.md)
 - deploy lokalny: [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md)
 - testy: [TESTOWANIE.md](TESTOWANIE.md)
+
+## Integracje giełd i brokerów
+
+```text
+app/Integrations/
+  Crypto.php            AES-256-GCM envelope (INTEGRATIONS_KEY)
+  HttpClient.php        cURL/stream, limity, bez logowania sekretów
+  Normalizer.php        pary, liczby, UTC ISO
+  OKXProvider.php       account/config + positions-history + fills-history
+  BingXProvider.php     apiPermissions + income + positionHistory
+  WEEXProvider.php      probe read-only + userTrades + rekonstrukcja
+  MetaApiProvider.php   provisioning + account-information + history-deals
+  PositionReconstructor.php  fills -> zamknięte transakcje
+  ConnectionStore.php   szyfrowane połączenia, maski, statusy
+  ExchangeSync.php      okna 30 dni, deduplikacja, merge do user_states
+  MtEa.php              kod parowania + ingest z EA
+```
+
+Przepływ: UI → `/api/connections` → provider → `ConnectionStore`; worker → `ExchangeSync` → `exchange_imports` + `user_states.trades`.

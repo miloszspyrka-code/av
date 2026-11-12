@@ -654,17 +654,38 @@
 
   /* ---------- giełdy ---------- */
   AV.exKey = 'weex';
+  AV.connectionDefaults = () => ({
+    weex: { connected: false },
+    okx: { connected: false },
+    bingx: { connected: false },
+    mt: { connected: false, platform: 'mt5' },
+    file: { connected: false }
+  });
+  AV.connections = () => {
+    const s = AV.state || {};
+    s.settings = s.settings || {};
+    s.settings.connections = s.settings.connections || AV.connectionDefaults();
+    const c = s.settings.connections;
+    Object.entries(AV.connectionDefaults()).forEach(([k, v]) => {
+      if (!c[k] || typeof c[k] !== 'object') c[k] = v;
+    });
+    return c;
+  };
   AV.renderExchangeList = () => {
-    const c = AV.state.settings.connections;
+    const c = AV.connections();
     const set = (k, txt, cls) => { const el = $('[data-exstate="' + k + '"]'); if (el) { el.textContent = txt; el.className = cls || ''; } };
-    set('weex', c.weex.connected ? '● połączona' : 'niepodłączona', c.weex.connected ? 'win' : '');
-    set('okx', c.okx.connected ? '● połączona' : 'niepodłączona', c.okx.connected ? 'win' : '');
-    set('bingx', c.bingx.connected ? '● połączona' : 'niepodłączona', c.bingx.connected ? 'win' : '');
-    set('mt', c.mt.connected ? '● połączony' : 'forex · indeksy · złoto', c.mt.connected ? 'win' : 'warnc');
+    const stateOf = (x) => x.pending ? '● konfiguracja' : (x.connected ? '● połączona' : 'niepodłączona');
+    set('weex', stateOf(c.weex), c.weex.connected ? 'win' : '');
+    set('okx', stateOf(c.okx), c.okx.connected ? 'win' : '');
+    set('bingx', stateOf(c.bingx), c.bingx.connected ? 'win' : '');
+    set('mt', c.mt.connected ? (c.mt.pending ? '● konfiguracja' : '● połączony') : 'forex · indeksy · złoto', c.mt.connected ? 'win' : 'warnc');
     set('file', 'CSV · XLS', '');
-    const last = c.weex.lastSync || c.okx.lastSync || c.bingx.lastSync;
+    const active = ['weex', 'okx', 'bingx'].map((k) => [k, c[k]]).find(([, v]) => v.connected);
     const badge = $('#syncBadge');
-    if (badge) badge.innerHTML = '<span class="dot"></span>' + (c.weex.connected ? 'WEEX' : c.okx.connected ? 'OKX' : c.bingx.connected ? 'BingX' : 'brak połączeń') + (last ? ' · ' + new Date(last).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '');
+    if (badge) {
+      const last = active && active[1].lastSync ? new Date(active[1].lastSync).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
+      badge.innerHTML = '<span class="dot"></span>' + (active ? active[0].toUpperCase() : (c.mt.connected ? 'MetaTrader' : 'brak połączeń')) + (last ? ' · ' + last : '');
+    }
   };
 
   AV.renderEx = (k) => {
@@ -672,70 +693,94 @@
     $$('.exl button').forEach((b) => b.classList.toggle('on', b.dataset.ex === k));
     if (k === 'mt') { AV.renderMT(); return; }
     if (k === 'file') { AV.renderImport(); return; }
-    const c = AV.state.settings.connections[k];
+    const c = AV.connections()[k];
     const meta = {
       weex: { n: 'WEEX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>weex.com</b> i kliknij ikonę profilu w prawym górnym rogu.', 'Wejdź w <b>Zarządzanie API</b> i kliknij <b>Utwórz klucz API</b>.', 'Nazwij klucz, np. <b>Alpha Vault</b>, i ustaw passphrase. Zapisz go.', 'W uprawnieniach zaznacz <b>tylko odczyt</b>. <b>Nie zaznaczaj</b> handlu ani wypłat.', 'Potwierdź kodem 2FA i skopiuj <b>API Key</b> oraz <b>Secret Key</b>. Secret pokazuje się tylko raz.', 'Wklej trzy wartości obok i kliknij <b>Połącz</b>. Pierwsza synchronizacja pobierze 90 dni historii.'] },
       okx: { n: 'OKX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>okx.com</b>, kliknij profil i wybierz <b>API</b>.', 'Kliknij <b>Utwórz klucz API v5</b>.', 'Wpisz nazwę, np. <b>Alpha Vault</b>, i ustaw passphrase.', 'Uprawnienia: <b>tylko Odczyt</b>. Handel i wypłaty wyłączone.', 'Potwierdź i skopiuj <b>API Key</b> oraz <b>Secret Key</b>.', 'Wklej obok razem z passphrase i kliknij <b>Połącz</b>.'] },
       bingx: { n: 'BingX', f: ['API Key', 'Secret Key'], steps: ['Zaloguj się na <b>bingx.com</b>, kliknij profil i wybierz <b>Zarządzanie API</b>.', 'Kliknij <b>Utwórz API</b> i nazwij klucz, np. <b>Alpha Vault</b>.', 'Zostaw <b>tylko Odczyt</b>. Nie włączaj handlu ani wypłat.', 'Potwierdź kodem z maila lub 2FA.', 'Skopiuj <b>API Key</b> i <b>Secret Key</b>, wklej obok i kliknij <b>Połącz</b>.'] }
     }[k];
-    const connected = c.connected;
-    AV.setHTML('#exBody', '<div class="sech"><h2>' + meta.n + (connected ? ' <span class="win" style="font-size:13px;font-weight:600;margin-left:6px">● połączona</span>' : '') + '</h2>' + (connected ? '<button class="btn g sm" data-disconnect="' + k + '">Odłącz</button>' : '') + '</div>' +
-      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + new Date(c.lastSync).toLocaleString('pl-PL') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Automatyczny import</span><b>co 30 minut</b></div><div class="kv"><span>Uprawnienia klucza</span><b class="win">tylko odczyt ✓</b></div><div class="kv"><span>Klucz</span><b class="mono">' + AV.esc(c.masked || '••••') + '</b></div>' : '') +
+    const connected = !!c.connected;
+    const statusNote = c.error
+      ? '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div><b>Ostatnia synchronizacja nie powiodła się.</b><br>' + AV.esc(c.error) + '</div></div>'
+      : '';
+    AV.setHTML('#exBody', '<div class="sech"><h2>' + meta.n + (connected ? ' <span class="win" style="font-size:13px;font-weight:600;margin-left:6px">' + (c.pending ? '● konfiguracja' : '● połączona') + '</span>' : '') + '</h2>' + (connected && c.id ? '<button class="btn g sm" data-disconnect="' + c.id + '">Odłącz</button>' : '') + '</div>' +
+      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + (c.lastSync ? new Date(c.lastSync).toLocaleString('pl-PL') : 'oczekuje') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Automatyczny import</span><b>co 30 minut</b></div><div class="kv"><span>Uprawnienia klucza</span><b class="win">' + (c.perms === 'read-only' ? 'tylko odczyt ✓' : AV.esc(c.perms || '')) + '</b></div><div class="kv"><span>Klucz</span><b class="mono">' + AV.esc(c.masked || '') + '</b></div>' : '') +
+      statusNote +
       '<div class="grid g2" style="margin-top:' + (connected ? 20 : 4) + 'px;align-items:start"><div><h3>Jak zdobyć klucz</h3><ol class="howto" style="margin-top:6px">' + meta.steps.map((s) => '<li><span>' + s + '</span></li>').join('') + '</ol></div>' +
-      '<div><div class="card flat"><h3>' + (connected ? 'Zmień klucz' : 'Wklej klucz') + '</h3>' + meta.f.map((f, i) => '<span class="label">' + f + '</span><input class="input mono" id="exF' + i + '" placeholder="' + f + '" type="' + (/Secret|Pass/.test(f) ? 'password' : 'text') + '">').join('') +
-      '<button class="btn p" style="width:100%;margin-top:18px" data-conn="' + k + '">' + (connected ? 'Zapisz nowy klucz' : 'Połącz ' + meta.n) + '</button></div>' +
+      '<div><div class="card flat"><h3>' + (connected ? 'Zmień klucz' : 'Wklej klucz') + '</h3>' + meta.f.map((f, i) => '<span class="label">' + f + '</span><input class="input mono" id="exF' + i + '" placeholder="' + f + '" autocomplete="off" type="' + (/Secret|Pass/.test(f) ? 'password' : 'text') + '">').join('') +
+      '<button class="btn p" style="width:100%;margin-top:18px" data-conn="' + k + '">' + (connected ? 'Zapisz nowy klucz' : 'Połącz ' + meta.n) + '</button>' +
+      '<div id="exMsg" class="hint" style="margin-top:10px"></div></div>' +
       '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div>Jeśli klucz ma prawo do handlu albo wypłat, Alpha Vault go odrzuci. Tak chronimy Twoje środki.</div></div></div></div>');
     AV.bindExchangeActions(k, meta);
   };
 
   AV.bindExchangeActions = (k, meta) => {
-    $('#exBody [data-conn]') && ($('#exBody [data-conn]').onclick = () => {
+    $('#exBody [data-conn]') && ($('#exBody [data-conn]').onclick = async () => {
+      const btn = $('#exBody [data-conn]');
       const vals = meta.f.map((_, i) => $('#exF' + i).value.trim());
       if (vals.some((v) => !v)) { AV.toast('Uzupełnij wszystkie pola klucza'); return; }
       if (vals.some((v) => v.length < 8)) { AV.toast('Klucz wygląda na niepełny (min. 8 znaków)'); return; }
-      const c = AV.state.settings.connections[k];
-      c.connected = true;
-      c.lastSync = new Date().toISOString();
-      c.imported = c.imported || 0;
-      c.masked = vals[0].slice(0, 4) + '••••' + vals[0].slice(-4);
-      c.perms = 'read-only';
-      AV.saveNow();
-      AV.renderExchangeList(); AV.renderEx(k);
-      AV.toast(meta.n + ': klucz tylko do odczytu zapisany. Synchronizacja gotowa.');
+      const fields = {};
+      meta.f.forEach((f, i) => { fields[f === 'API Key' ? 'apiKey' : f === 'Secret Key' ? 'secretKey' : 'passphrase'] = vals[i]; });
+      btn.disabled = true;
+      btn.textContent = 'Łączę…';
+      try {
+        await AV.connectExchange(k, fields);
+        if ($('#exMsg')) $('#exMsg').textContent = 'Klucz zapisany. Pobieram historię…';
+        await AV.syncConnections(k);
+        AV.renderExchangeList();
+        AV.renderEx(k);
+        AV.toast(meta.n + ': połączono. Transakcje są w dzienniku.', 5000);
+      } catch (err) {
+        if ($('#exMsg')) $('#exMsg').textContent = err.message || 'Nie udało się połączyć.';
+        AV.toast(err.message || 'Nie udało się połączyć.', 7000);
+        btn.disabled = false;
+        btn.textContent = (AV.connections()[k].connected ? 'Zapisz nowy klucz' : 'Połącz ' + meta.n);
+      }
     });
     $('#exBody [data-disconnect]') && ($('#exBody [data-disconnect]').onclick = () => {
-      AV.confirm({ title: 'Odłączyć ' + meta.n + '?', text: 'Historia transakcji zostanie w dzienniku, ale nowe nie będą już importowane.', confirmLabel: 'Odłącz', danger: true, onConfirm: () => {
-        const c = AV.state.settings.connections[k];
-        c.connected = false; c.lastSync = null; c.masked = ''; c.imported = 0;
-        AV.saveNow(); AV.renderExchangeList(); AV.renderEx(k); AV.toast(meta.n + ' odłączona');
+      AV.confirm({ title: 'Odłączyć ' + meta.n + '?', text: 'Historia transakcji zostanie w dzienniku, ale nowe nie będą już importowane.', confirmLabel: 'Odłącz', danger: true, onConfirm: async () => {
+        try {
+          await AV.disconnectExchange(Number($('#exBody [data-disconnect]').dataset.disconnect));
+          AV.renderExchangeList(); AV.renderEx(k);
+          AV.toast(meta.n + ' odłączona');
+        } catch (err) { AV.toast(err.message || 'Nie udało się odłączyć.', 6000); }
       } });
     });
   };
 
   AV.renderMT = () => {
-    const c = AV.state.settings.connections.mt;
-    const code = c.code || 'AV-7K3Q-92XD';
-    AV.setHTML('#exBody', '<div class="sech"><h2>MetaTrader 4 / 5</h2><div class="seg" id="mtTabs"><button class="on" data-m="a">Hasło inwestora</button><button data-m="b">Alpha Vault EA</button></div></div>' +
-      '<p class="mut" style="font-size:14px;line-height:1.55">Forex, indeksy (NAS100, US500, DAX), złoto i ropa u dowolnego brokera z MetaTraderem, np. VT Markets, IC Markets, XM czy konta prop firm. Transakcje, loty, swapy i prowizje kopiują się do dziennika same.</p>' +
+    const c = AV.connections().mt;
+    const connected = !!c.connected;
+    const code = c.pairCode || '';
+    const statusNote = c.error
+      ? '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div><b>MetaTrader:</b> ' + AV.esc(c.error) + '</div></div>'
+      : '';
+    AV.setHTML('#exBody', '<div class="sech"><h2>MetaTrader 4 / 5' + (connected ? ' <span class="win" style="font-size:13px;font-weight:600;margin-left:6px">' + (c.pending ? '● konfiguracja' : '● połączony') + '</span>' : '') + '</h2>' + (connected && c.id ? '<button class="btn g sm" data-disconnect="' + c.id + '">Odłącz</button>' : '') + '</div>' +
+      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + (c.lastSync ? new Date(c.lastSync).toLocaleString('pl-PL') : 'oczekuje') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Konto</span><b class="mono">' + AV.esc(c.masked || '') + '</b></div><div class="kv"><span>Uprawnienia</span><b class="win">tylko odczyt ✓</b></div>' : '') +
+      statusNote +
+      '<div class="seg" id="mtTabs" style="margin-top:14px"><button class="on" data-m="a">Hasło inwestora</button><button data-m="b">Alpha Vault EA</button></div>' +
+      '<p class="mut" style="font-size:14px;line-height:1.55;margin-top:12px">Forex, indeksy (NAS100, US500, DAX), złoto i ropa u dowolnego brokera z MetaTraderem. Transakcje, loty, swapy i prowizje kopiują się do dziennika same.</p>' +
       '<div id="mtA" class="grid g2" style="margin-top:16px;align-items:start"><div><h3>Jak podłączyć</h3><ol class="howto" style="margin-top:6px">' +
-      '<li><span>Sprawdź <b>numer konta</b> i <b>nazwę serwera</b>. W MetaTraderze: <b>Plik → Zaloguj się do konta handlowego</b>. Serwer wygląda np. tak: <b>VTMarkets-Live 3</b>.</span></li>' +
+      '<li><span>Sprawdź <b>numer konta</b> i <b>nazwę serwera</b>. W MetaTraderze: <b>Plik → Zaloguj się do konta handlowego</b>.</span></li>' +
       '<li><span>Zdobądź <b>hasło inwestora</b>. Znajdziesz je w panelu klienta u brokera. W MT5 możesz je też ustawić sam: <b>Narzędzia → Opcje → Serwer → Zmień</b> i zaznacz hasło inwestora.</span></li>' +
       '<li><span>Wybierz platformę, wpisz dane obok i kliknij <b>Połącz</b>. Pierwsza synchronizacja pobierze 90 dni historii.</span></li>' +
-      '<li><span>Gotowe. Nowe transakcje pojawią się w dzienniku w ciągu kilku minut od zamknięcia.</span></li></ol></div>' +
-      '<div><div class="card flat"><h3>Dane konta</h3><span class="label">Platforma</span><div class="chips sel" id="mtPlatform"><span class="chip">MT4</span><span class="chip on">MT5</span></div>' +
+      '<li><span>Alpha Vault łączy się przez MetaApi i akceptuje wyłącznie konto z potwierdzonym trybem inwestora. Hasło z prawem handlu zostanie odrzucone.</span></li></ol></div>' +
+      '<div><div class="card flat"><h3>Dane konta</h3><span class="label">Platforma</span><div class="chips sel" id="mtPlatform"><span class="chip" data-p="mt4">MT4</span><span class="chip on" data-p="mt5">MT5</span></div>' +
       '<span class="label">Serwer brokera</span><input class="input" id="mtServer" placeholder="np. VTMarkets-Live 3" value="' + AV.attr(c.server || '') + '">' +
-      '<span class="label">Numer konta (login)</span><input class="input mono" id="mtLogin" placeholder="np. 81234567" value="' + AV.attr(c.login || '') + '">' +
-      '<span class="label">Hasło inwestora</span><input class="input mono" type="password" id="mtPass" placeholder="hasło tylko do odczytu">' +
+      '<span class="label">Numer konta (login)</span><input class="input mono" id="mtLogin" placeholder="np. 81234567" value="">' +
+      '<span class="label">Hasło inwestora</span><input class="input mono" type="password" id="mtPass" placeholder="hasło tylko do odczytu" autocomplete="off">' +
       '<span class="label">Typ konta</span><div class="chips sel" id="mtType"><span class="chip on">Live</span><span class="chip">Demo</span><span class="chip">Prop challenge</span></div>' +
-      '<button class="btn p" style="width:100%;margin-top:18px" data-mtconnect>Połącz MetaTrader</button></div>' +
+      '<button class="btn p" style="width:100%;margin-top:18px" data-mtconnect>Połącz MetaTrader</button>' +
+      '<div id="mtMsg" class="hint" style="margin-top:10px"></div></div>' +
       '<div class="note" style="margin-top:12px">' + AV.ic('shield') + '<div><b>Hasło inwestora pozwala tylko oglądać konto.</b> Nie da się nim otworzyć pozycji ani wypłacić środków. Nigdy nie wpisuj tu hasła głównego.</div></div></div></div>' +
       '<div id="mtB" class="grid g2" style="margin-top:16px;align-items:start;display:none"><div><h3>Jeśli broker nie daje hasła inwestora</h3><ol class="howto" style="margin-top:6px">' +
-      '<li><span>Pobierz plik <b>AlphaVault.ex5</b> (dla MT4: <b>AlphaVault.ex4</b>).</span></li><li><span>W MetaTraderze: <b>Plik → Otwórz folder danych → MQL5 → Experts</b>. Wrzuć tam plik i odśwież Nawigator.</span></li>' +
-      '<li><span><b>Narzędzia → Opcje → Doradcy</b>: zaznacz „Zezwalaj na WebRequest” i dodaj adres <b>https://api.alphavault.pl</b>.</span></li>' +
+      '<li><span>Pobierz plik <b>AlphaVault.mq5</b> z repozytorium projektu (katalog <b>integrations/mt5</b>).</span></li><li><span>W MetaTraderze: <b>Plik → Otwórz folder danych → MQL5 → Experts</b>. Wrzuć tam plik i odśwież Nawigator.</span></li>' +
+      '<li><span><b>Narzędzia → Opcje → Doradcy</b>: zaznacz <b>Zezwalaj na WebRequest</b> i dodaj adres <b>https://alphavault.pl</b>.</span></li>' +
       '<li><span>Przeciągnij <b>AlphaVault</b> na dowolny wykres i wklej swój kod parowania. EA wysyła tylko historię zamkniętych transakcji. Nie handluje.</span></li>' +
       '<li><span>MetaTrader musi być włączony, żeby nowe transakcje się kopiowały. Na VPS działa 24/7.</span></li></ol></div>' +
-      '<div><div class="card flat" style="text-align:center;padding:26px"><div class="lbl">Twój kod parowania</div><div class="mono" style="font-size:30px;font-weight:700;letter-spacing:.12em;margin:12px 0">' + code + '</div><div class="hint">ważny 24 godziny</div>' +
-      '<div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap"><button class="btn p sm" data-eadl>Pobierz instrukcję EA</button><button class="btn g sm" data-copycode>Kopiuj kod</button></div></div></div></div>');
+      '<div><div class="card flat" style="text-align:center;padding:26px"><div class="lbl">Twój kod parowania</div><div class="mono" id="mtCode" style="font-size:30px;font-weight:700;letter-spacing:.12em;margin:12px 0;min-height:42px">' + (code ? AV.esc(code) : '') + '</div><div class="hint">' + (code ? 'wpisz go w EA i zostaw włączony' : 'wygeneruj kod, jeśli broker nie daje hasła inwestora') + '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap"><button class="btn p sm" data-mtpair>Generuj kod</button><button class="btn g sm" data-copycode' + (code ? '' : ' disabled') + '>Kopiuj kod</button><button class="btn g sm" data-eadl>Instrukcja EA</button></div></div></div></div>');
     $$('#mtTabs button').forEach((b) => b.onclick = () => {
       $$('#mtTabs button').forEach((x) => x.classList.toggle('on', x === b));
       $('#mtA').style.display = b.dataset.m === 'a' ? 'grid' : 'none';
@@ -745,18 +790,54 @@
       c2.parentNode.querySelectorAll('.chip').forEach((x) => x.classList.remove('on'));
       c2.classList.add('on');
     });
-    $('#exBody [data-mtconnect]').onclick = () => {
+    $('#exBody [data-mtconnect]') && ($('#exBody [data-mtconnect]').onclick = async () => {
+      const btn = $('#exBody [data-mtconnect]');
+      const platform = $('#mtPlatform .chip.on')?.dataset.p || 'mt5';
       const server = $('#mtServer').value.trim(), login = $('#mtLogin').value.trim(), pass = $('#mtPass').value.trim();
+      const type = $('#mtType .chip.on')?.textContent || 'Live';
       if (!server || !login || !pass) { AV.toast('Podaj serwer, login i hasło inwestora'); return; }
-      c.connected = true; c.server = server; c.login = login; c.masked = 'login ••' + login.slice(-3); c.lastSync = new Date().toISOString();
-      AV.saveNow(); AV.renderExchangeList(); AV.renderMT(); AV.toast('MetaTrader podłączony (symulacja odczytu).');
-    };
-    $('#exBody [data-copycode]').onclick = () => {
-      navigator.clipboard?.writeText(code).then(() => AV.toast('Kod skopiowany: ' + code)).catch(() => AV.toast('Kod: ' + code));
-    };
-    $('#exBody [data-eadl]').onclick = () => AV.download('AlphaVault-EA-instrukcja.txt',
-      'Alpha Vault — instrukcja podłączenia EA\n\nKod parowania: ' + code + '\nWażny: 24 godziny\n\n1. Pobierz AlphaVault.ex5 (MT5) lub AlphaVault.ex4 (MT4) z panelu Alpha Vault.\n2. Plik → Otwórz folder danych → MQL5 → Experts. Wrzuć plik i odśwież Nawigator.\n3. Narzędzia → Opcje → Doradcy: zezwól na WebRequest dla https://api.alphavault.pl.\n4. Przeciągnij AlphaVault na wykres i wklej kod parowania.\n5. EA wysyła wyłącznie historię zamkniętych transakcji. Nie handluje.\n\nWersja demonstracyjna: plik EA nie jest dołączony do tego podglądu.\n', 'text/plain;charset=utf-8');
+      btn.disabled = true; btn.textContent = 'Łączę…';
+      try {
+        await AV.connectExchange(platform, { platform, server, login, password: pass, type });
+        if ($('#mtMsg')) $('#mtMsg').textContent = 'Konto dodane. Pobieram historię…';
+        await AV.syncConnections(platform);
+        AV.renderExchangeList(); AV.renderMT();
+        AV.toast('MetaTrader połączony. Transakcje są w dzienniku.', 5000);
+      } catch (err) {
+        if ($('#mtMsg')) $('#mtMsg').textContent = err.message || 'Nie udało się połączyć.';
+        AV.toast(err.message || 'Nie udało się połączyć.', 8000);
+        btn.disabled = false; btn.textContent = 'Połącz MetaTrader';
+      }
+    });
+    $('#exBody [data-mtpair]') && ($('#exBody [data-mtpair]').onclick = async () => {
+      const platform = $('#mtPlatform .chip.on')?.dataset.p || 'mt5';
+      try {
+        const code = await AV.pairMt(platform);
+        const c2 = AV.connections().mt;
+        c2.pairCode = code;
+        AV.saveNow();
+        AV.renderMT();
+        AV.toast('Kod parowania: ' + code + ' (pokaż go tylko EA)', 7000);
+      } catch (err) { AV.toast(err.message || 'Nie udało się wygenerować kodu.', 6000); }
+    });
+    $('#exBody [data-copycode]') && ($('#exBody [data-copycode]').onclick = () => {
+      const value = AV.connections().mt.pairCode || '';
+      if (!value) { AV.toast('Najpierw wygeneruj kod parowania.'); return; }
+      navigator.clipboard?.writeText(value).then(() => AV.toast('Kod skopiowany: ' + value)).catch(() => AV.toast('Kod: ' + value));
+    });
+    $('#exBody [data-eadl]') && ($('#exBody [data-eadl]').onclick = () => AV.download('AlphaVault-EA-instrukcja.txt',
+      'Alpha Vault — instrukcja podłączenia EA\n\nKod parowania: ' + (AV.connections().mt.pairCode || '(wygeneruj w panelu)') + '\n\n1. Pobierz integrations/mt5/AlphaVault.mq5 z repozytorium projektu.\n2. Skompiluj w MetaEditorze (F7) i wrzuć do MQL5/Experts.\n3. Narzędzia → Opcje → Doradcy: zezwól na WebRequest dla https://alphavault.pl.\n4. Przeciągnij AlphaVault na wykres i wpisz kod parowania.\n5. EA wysyła wyłącznie historię zamkniętych transakcji. Nie handluje.\n\nEndpoint: POST https://alphavault.pl/api/mt/ea\n', 'text/plain;charset=utf-8'));
+    $('#exBody [data-disconnect]') && ($('#exBody [data-disconnect]').onclick = () => {
+      AV.confirm({ title: 'Odłączyć MetaTrader?', text: 'Historia transakcji zostanie w dzienniku, ale nowe nie będą już importowane.', confirmLabel: 'Odłącz', danger: true, onConfirm: async () => {
+        try {
+          await AV.disconnectExchange(Number($('#exBody [data-disconnect]').dataset.disconnect));
+          AV.renderExchangeList(); AV.renderMT();
+          AV.toast('MetaTrader odłączony');
+        } catch (err) { AV.toast(err.message || 'Nie udało się odłączyć.', 6000); }
+      } });
+    });
   };
+
 
   AV.renderImport = () => {
     AV.setHTML('#exBody', '<div class="sech"><h2>Import z pliku</h2><span class="tag info">CSV</span></div>' +

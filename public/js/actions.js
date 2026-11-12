@@ -976,18 +976,31 @@
     });
   };
 
-  /* ---------- gieĹ‚dy ---------- */
+  /* ---------- giełdy ---------- */
   AV.bindExchanges = () => {
     $$('.exl button').forEach((b) => b.addEventListener('click', () => AV.renderEx(b.dataset.ex)));
-    $('#syncNow')?.addEventListener('click', () => {
-      const c = AV.state.settings.connections;
-      const connected = Object.entries(c).filter(([k, v]) => v.connected);
-      if (!connected.length) { AV.toast('PodĹ‚Ä…cz najpierw gieĹ‚dÄ™ albo MetaTrader'); return; }
-      connected.forEach(([k, v]) => { v.lastSync = new Date().toISOString(); });
-      AV.saveNow(); AV.renderExchangeList(); AV.renderEx(AV.exKey);
-      AV.toast('Zsynchronizowano ' + connected.length + ' ' + AV.plural(connected.length, 'poĹ‚Ä…czenie', 'poĹ‚Ä…czenia', 'poĹ‚Ä…czeĹ„') + ' Â· brak nowych transakcji');
+    $('#syncNow')?.addEventListener('click', async () => {
+      const c = AV.state.settings.connections || {};
+      const connected = Object.entries(c).filter(([k, v]) => v && v.connected && k !== 'file');
+      if (!connected.length) { AV.toast('Połącz najpierw giełdę albo MetaTrader'); return; }
+      const btn = $('#syncNow');
+      const old = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Synchronizuję…'; }
+      try {
+        const data = await AV.syncConnections();
+        AV.renderExchangeList();
+        if (AV.renderEx) AV.renderEx(AV.exKey);
+        AV.toast(data.imported > 0
+          ? 'Pobrano ' + data.imported + ' ' + AV.plural(data.imported, 'transakcję', 'transakcje', 'transakcji') + ' z ' + connected.length + ' połączeń'
+          : 'Synchronizacja gotowa · brak nowych transakcji', 5000);
+      } catch (err) {
+        AV.toast(err.message || 'Synchronizacja nie powiodła się.', 7000);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = old; }
+      }
     });
   };
+
 
   /* ---------- ustawienia ---------- */
   AV.bindSettings = () => {
