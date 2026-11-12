@@ -5,7 +5,7 @@
 - hosting współdzielony LH.pl, Debian 13, PHP 8.3.36,
 - domena `https://alphavault.pl`,
 - document root `~/public_html/alphavault.pl`,
-- kod PHP i konfiguracja `~/alphavault-app` (poza publicznym katalogiem),
+- kod PHP i konfiguracja `~/public_html/alphavault.pl/_app` (chronione przez `.htaccess`, wymóg `open_basedir` LH),
 - MySQL/MariaDB LH.pl (MariaDB 11.8),
 - brak procesu Node na produkcji.
 
@@ -26,7 +26,7 @@ Hasło użytkownika bazy trafia do GitHub secret `DB_PASSWORD` przez `gh secret 
 Migracja schematu:
 
 ```bash
-php ~/alphavault-app/app/db/migrate.php
+php ~/public_html/alphavault.pl/_app/app/db/migrate.php
 ```
 
 Wykonuje `db/schema.sql` (idempotentnie) i wpis w `schema_migrations`.
@@ -43,7 +43,7 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `LH_SSH_PRIVATE_KEY` | prywatny klucz ED25519 wdrożeniowy |
 | `LH_SSH_KNOWN_HOSTS` | `ssh-keyscan -p 40022 serwer445119.lh.pl` |
 | `LH_DEPLOY_PATH` | `~/public_html/alphavault.pl` |
-| `LH_APP_PATH` | `~/alphavault-app` |
+| `LH_APP_PATH` | `~/public_html/alphavault.pl/_app` |
 | `SESSION_SECRET` | 64+ losowych znaków |
 | `DB_HOST` | host MySQL z panelu LH.pl (np. `main195.lh.pl`); `localhost` działa dla procesów na serwerze |
 | `DB_PORT` | `3306` |
@@ -84,29 +84,29 @@ Backend odmawia dostępu, gdy:
 Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → dodaj zadanie:
 
 ```text
-*/5 * * * * /usr/bin/php /home/platne/serwer445119/alphavault-app/bin/sync-discord-events.php
+*/5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/_app/bin/sync-discord-events.php
 ```
 
 Wymagania:
 
-- `DISCORD_BOT_TOKEN` i `DISCORD_GUILD_ID` w `~/alphavault-app/config.json`,
+- `DISCORD_BOT_TOKEN` i `DISCORD_GUILD_ID` w `~/public_html/alphavault.pl/_app/config.json`,
 - bot z uprawnieniem `View Channels`, bez uprawnień do zarządzania wydarzeniami,
 - brak Privileged Gateway Intents,
-- katalog `~/alphavault-app/logs` z prawami 700.
+- katalog `~/public_html/alphavault.pl/_app/logs` z prawami 700.
 
 Reguły klasyfikacji (opcjonalne):
 
 - przykład: `config/discord_event_rules.example.json`,
-- aktywny plik na serwerze: `~/alphavault-app/config/discord_event_rules.json`,
+- aktywny plik na serwerze: `~/public_html/alphavault.pl/_app/config/discord_event_rules.json`,
 - deploy synchronizuje katalog `config/`, ale celowo **nie nadpisuje** aktywnego `discord_event_rules.json`.
 
 Ręczny test:
 
 ```bash
-/usr/bin/php ~/alphavault-app/bin/sync-discord-events.php
+/usr/bin/php ~/public_html/alphavault.pl/_app/bin/sync-discord-events.php
 ```
 
-Log: `~/alphavault-app/logs/discord-sync.log`. Stan: tabele `discord_sync_state`, `discord_sync_runs`. Skrypt blokuje równoległe uruchomienia i przy błędzie API nie usuwa ostatniego dobrego zestawu wydarzeń.
+Log: `~/public_html/alphavault.pl/_app/logs/discord-sync.log`. Stan: tabele `discord_sync_state`, `discord_sync_runs`. Skrypt blokuje równoległe uruchomienia i przy błędzie API nie usuwa ostatniego dobrego zestawu wydarzeń.
 
 ## 6. Deployment
 
@@ -115,10 +115,10 @@ Workflow `.github/workflows/deploy-alphavault.yml`:
 1. checkout i lint PHP,
 2. weryfikacja sekretów,
 3. zapis klucza SSH i `known_hosts` z `StrictHostKeyChecking=yes`,
-4. backup `~/public_html/alphavault.pl` i `~/alphavault-app` do `~/alphavault-backups`,
-5. `rsync` frontendu do docrootu i PHP/`bin`/`db`/`config` do `~/alphavault-app`,
+4. backup `~/public_html/alphavault.pl` i `~/public_html/alphavault.pl/_app` do `~/alphavault-backups`,
+5. `rsync` frontendu do docrootu i PHP/`bin`/`db`/`config` do `~/public_html/alphavault.pl/_app`,
 6. wygenerowanie `public/app-path.php`,
-7. wygenerowanie `~/alphavault-app/config.json` (600) z sekretów,
+7. wygenerowanie `~/public_html/alphavault.pl/_app/config.json` (600) z sekretów,
 8. `php app/db/migrate.php`,
 9. health check `GET /api/health` + UI + `/js/state.js`.
 
@@ -179,7 +179,7 @@ Po deployu:
 
 - `config.json` poza docrootem, `600`,
 - brak `.env` i kluczy w repo,
-- `public/.htaccess` blokuje `app-path.php`, `.env`, `config.json`,
+- `public/.htaccess` blokuje `_app/`, `app-path.php`, `.env`, `config.json`,
 - HSTS i Secure cookies przy HTTPS,
 - `Origin` check dla PUT/DELETE/POST,
 - rate limiting w MySQL,

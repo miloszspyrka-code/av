@@ -3,6 +3,9 @@ DirectoryIndex index.php
 
 RewriteEngine On
 
+# PHP app lives in _app inside docroot (LH open_basedir).
+RewriteRule ^_app(/|$) - [F,L]
+
 # Istniejące pliki i katalogi obsługuje Apache.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
