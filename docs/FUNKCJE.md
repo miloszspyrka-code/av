@@ -232,7 +232,7 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 | 3 zasady + punkty checklisty | ✅ | własny punkt checklisty |
 | Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
-| Odznaki | ✅ | postęp z danych |
+| Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
 | 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
 | Aplikacja na telefonie | ⚪ | instrukcja PWA; manifest nie jest jeszcze dodany |

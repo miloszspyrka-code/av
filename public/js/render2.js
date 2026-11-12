@@ -728,9 +728,13 @@
     AV.setHTML('#flowBody', s.flows.length ? s.flows.map((f) => '<tr><td class="mono dim">' + new Date(f.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(f.account) + '</td><td>' + AV.esc(f.type) + ' · ' + AV.esc(f.op) + '</td><td class="mono" style="text-align:right">' + (f.type === 'Wpłata' ? '+' : '−') + AV.fmt(f.amount, 2) + ' USDT</td><td class="mono" style="text-align:right">' + AV.fmt(f.fiat, 2) + ' ' + (f.currency === 'PLN' ? 'zł' : f.currency) + '</td><td><span class="pill ' + (f.tax === 'cost' ? 'k' : 'p') + '">' + (f.tax === 'cost' ? 'koszt' : 'przychód') + '</span> <span class="link" data-flow-del="' + f.id + '" style="font-size:11px">✕</span></td></tr>').join('') : '<tr><td colspan="6" class="dim" style="text-align:center;padding:20px">Brak wpłat i wypłat.</td></tr>');
   };
 
-  AV.renderBadges = () => {
-    const b = AV.badges(AV.state);
-    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span>' + (x.progress != null ? '<div class="bar"><i style="width:' + x.progress + '%;background:var(--alpha)"></i></div>' : '') + '</div>').join(''));
+  AV.renderBadges = (state) => {
+    const s = state || AV.state;
+    const b = AV.badges(s);
+    const summary = AV.badgeSummary(b);
+    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span><div class="bar"><i style="width:' + AV.clamp(x.progress || 0, 0, 100) + '%;background:var(--alpha)"></i></div></div>').join(''));
+    AV.setText('#badgeSummary', summary.done + ' z ' + summary.total + ' · poziom ' + summary.level);
+    AV.setText('#levelBadge', 'poziom ' + summary.level);
   };
 
   AV.renderExpired = () => {
