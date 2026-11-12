@@ -37,7 +37,7 @@ const targets = [
   { file: 'apple-touch-icon.png', size: 180, logoScale: 0.78 }
 ];
 
-const outDir = path.join(root, 'public/icons');
+const outDir = path.join(root, 'public/assets/pwa');
 fs.mkdirSync(outDir, { recursive: true });
 
 for (const target of targets) {

@@ -6,7 +6,7 @@
   if (!AV) return;
 
   const P = AV.pwa = AV.pwa || {};
-  const ICON = '/icons/icon-192.png';
+  const ICON = '/assets/pwa/icon-192.png';
 
   P.registration = null;
   P.installEvent = null;
