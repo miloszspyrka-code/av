@@ -214,9 +214,9 @@ try {
   log('WEEX: rekonstrukcja transakcji z fills', true, 'wynik 9.8');
 
   const weexTradeKey = await connect('weex', { apiKey: 'weex-trade', secretKey: 'weex-secret', passphrase: 'p' });
-  assert.equal(weexTradeKey.res.status, 422, weexTradeKey.text);
-  assert.equal(weexTradeKey.json.error, 'read_only_required');
-  log('WEEX: klucz z handlem odrzucony (probe)', true);
+  assert.equal(weexTradeKey.res.status, 201, weexTradeKey.text);
+  assert.equal(weexTradeKey.json.connection.permissions, 'any');
+  log('WEEX: klucz z handlem zaakceptowany', true, weexTradeKey.json.connection.keyMask);
 
   // ---------- MetaTrader / MetaApi ----------
   const mt = await connect('mt5', { platform: 'mt5', server: 'Mock-Server', login: '81234567', password: 'investor', type: 'Live' });

@@ -142,7 +142,7 @@ paths:
         '201':
           description: Połączono
         '422':
-          description: Klucz niepoprawny lub nie jest tylko do odczytu
+          description: Klucz niepoprawny lub (OKX/BingX) nie jest tylko do odczytu
   /api/connections/sync:
     post:
       tags: [API]

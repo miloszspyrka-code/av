@@ -5,9 +5,8 @@ namespace AlphaVault\Integrations;
 
 /**
  * WEEX. Klucz czytany jest przez API spot/futures. WEEX nie udostępnia
- * endpointu uprawnień klucza, dlatego wykonujemy bezpieczną próbę zlecenia
- * na nieistniejącym symbolu: brak uprawnień = kod -1051/-1052/-1053.
- * Zlecenie nie może zostać zrealizowane, bo symbol nie istnieje.
+ * endpointu uprawnień klucza, więc akceptujemy każdy klucz, który przechodzi
+ * odczyt konta — także z prawem handlu lub wypłat. Import wymaga tylko odczytu.
  */
 final class WEEXProvider extends AbstractProvider
 {
@@ -33,14 +32,12 @@ final class WEEXProvider extends AbstractProvider
         ];
 
         $account = $this->probeAccount($credentials);
-        $this->assertReadOnly($credentials, 'spot');
-        $this->assertReadOnly($credentials, 'futures');
 
         return [
             'credentials' => $credentials,
             'accountRef' => $account,
             'keyMask' => Normalizer::mask($credentials['apiKey']),
-            'permissions' => 'read-only',
+            'permissions' => 'any',
             'label' => 'WEEX',
         ];
     }
@@ -145,40 +142,6 @@ final class WEEXProvider extends AbstractProvider
             }
         }
         throw new IntegrationException('invalid_credentials', 'WEEX odrzucił klucz lub passphrase.', 422);
-    }
-
-    private function assertReadOnly(array $credentials, string $market): void
-    {
-        $path = $market === 'spot' ? '/api/v3/order' : '/capi/v3/order';
-        $payload = [
-            'symbol' => 'AVREADONLYPROBE',
-            'side' => 'BUY',
-            'type' => 'LIMIT',
-            'quantity' => '0',
-            'price' => '0',
-        ];
-        if ($market === 'futures') {
-            $payload['positionSide'] = 'LONG';
-        }
-        $res = $this->signedRequest('POST', $path, $credentials, [], $payload, $market);
-        $code = (int) ($res['code'] ?? 0);
-        if ($code === 0) {
-            throw new IntegrationException(
-                'read_only_required',
-                'Ten klucz WEEX ma prawo do handlu. Alpha Vault przyjmuje wyłącznie klucz tylko do odczytu.',
-                422
-            );
-        }
-        if (!in_array($code, self::PERMISSION_CODES, true)) {
-            $msg = (string) ($res['msg'] ?? '');
-            throw new IntegrationException(
-                'read_only_required',
-                'Nie można potwierdzić, że klucz WEEX jest tylko do odczytu'
-                . ($msg !== '' ? ' (' . substr($msg, 0, 120) . ')' : '')
-                . '. Utwórz klucz z uprawnieniem Readonly.',
-                422
-            );
-        }
     }
 
     /**

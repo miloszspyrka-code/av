@@ -379,7 +379,7 @@
         checklist: ['Trend wyższego TF', 'Poziom z planu', 'Potwierdzenie', 'SL przed wejściem', 'R:R ≥ 2', 'Brak makro 15 min', 'Spokojna głowa'],
         devices: { garmin: false, apple: false, oura: false, whoop: false },
         connections: {
-          weex: { connected: true, lastSync: new Date().toISOString(), imported: 41, masked: 'wx_live_••••7f2a', perms: 'read-only' },
+          weex: { connected: true, lastSync: new Date().toISOString(), imported: 41, masked: 'wx_live_••••7f2a', perms: 'any' },
           okx: { connected: false }, bingx: { connected: false },
           mt: { connected: false, server: '', login: '', masked: '', code: 'AV-7K3Q-92XD', codeAt: Date.now() }
         }

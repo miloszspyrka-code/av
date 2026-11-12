@@ -375,7 +375,7 @@ Obsługiwane providery: `weex`, `okx`, `bingx`, `mt4`, `mt5`. Dla MetaTrader pol
 Serwer:
 
 1. waliduje klucz na żywo u dostawcy,
-2. odrzuca klucz z prawem handlu lub wypłat (`422 read_only_required`),
+2. dla `okx` i `bingx` odrzuca klucz z prawem handlu lub wypłat (`422 read_only_required`); `weex` akceptuje każdy klucz, który przechodzi odczyt konta, i zapisuje `permissions: "any"`,
 3. szyfruje poświadczenia AES-256-GCM (`INTEGRATIONS_KEY`),
 4. zapisuje połączenie i zwraca `201` z zamaskowanym kluczem.
 
