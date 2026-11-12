@@ -293,6 +293,12 @@ try {
   const afterChat = await page.locator('#msgs .msg').count();
   log('mentor: odpowiedź', afterChat >= beforeChat + 2, beforeChat + ' → ' + afterChat);
 
+  // krok mentora prowadzi do planu dnia
+  await page.evaluate(() => { AV.renderDashMentor({ closed: [] }); AV.showView('pulpit'); });
+  await page.click('#dashMentor .step');
+  const planFromStep = await page.evaluate(() => ({ on: document.querySelector('#plan').classList.contains('on'), hash: location.hash }));
+  log('mentor: krok plan dnia → zakładka', planFromStep.on && planFromStep.hash === '#/plan', JSON.stringify(planFromStep));
+
   // akademia
   await page.click('.navg button[data-v="akad"]');
   const liveHrefAgain = await page.locator('#liveJoin').getAttribute('href');

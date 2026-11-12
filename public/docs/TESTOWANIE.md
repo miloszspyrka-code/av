@@ -167,7 +167,7 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI - 53 scenariusze
+## UI - 54 scenariusze
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 

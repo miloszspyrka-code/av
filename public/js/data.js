@@ -88,7 +88,7 @@
         'Najwięcej zabiera Ci {para}: {paraWynik}. Najwięcej daje {dobraPara}: {dobraWynik}.<br><br><b class="al">Krok:</b> przez 2 tygodnie zero {para}. Różnicę zobaczysz na krzywej kapitału.',
         'Pomijanie checklisty. Z pełną masz {clFull}% skuteczności, bez niej {clNo}%. To nie drobiazg, to prawie dwa razy lepszy wynik.<br><br><b class="al">Krok:</b> żadnej transakcji poniżej 6/7.',
         'Pora dnia. {godz} masz {godzWr}% skuteczności. Rano jesteś zupełnie innym traderem.<br><br><b class="al">Krok:</b> ustaw w zasadach „nie handluję po 21:00”. Przypomnę Ci o tym.',
-        'Brak planu. W dni z zatwierdzonym planem jesteś średnio na plusie, bez planu na minusie. Dziś zgodnie z planem: {planZgodne}.<br><br><b class="al">Krok:</b> plan dnia przed pierwszą transakcją. Zawsze.'
+        'Brak planu. W dni z zatwierdzonym planem jesteś średnio na plusie, bez planu na minusie. Dziś zgodnie z planem: {planZgodne}.<br><br><b class="al">Krok:</b> <span class="link" data-go="plan">plan dnia</span> przed pierwszą transakcją. Zawsze.'
       ]
     },
     {
