@@ -13,7 +13,7 @@
 #   DISCORD_TRIAL_DAYS, ALLOW_DEMO_LOGIN, MAX_STATE_BYTES
 #
 # The script never prints secret values. Config is written over SSH stdin to
-# <LH_APP_PATH>/config.json with mode 600, outside the public document root.
+# <LH_APP_PATH>/config.json with mode 600, in the protected .app directory.
 
 set -euo pipefail
 
@@ -120,11 +120,14 @@ case "$DEPLOY_PATH" in
   */alphavault.pl) ;;
   *) fail "LH_DEPLOY_PATH must end with /alphavault.pl for this deployment." ;;
 esac
-case "$APP_PATH/" in
-  "$DEPLOY_PATH/"*) fail "LH_APP_PATH must be outside the public document root." ;;
+case "$APP_PATH" in
+  "$DEPLOY_PATH/.app") ;;
+  "$DEPLOY_PATH"/*) fail "LH_APP_PATH inside the document root is allowed only as ${DEPLOY_PATH}/.app (protected by public/.htaccess)." ;;
 esac
 case "$APP_PATH" in
-  */public_html/*) fail "LH_APP_PATH must not be inside public_html." ;;
+  */public_html/*)
+    [ "$APP_PATH" = "$DEPLOY_PATH/.app" ] || fail "LH_APP_PATH inside public_html is allowed only as ${DEPLOY_PATH}/.app."
+    ;;
 esac
 
 BACKUP_DIR="$REMOTE_HOME/alphavault-backups"
@@ -238,7 +241,7 @@ fi
 log "Writing app path..."
 printf "<?php\nreturn '%s';\n" "$APP_PATH/app" | ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "umask 022; cat > '$DEPLOY_PATH/app-path.php'; chmod 644 '$DEPLOY_PATH/app-path.php'"
 
-log "Writing production config.json (outside public docroot)..."
+log "Writing production config.json (protected .app directory)..."
 node scripts/render-config.mjs | ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "umask 077; cat > '$APP_PATH/config.json'; chmod 600 '$APP_PATH/config.json'"
 
 log "Applying database schema..."
