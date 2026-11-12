@@ -165,6 +165,20 @@ try {
   await page.waitForTimeout(400);
   const sideName = await page.locator('#sideName').innerText();
   log('profil: zapis imienia', sideName === 'E2E Tester', sideName);
+  const planDates = await page.evaluate(() => {
+    const prev = AV.state.subscription.until;
+    const read = () => ({
+      side: document.querySelector('#sidePlan').textContent.trim(),
+      row: document.querySelector('#planUntilRow').style.display
+    });
+    AV.state.subscription.until = null;
+    AV.renderUser();
+    const none = read();
+    AV.state.subscription.until = prev;
+    AV.renderUser();
+    return { none, restored: read() };
+  });
+  log('profil: bez daty bez adnotacji', planDates.none.side === 'Alpha + Akademia' && planDates.none.row === 'none', JSON.stringify(planDates.none));
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');
