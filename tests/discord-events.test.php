@@ -53,7 +53,7 @@ $fixture = [
         'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true], 'user_count' => 3, 'entity_metadata' => null,
     ],
     [
-        'id' => '1003', 'guild_id' => $guild, 'name' => 'Wydarzenie zewnÄ™trzne - Hubert',
+        'id' => '1003', 'guild_id' => $guild, 'name' => 'Wydarzenie zewnętrzne - Hubert',
         'description' => 'Spotkanie', 'scheduled_start_time' => '2026-11-16T18:00:00+00:00',
         'status' => 1, 'entity_type' => 3, 'channel_id' => null,
         'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true], 'user_count' => 3,

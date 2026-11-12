@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Alpha Vault â€” testy jednostkowe silnika Prop challenge.
+ * Alpha Vault — testy jednostkowe silnika Prop challenge.
  * Uruchom: npm run test:prop
  * Nie wymaga serwera ani bazy.
  */
@@ -15,7 +15,7 @@ function check(name, fn) {
     console.log('PASS  ' + name);
   } catch (err) {
     results.push({ name, ok: false, info: err.message });
-    console.log('FAIL  ' + name + '  Â· ' + err.message);
+    console.log('FAIL  ' + name + '  · ' + err.message);
   }
 }
 
@@ -38,10 +38,10 @@ const base = (over = {}) => prop.normalize({
   startDate: key(-30), endDate: key(10),
   ...over
 });
-const compute = (over, trades, now = NOW) => prop.compute(base(over), trades, now, ['WEEX', 'OKX', 'MT5 Â· demo']);
+const compute = (over, trades, now = NOW) => prop.compute(base(over), trades, now, ['WEEX', 'OKX', 'MT5 · demo']);
 
-/* ---------- katalog szablonĂłw ---------- */
-check('katalog: min. 8 szablonĂłw z unikalnym id i poprawnymi limitami', () => {
+/* ---------- katalog szablonów ---------- */
+check('katalog: min. 8 szablonów z unikalnym id i poprawnymi limitami', () => {
   assert.ok(prop.TEMPLATES.length >= 8);
   const ids = prop.TEMPLATES.map((t) => t.id);
   assert.equal(new Set(ids).size, ids.length);
@@ -58,7 +58,7 @@ check('katalog: min. 8 szablonĂłw z unikalnym id i poprawnymi limitami', () =>
 });
 
 /* ---------- puste dane i normalizacja ---------- */
-check('puste transakcje: zero postÄ™pu, brak faĹ‚szywego alarmu', () => {
+check('puste transakcje: zero postępu, brak fałszywego alarmu', () => {
   const m = compute({}, []);
   assert.equal(m.n, 0);
   assert.equal(m.balance, 10000);
@@ -72,18 +72,18 @@ check('puste transakcje: zero postÄ™pu, brak faĹ‚szywego alarmu', () => {
   assert.equal(m.daysTotal, 41);
 });
 
-check('normalizacja: brak danych nie wywala siÄ™, wartoĹ›ci sÄ… przyciÄ™te', () => {
+check('normalizacja: brak danych nie wywala się, wartości są przycięte', () => {
   const c = prop.normalize(null);
   assert.ok(c.id.startsWith('prop_'));
   assert.equal(c.name, 'Challenge');
   const c2 = prop.normalize({
     targetPct: -5, dailyLossPct: -1, maxLossPct: 0, accountSize: 'abc', startBalance: 'xyz',
-    minDays: 999, drawdownType: 'zĹ‚e', dailyBasis: 'zĹ‚e', currency: 'GBP', endDate: key(-10), startDate: key(0)
+    minDays: 999, drawdownType: 'złe', dailyBasis: 'złe', currency: 'GBP', endDate: key(-10), startDate: key(0)
   });
   assert.equal(c2.targetPct, 0);
   assert.equal(c2.dailyLossPct, 0);
   assert.equal(c2.maxLossPct, 0);
-  assert.equal(c2.accountSize, 10000); // nieczytelna kwota â†’ bezpieczny default
+  assert.equal(c2.accountSize, 10000); // nieczytelna kwota → bezpieczny default
   assert.equal(c2.startBalance, 10000);
   assert.equal(c2.minDays, 60);
   assert.equal(c2.drawdownType, 'static');
@@ -98,32 +98,32 @@ check('normalizacja: brak danych nie wywala siÄ™, wartoĹ›ci sÄ… przyci�
 });
 
 /* ---------- filtrowanie transakcji ---------- */
-check('filtr dat: transakcje przed startem i po koĹ„cu sÄ… pomijane', () => {
+check('filtr dat: transakcje przed startem i po końcu są pomijane', () => {
   const m = compute({}, [trade(-31, 1000), trade(-30, 100), trade(10, 50), trade(11, 999)]);
   assert.equal(m.n, 2);
   assert.equal(m.profitAmount, 150);
 });
 
-check('filtr konta: tylko wybrane konto, bez wzglÄ™du na wielkoĹ›Ä‡ liter', () => {
+check('filtr konta: tylko wybrane konto, bez względu na wielkość liter', () => {
   const m = compute({ account: 'WEEX' }, [trade(-5, 100), trade(-4, 500, 'weex'), trade(-3, 1000, 'OKX')]);
   assert.equal(m.n, 2);
   assert.equal(m.profitAmount, 600);
 });
 
-check('transakcje otwarte (result=null) nie wchodzÄ… do limitu ani statystyk', () => {
+check('transakcje otwarte (result=null) nie wchodzą do limitu ani statystyk', () => {
   const m = compute({}, [trade(-2, 100), { ...trade(-1, null), result: null }]);
   assert.equal(m.n, 1);
   assert.equal(m.balance, 10100);
 });
 
-check('brakujÄ…ce konto jest raportowane, ale nie wywala liczenia', () => {
+check('brakujące konto jest raportowane, ale nie wywala liczenia', () => {
   const m = compute({ account: 'Nie ma takiego' }, [trade(-1, 100)]);
   assert.equal(m.accountMissing, true);
   assert.equal(m.n, 0);
 });
 
 /* ---------- cel zysku ---------- */
-check('cel zysku: dokĹ‚adne trafienie = achieved i passed', () => {
+check('cel zysku: dokładne trafienie = achieved i passed', () => {
   const m = compute({ minDays: 0 }, [trade(-2, 500), trade(-1, 500)]);
   assert.equal(m.targetReached, true);
   assert.equal(m.targetProgressPct, 100);
@@ -131,14 +131,14 @@ check('cel zysku: dokĹ‚adne trafienie = achieved i passed', () => {
   assert.equal(m.alerts[0].code, 'target');
 });
 
-check('cel zysku: brakuje 1 centa = nieosiÄ…gniÄ™ty', () => {
+check('cel zysku: brakuje 1 centa = nieosiągnięty', () => {
   const m = compute({ minDays: 0 }, [trade(-1, 999.99)]);
   assert.equal(m.targetReached, false);
   assert.equal(m.status, 'active');
   assert.equal(m.targetRemaining.toFixed(2), '0.01');
 });
 
-check('cel osiÄ…gniÄ™ty, ale brak min. dni = status target (nie passed)', () => {
+check('cel osiągnięty, ale brak min. dni = status target (nie passed)', () => {
   const m = compute({ minDays: 4 }, [trade(-1, 1000)]);
   assert.equal(m.targetReached, true);
   assert.equal(m.minDaysMet, false);
@@ -157,7 +157,7 @@ check('min. dni handlowe: liczone jako unikalne dni, nie transakcje', () => {
 });
 
 /* ---------- dzienny limit ---------- */
-check('dzienny limit: 75% = ostrzeĹĽenie, nie poraĹĽka', () => {
+check('dzienny limit: 75% = ostrzeżenie, nie porażka', () => {
   const m = compute({ dailyLossPct: 5 }, [trade(0, -375)]);
   assert.equal(m.dailyUsedPct, 75);
   assert.equal(m.status, 'active');
@@ -175,7 +175,7 @@ check('dzienny limit: 90% = alarm, 100% = przekroczenie', () => {
   assert.equal(fail.dailyBuffer, 0);
 });
 
-check('dzienny limit liczony od salda startowego vs poczÄ…tku dnia', () => {
+check('dzienny limit liczony od salda startowego vs początku dnia', () => {
   const trades = [trade(-1, -1000), trade(0, -400)];
   const initial = compute({ dailyLossPct: 5, dailyBasis: 'initial' }, trades);
   const dayStart = compute({ dailyLossPct: 5, dailyBasis: 'dayStart' }, trades);
@@ -195,8 +195,8 @@ check('dzienny limit 0 = brak limitu, strata dzienna nie blokuje', () => {
   assert.ok(m.alerts.some((a) => a.code === 'dd-90'));
 });
 
-/* ---------- obsuniÄ™cie ---------- */
-check('obsuniÄ™cie statyczne: 10% = poraĹĽka, takĹĽe po odbiciu', () => {
+/* ---------- obsunięcie ---------- */
+check('obsunięcie statyczne: 10% = porażka, także po odbiciu', () => {
   const m = compute({}, [trade(-5, -600), trade(-4, -400), trade(-3, 300)]);
   assert.equal(m.maxDrawdownAmount, 1000);
   assert.equal(m.drawdownUsedPct, 100);
@@ -204,14 +204,14 @@ check('obsuniÄ™cie statyczne: 10% = poraĹĽka, takĹĽe po odbiciu', () => {
   assert.ok(m.alerts.some((a) => a.code === 'dd-breach'));
 });
 
-check('obsuniÄ™cie statyczne: bieĹĽÄ…cy bufor roĹ›nie po odbiciu, ale max pozostaje', () => {
+check('obsunięcie statyczne: bieżący bufor rośnie po odbiciu, ale max pozostaje', () => {
   const m = compute({}, [trade(-5, -500), trade(-4, 300)]);
   assert.equal(m.maxDrawdownAmount, 500);
   assert.equal(m.drawdownBuffer, 800);
   assert.equal(m.status, 'active');
 });
 
-check('trailing: szczyt podnosi liniÄ™ stopu i Ĺ‚amie limit szybciej niĹĽ static', () => {
+check('trailing: szczyt podnosi linię stopu i łamie limit szybciej niż static', () => {
   const trades = [trade(-5, 1000), trade(-4, -1500)];
   const trailing = compute({ drawdownType: 'trailing' }, trades);
   const staticDd = compute({ drawdownType: 'static' }, trades);
@@ -223,7 +223,7 @@ check('trailing: szczyt podnosi liniÄ™ stopu i Ĺ‚amie limit szybciej niĹ�
   assert.equal(staticDd.drawdownFloor, 9000);
 });
 
-check('trailing: floor podÄ…ĹĽa za szczytem, bufor liczony od bieĹĽÄ…cego kapitaĹ‚u', () => {
+check('trailing: floor podąża za szczytem, bufor liczony od bieżącego kapitału', () => {
   const m = compute({ drawdownType: 'trailing' }, [trade(-3, 1000), trade(-2, -500)]);
   assert.equal(m.peak, 11000);
   assert.equal(m.balance, 10500);
@@ -233,7 +233,7 @@ check('trailing: floor podÄ…ĹĽa za szczytem, bufor liczony od bieĹĽÄ…c
 });
 
 /* ---------- termin ---------- */
-check('termin: dzieĹ„ koĹ„cowy wĹ‚Ä…cznie, dzieĹ„ po = expired', () => {
+check('termin: dzień końcowy włącznie, dzień po = expired', () => {
   const lastDay = compute({ endDate: key(0) }, []);
   assert.equal(lastDay.daysLeft, 1);
   assert.equal(lastDay.expired, false);
@@ -245,21 +245,21 @@ check('termin: dzieĹ„ koĹ„cowy wĹ‚Ä…cznie, dzieĹ„ po = expired', 
   assert.ok(after.alerts.some((a) => a.code === 'expired'));
 });
 
-check('brak daty koĹ„ca = bez terminu, nigdy expired', () => {
+check('brak daty końca = bez terminu, nigdy expired', () => {
   const m = compute({ endDate: '' }, [trade(-10, 100)], new Date(2027, 5, 1, 12));
   assert.equal(m.hasDeadline, false);
   assert.equal(m.daysLeft, null);
   assert.equal(m.expired, false);
 });
 
-check('min. dni nie zdÄ…ĹĽÄ… przed terminem = ostrzeĹĽenie', () => {
+check('min. dni nie zdążą przed terminem = ostrzeżenie', () => {
   const m = compute({ minDays: 10, endDate: key(3) }, [trade(-2, 10), trade(-1, 10)]);
   assert.equal(m.daysLeft, 4);
   assert.ok(m.alerts.some((a) => a.code === 'mindays-deadline'));
 });
 
 /* ---------- statusy i statystyki ---------- */
-check('cel osiÄ…gniÄ™ty, ale dzienny limit zĹ‚amany tego samego dnia = failed', () => {
+check('cel osiągnięty, ale dzienny limit złamany tego samego dnia = failed', () => {
   const m = compute({ targetPct: 5, dailyLossPct: 5, minDays: 0 }, [trade(-1, 1000), trade(0, -500)]);
   assert.equal(m.targetReached, true); // 10 500 przy celu 10 500
   assert.equal(m.status, 'failed');
@@ -267,7 +267,7 @@ check('cel osiÄ…gniÄ™ty, ale dzienny limit zĹ‚amany tego samego dnia = 
   assert.ok(!m.alerts.some((a) => a.code === 'target'));
 });
 
-check('statystyki: win rate, PF, avg R, seria strat, najlepszy i najgorszy dzieĹ„', () => {
+check('statystyki: win rate, PF, avg R, seria strat, najlepszy i najgorszy dzień', () => {
   const m = compute({}, [
     trade(-5, 200), trade(-4, -100), trade(-3, -50), trade(-2, 100), trade(-1, -25)
   ]);
@@ -284,12 +284,12 @@ check('statystyki: win rate, PF, avg R, seria strat, najlepszy i najgorszy dzie�
   assert.equal(m.dailyRows[m.dailyRows.length - 1].equity, 10125);
 });
 
-check('profit factor bez strat = 99 (UI pokazuje âž), bez transakcji = 0', () => {
+check('profit factor bez strat = 99 (UI pokazuje ∞), bez transakcji = 0', () => {
   assert.equal(compute({}, [trade(-1, 100)]).pf, 99);
   assert.equal(compute({}, []).pf, 0);
 });
 
-check('portfolio: archiwum nie wchodzi do metryk, aktywne sÄ… zliczane', () => {
+check('portfolio: archiwum nie wchodzi do metryk, aktywne są zliczane', () => {
   const a = base({ id: 'a', name: 'A' });
   const b = base({ id: 'b', name: 'B', archived: true });
   const p = prop.portfolio([a, b], [trade(-1, 100)], NOW, ['WEEX']);
@@ -309,7 +309,7 @@ check('waluta jest zachowana w metrykach i alertach', () => {
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} PASS`);
 if (failed.length) {
-  console.log('Nieudane:', failed.map((f) => f.name + ' â€” ' + f.info).join('\n'));
+  console.log('Nieudane:', failed.map((f) => f.name + ' — ' + f.info).join('\n'));
   process.exitCode = 1;
 }
 
