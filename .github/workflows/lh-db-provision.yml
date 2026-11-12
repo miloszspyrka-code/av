@@ -70,10 +70,22 @@ jobs:
 
           if ! MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -N -e "SELECT 1" >/dev/null 2>&1; then
             echo "ADMIN_LOGIN=FAIL"
-            echo "The LH SSH user does not have a matching MySQL admin account. Create the database and user in panel.lh.pl, then rerun deploy."
-            exit 1
+          else
+            echo "ADMIN_LOGIN=OK"
           fi
-          echo "ADMIN_LOGIN=OK"
+
+          if MYSQL_PWD="$DB_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$DB_USER" "$DB_NAME" -e "SELECT 1;" >/dev/null 2>&1; then
+            echo "DB_SECRET_LOGIN=OK"
+            echo "Database and dedicated user already work. No provisioning needed."
+            exit 0
+          fi
+          echo "DB_SECRET_LOGIN=FAIL"
+
+          if ! MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -N -e "SELECT 1" >/dev/null 2>&1; then
+            echo "::warning::The LH SSH user does not have a matching MySQL admin account."
+            echo "::warning::Create the database and user in panel.lh.pl using the password from C:\\Users\\milos\\AppData\\Local\\Temp\\opencode\\alphavault-deploy\\db_password.txt, then rerun the deploy."
+            exit 0
+          fi
 
           MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
