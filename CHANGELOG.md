@@ -5,7 +5,22 @@
 ### Zmienione
 - Jeden wpis LH Cron `*/5` uruchamia teraz także sync makro (co 15 min) i sync urządzeń (co 30 min) przez throttle `.runtime/*.stamp`; osobne wpisy w panelu nie są potrzebne.
 
-## 3.9.0 - 2026-11-13
+## 3.9.2 — 2026-11-13
+
+### Dodane
+- Kalkulator Alpha: cena instrumentu pochodzi z `GET /api/quotes?symbols=…` (Yahoo Finance) i odświeża się co 60 s; ticker i kalkulator korzystają z jednego cache.
+- `Quotes` obsługuje instrumenty kalkulatora (pary USDT, FX, indeksy, metale) i normalizuje etykiety UI (`NAS100 · Nasdaq 100` → `NAS100`).
+
+### Zmienione
+- Nagłówek panelu: usunięta adnotacja planu i „zapis automatyczny”; status to `POŁĄCZONO Z MYSQL` (błąd zapisu oznaczany osobno).
+- Etykieta „Cena live” bez znacznika `demo`; przy braku notowań wartość `—` i komunikat „brak notowań” zamiast ceny statycznej.
+
+### Testy
+- `tests/quotes.test.php`: filtr instrumentów, normalizacja etykiet, nieznany symbol.
+- `tests/quotes.e2e.mjs`: `?symbols=` pobiera tylko zamówione instrumenty.
+- UI e2e: cena live z podstawionego API, brak `demo` w etykiecie i planu w nagłówku.
+
+## 3.9.0 — 2026-11-13
 
 ### Naprawione
 - Demo: każda przeglądarka ma osobne konto `demo-<hash>` (cookie `av_demo`), koniec współdzielonego `demo-local` i wycieku dziennika między osobami.
