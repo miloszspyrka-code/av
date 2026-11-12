@@ -14,12 +14,16 @@ CREATE TABLE IF NOT EXISTS users (
   plan ENUM('solo','full') NOT NULL DEFAULT 'solo',
   access_until DATE NULL,
   role_verified TINYINT(1) NOT NULL DEFAULT 0,
+  role_checked_at DATETIME NULL,
+  role_check_status VARCHAR(16) NOT NULL DEFAULT 'never',
+  role_check_error VARCHAR(500) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   last_login_at TIMESTAMP NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_discord (discord_id),
-  KEY idx_users_demo (is_demo)
+  KEY idx_users_demo (is_demo),
+  KEY idx_users_role_check (role_checked_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -81,6 +85,24 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   PRIMARY KEY (bucket, ip),
   KEY idx_rate_window (window_start)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS role_check_state (
+  id TINYINT UNSIGNED NOT NULL,
+  last_attempt_at DATETIME NULL,
+  last_success_at DATETIME NULL,
+  last_status VARCHAR(20) NOT NULL DEFAULT 'never',
+  last_error VARCHAR(500) NULL,
+  checked_count INT UNSIGNED NOT NULL DEFAULT 0,
+  revoked_count INT UNSIGNED NOT NULL DEFAULT 0,
+  error_count INT UNSIGNED NOT NULL DEFAULT 0,
+  lock_token VARCHAR(64) NULL,
+  locked_until DATETIME NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO role_check_state (id, last_status) VALUES (1, 'never')
+ON DUPLICATE KEY UPDATE id = id;
 
 CREATE TABLE IF NOT EXISTS discord_scheduled_events (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

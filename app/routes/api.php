@@ -63,6 +63,14 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 // Brak tabeli stanu nie może wywalić publicznego health checku.
                 $sync = null;
             }
+            $roleRecheck = null;
+            try {
+                $guard = new RoleGuard($config, $db, new Discord($config));
+                $roleRecheck = $guard->state();
+            } catch (\Throwable) {
+                // Brak tabeli stanu nie może wywalić publicznego health checku.
+                $roleRecheck = null;
+            }
             Http::json([
                 'ok' => $health['ok'],
                 'service' => 'alpha-vault',
@@ -72,6 +80,8 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'now' => gmdate('Y-m-d\TH:i:s\Z'),
                 'discordConfigured' => $config->discordConfigured,
                 'roleCheckConfigured' => $config->roleCheckConfigured,
+                'roleRecheckConfigured' => $config->roleRecheckConfigured,
+                'roleRecheck' => $roleRecheck,
                 'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
                 'sync' => $sync,
@@ -89,6 +99,8 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'authenticated' => $user !== null,
                 'discordConfigured' => $config->discordConfigured,
                 'roleCheckConfigured' => $config->roleCheckConfigured,
+                'roleRecheckConfigured' => $config->roleRecheckConfigured,
+                'roleRecheckSeconds' => (int) $config->discord['roleRecheckSeconds'],
                 'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
                 'isAdmin' => $events->isAdmin($user),

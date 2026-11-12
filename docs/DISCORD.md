@@ -6,13 +6,14 @@ Aplikacja używa **Authorization Code Grant** i dwóch scope'ów:
 identify guilds.members.read
 ```
 
-Do weryfikacji roli **nie jest potrzebny bot**. Bot jest natomiast używany wyłącznie do odczytu harmonogramu wydarzeń (`GET /guilds/{guild.id}/scheduled-events?with_user_count=true`) przez `DISCORD_BOT_TOKEN`. Bot ma tylko `View Channels`, bez uprawnień do zarządzania wydarzeniami i bez Privileged Gateway Intents.
-
-Role są sprawdzane tokenem zalogowanego użytkownika:
+**Logowanie** sprawdza rolę tokenem zalogowanego użytkownika (scope `guilds.members.read`). **Cykliczna weryfikacja co 5 minut** używa bota (`DISCORD_BOT_TOKEN`) i endpointu pojedynczego członka — bez Privileged Gateway Intents:
 
 ```text
 GET https://discord.com/api/v10/users/@me/guilds/{DISCORD_GUILD_ID}/member
 Authorization: Bearer <access_token>
+
+GET https://discord.com/api/v10/guilds/{DISCORD_GUILD_ID}/members/{user_id}
+Authorization: Bot <DISCORD_BOT_TOKEN>
 ```
 
 Szczegóły przepływu: [DOCUMENTATION.md §4](../DOCUMENTATION.md#4-uwierzytelnianie-sesje-i-csrf) i [§7](../DOCUMENTATION.md#7-discord-scheduled-events--pełny-przepływ).
@@ -40,9 +41,12 @@ Nie dodawaj scope'ów `email`, `guilds`, `messages` ani uprawnień do wysyłania
 
 Backend **fail closed**: brak `DISCORD_GUILD_ID` lub `DISCORD_REQUIRED_ROLE_ID` oznacza odmowę dostępu, nie wejście bez sprawdzania.
 
-## 3. Bot do odczytu wydarzeń
+## 3. Bot do wydarzeń i weryfikacji roli
 
-Bot jest potrzebny wyłącznie do `GET /guilds/{guild.id}/scheduled-events?with_user_count=true`.
+Bot jest potrzebny do:
+
+- `GET /guilds/{guild.id}/scheduled-events?with_user_count=true`,
+- `GET /guilds/{guild.id}/members/{user_id}` — pojedynczy członek, bez intencji `GUILD_MEMBERS`.
 
 1. Discord Developer Portal → Bot → Add Bot.
 2. Skopiuj token → `DISCORD_BOT_TOKEN` (GitHub secret / ukryty `.app`).
@@ -50,7 +54,19 @@ Bot jest potrzebny wyłącznie do `GET /guilds/{guild.id}/scheduled-events?with_
 4. Nie włączaj Privileged Gateway Intents.
 5. Dodaj bota na serwer Alpha Moves.
 
-Synchronizacja jest uruchamiana przez LH Cron co 5 minut. Jeśli token jest nieprawidłowy, wydarzenia w panelu pozostają ostatnim poprawnym zestawem, a `discord_sync_state.last_status=error`.
+Synchronizacja i recheck roli są uruchamiane przez LH Cron co 5 minut (`cron/sync-discord-events.sh`). Jeśli token jest nieprawidłowy, wydarzenia w panelu pozostają ostatnim poprawnym zestawem, a `discord_sync_state.last_status=error`; recheck zapisuje `role_check_status=error` i nie odbiera dostępu.
+
+### 3a. Cykliczna weryfikacja roli (co 5 min)
+
+`bin/check-discord-roles.php` bierze aktywne sesje, których `users.role_checked_at` jest starsze niż `DISCORD_ROLE_RECHECK_SECONDS` (minimum 300 s), i sprawdza rolę botem.
+
+| Wynik Discord | Akcja |
+| --- | --- |
+| rola obecna | `role_verified=1`, `role_check_status=ok`, sesja zostaje |
+| brak roli / 404 | `role_verified=0`, `role_check_status=missing`, usunięcie wszystkich sesji, `access.role_revoked` |
+| 429 po 3 próbach / 5xx / timeout | `role_check_status=error`, dostęp zostaje (fail open) |
+
+`role_check_state` trzyma blokadę cronu i liczniki. Stan widać w `/api/health.roleRecheck`. Frontend co 5 minut sprawdza `/api/me`; 401 lub `roleVerified=false` pokazuje pełnoekranową bramkę z informacją o wymaganej roli i przyciskiem „Sprawdź ponownie”.
 
 ## 4. Sekrety
 
@@ -76,8 +92,9 @@ Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json
 4. Wymiana `code` na token.
 5. `GET /users/@me` → profil.
 6. `GET /users/@me/guilds/{guild}/member` → role.
-7. Brak członkostwa/roli → HTTP 403, bez sesji.
+7. Brak członkostwa/roli → HTTP 403, bez sesji. Chwilowy błąd Discord → 503; konto już zweryfikowane dostaje dostęp z grace.
 8. Sukces → `users` upsert, sesja w MySQL, cookie `av_session`, redirect `/#/pulpit`.
+9. Cron co 5 min sprawdza aktywne sesje botem. Odebranie roli usuwa sesje; nadanie roli przywraca dostęp po ponownym logowaniu lub odświeżeniu.
 
 ## 6. Test ręczny
 
@@ -87,8 +104,10 @@ Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json
 4. Wyloguj się i sprawdź, że `/api/state` zwraca 401.
 5. Zaloguj konto bez roli → powinien pojawić się ekran 403.
 6. Zaloguj konto spoza serwera → powinien pojawić się ekran 403.
+7. Będąc zalogowanym zdejmij rolę i odczekaj do 5 min. Panel powinien pokazać bramkę „Brak aktywnej roli Alpha”, a `/api/state` zwrócić 401.
+8. Nadaj rolę ponownie, kliknij „Sprawdź ponownie” i zaloguj się; dostęp wraca.
 
-Automatyczne testy nie symulują logowania Discord. Wymagają interaktywnego udziału użytkownika.
+Logowanie Discord wymaga interaktywnego udziału użytkownika. Automatycznie testujemy decyzje `RoleGuard` i cron na mocku Discord (`npm run test:roles`).
 
 **Stan 2026-11-12:** potwierdzone na produkcji — konto z rolą Alpha dostało sesję (`login.discord`), konto bez roli dostało 403 (`login.denied`, powód: brak roli Alpha). Pozostaje test konta spoza serwera.
 
@@ -101,6 +120,8 @@ Automatyczne testy nie symulują logowania Discord. Wymagają interaktywnego udz
 | 403 „Nie jesteś członkiem” | konto spoza serwera | dodaj konto do serwera |
 | 403 „Brak roli Alpha” | brak wymaganej roli | nadaj rolę |
 | 403 „Weryfikacja roli nie jest skonfigurowana” | brak Guild ID / Role ID | ustaw sekrety |
+| 503 „Nie udało się sprawdzić roli” | Discord 429/5xx, konto nigdy niezweryfikowane | ponów logowanie za chwilę |
+| `roleRecheck.status=error` | bot nie widzi członka lub token jest zły | sprawdź bota, `DISCORD_BOT_TOKEN`, uprawnienia |
 | 400 „Sesja logowania wygasła” | >10 min lub zły state | odśwież stronę |
 | brak cookie | inny origin/HTTPS | `APP_URL` musi być `https://alphavault.pl` |
 

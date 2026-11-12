@@ -474,6 +474,21 @@ components:
         version: { type: string }
         uptime: { type: integer }
         now: { type: string, format: date-time }
+        roleCheckConfigured: { type: boolean }
+        roleRecheckConfigured: { type: boolean }
+        roleRecheck:
+          type: object
+          properties:
+            configured: { type: boolean }
+            intervalSeconds: { type: integer }
+            status: { type: string, enum: [success, partial, error, never, skipped] }
+            lastAttemptAt: { type: [string, 'null'] }
+            lastSuccessAt: { type: [string, 'null'] }
+            lastError: { type: [string, 'null'] }
+            checked: { type: integer }
+            revoked: { type: integer }
+            errors: { type: integer }
+            stale: { type: boolean }
         db:
           type: object
           properties:
@@ -519,6 +534,8 @@ components:
         authenticated: { type: boolean }
         discordConfigured: { type: boolean }
         roleCheckConfigured: { type: boolean }
+        roleRecheckConfigured: { type: boolean }
+        roleRecheckSeconds: { type: integer }
         demoAllowed: { type: boolean }
         db: { type: string }
         user:

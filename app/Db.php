@@ -102,7 +102,7 @@ final class Db
 
         $this->execute(
             'INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version = VALUES(version)',
-            ['003_php']
+            ['004_role_recheck']
         );
     }
 
@@ -123,6 +123,10 @@ final class Db
             'refresh_token_expires_at',
             'DATETIME NULL AFTER `token_expires_at`'
         );
+        $this->ensureColumn('users', 'role_checked_at', 'DATETIME NULL');
+        $this->ensureColumn('users', 'role_check_status', "VARCHAR(16) NOT NULL DEFAULT 'never'");
+        $this->ensureColumn('users', 'role_check_error', 'VARCHAR(500) NULL');
+        $this->ensureIndex('users', 'idx_users_role_check', 'role_checked_at');
     }
 
     private function ensureColumn(string $table, string $column, string $definition): void
@@ -138,6 +142,22 @@ final class Db
         }
         $this->pdo->exec(
             'ALTER TABLE `' . $table . '` ADD COLUMN `' . $column . '` ' . $definition
+        );
+    }
+
+    private function ensureIndex(string $table, string $index, string $column): void
+    {
+        $row = $this->queryOne(
+            'SELECT COUNT(*) AS c
+               FROM information_schema.statistics
+              WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?',
+            [$table, $index]
+        );
+        if ((int) ($row['c'] ?? 0) > 0) {
+            return;
+        }
+        $this->pdo->exec(
+            'ALTER TABLE `' . $table . '` ADD INDEX `' . $index . '` (`' . $column . '`)'
         );
     }
 
