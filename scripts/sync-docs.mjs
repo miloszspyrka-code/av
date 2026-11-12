@@ -23,6 +23,7 @@ export const MANAGED = [
   { src: 'docs/ARCHITEKTURA.md', out: 'ARCHITEKTURA.md', root: false },
   { src: 'docs/BAZA-DANYCH.md', out: 'BAZA-DANYCH.md', root: false },
   { src: 'docs/FUNKCJE.md', out: 'FUNKCJE.md', root: false },
+  { src: 'docs/PROP.md', out: 'PROP.md', root: false },
   { src: 'docs/TESTOWANIE.md', out: 'TESTOWANIE.md', root: false },
   { src: 'docs/openapi.yaml', out: 'openapi.yaml', root: false }
 ];

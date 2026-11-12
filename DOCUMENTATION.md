@@ -468,9 +468,11 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 index.html
   → core.js       (AV, $, $$, esc, fmt)
   → data.js       (dane demo/statyczne)
+  → prop.js       (silnik prop challenge: szablony, limity, metryki)
   → state.js      (stan, API, rewizje, wydarzenia)
   → render1.js    (widoki, pulpit, dziennik)
   → render2.js    (statystyki, mentor, akademia, admin)
+  → propui.js     (widok prop, edytor, szablony, alerty)
   → actions.js    (zdarzenia, timery, modale)
 ```
 
@@ -633,8 +635,9 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Suita | Plik | Zakres | Wynik lokalny |
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
-| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
-| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy | 23/23 PASS |
+| Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
+| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport, prop | 21/21 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, pusty stan, zapisy | 32/32 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |

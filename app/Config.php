@@ -146,7 +146,7 @@ final class Config
             eventsConfigured: $eventsConfigured,
             adminDiscordIds: $adminDiscordIds,
             discordEventRules: $rules,
-            version: '3.0.0',
+            version: '3.2.0',
         );
     }
 }
