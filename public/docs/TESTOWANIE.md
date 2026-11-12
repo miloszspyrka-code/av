@@ -78,7 +78,7 @@ npm run test:ui:empty
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 35 scenariuszy
+## UI — 37 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 

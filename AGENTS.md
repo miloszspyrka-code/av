@@ -177,7 +177,7 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 
 ```powershell
 npm test                 # API 20/20
-npm run test:ui          # UI 35/35 (Chrome/Edge)
+npm run test:ui          # UI 37/37 (Chrome/Edge)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
 npm run test:docs        # linki i spójność dokumentacji
@@ -284,7 +284,7 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | API 20/20, UI 35/35, empty 10/10, events 24/24 |
+| Testy lokalne | API 20/20, UI 37/37, empty 10/10, events 24/24 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (10), login OK |
 | `https://alphavault.pl` | **200** — wdrożona |

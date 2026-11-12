@@ -237,6 +237,8 @@ try {
     s = base(); for (let i = 0; i < 100; i++) s.trades.push(trade(0)); out.a100 = badge(s, 5);
     s = base(); for (let i = 0; i < 10; i++) s.trades.push(trade(-i)); out.fomo10 = badge(s, 6);
     s = base(); for (let i = 0; i < 10; i++) s.trades.push(trade(-i, { emotion: i === 5 ? 'FOMO' : 'Spokój' })); out.fomoBreak = badge(s, 6);
+    s = base(); for (let i = 0; i < 10; i++) s.trades.push(trade(-i * 2)); out.fomoGaps = badge(s, 6);
+    s = base(); for (let i = 0; i < 5; i++) { plan(s, -i * 2); s.trades.push(trade(-i * 2)); } out.weekGaps = badge(s, 3);
 
     const prev = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 12, 12, 0, 0).toISOString();
     s = base(); s.trades.push({ ...trade(0), date: prev, result: 100 }); out.month = badge(s, 7);
@@ -254,9 +256,11 @@ try {
   log('odznaka 2: 7 dni z dziennikiem', badges.seven.done && badges.seven.progress === 100, badges.seven.hint);
   log('odznaka 3: 50 × ze stop lossem', badges.sl50.done && !badges.sl49.done && badges.sl49.hint === '49 / 50', badges.sl49.hint);
   log('odznaka 4: tydzień bez złamania zasad', badges.week.done && badges.week.progress === 100, badges.week.hint);
+  log('odznaka 4: przerwy w kalendarzu nie przerywają serii', badges.weekGaps.done && badges.weekGaps.progress === 100, badges.weekGaps.hint);
   log('odznaka 5: 30 planów dnia', badges.plans30.done && badges.plans30.progress === 100, badges.plans30.hint);
   log('odznaka 6: 100 transakcji A', badges.a100.done && badges.a100.progress === 100, badges.a100.hint);
   log('odznaka 7: 10 dni bez FOMO', badges.fomo10.done && !badges.fomoBreak.done && badges.fomoBreak.hint === '5 / 10', badges.fomoBreak.hint);
+  log('odznaka 7: przerwy w kalendarzu nie przerywają serii', badges.fomoGaps.done && badges.fomoGaps.progress === 100, badges.fomoGaps.hint);
   log('odznaka 8: miesiąc na plusie bez C', badges.month.done && !badges.monthC.done, badges.month.hint);
   log('odznaki: puste dane bez fałszywych postępów', badges.count === 8 && badges.empty && badges.emptySummary.done === 0 && badges.emptySummary.level === 1, JSON.stringify(badges.emptySummary));
   log('odznaki: 4 z 8 daje poziom 3', badges.summary4.done === 4 && badges.summary4.level === 3, JSON.stringify(badges.summary4));
