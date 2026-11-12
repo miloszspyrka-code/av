@@ -298,11 +298,11 @@ npm run test:docs
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
-| OAuth w przeglądarce | **nieprzetestowany interaktywnie** |
+| OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
 
 **Pozostałe czynności:**
 
-1. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
+1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 

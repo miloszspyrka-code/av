@@ -90,6 +90,8 @@ Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json
 
 Automatyczne testy nie symulują logowania Discord. Wymagają interaktywnego udziału użytkownika.
 
+**Stan 2026-11-12:** potwierdzone na produkcji — konto z rolą Alpha dostało sesję (`login.discord`), konto bez roli dostało 403 (`login.denied`, powód: brak roli Alpha). Pozostaje test konta spoza serwera.
+
 ## 7. Typowe błędy
 
 | Objaw | Przyczyna | Rozwiązanie |
