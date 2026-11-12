@@ -103,7 +103,7 @@ Garmin i Whoop są wyłączone na razie: kod OAuth i konfiguracja pozostają w r
 
 Apple Watch nie używa OAuth. Panel generuje kod `AV-XXXX-XXXX`; aplikacja iPhone wysyła nim `POST /api/wearables/apple/ingest` i dostaje token urządzenia. Sama aplikacja iPhone nie jest częścią tego repozytorium — backend jest gotowy, ale do realnego użycia potrzebna jest aplikacja klienta.
 
-Synchronizacja OAuth2 jest uruchamiana ręcznie z panelu. Nie ma osobnego wpisu LH Cron; 5-minutowy wrapper jej nie wywołuje. Ręcznie:
+Synchronizacja OAuth2 działa z panelu i z wrappera Cron co 30 min (throttle). Nie ma osobnego wpisu LH Cron. Ręcznie:
 
 ```bash
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-wearables.php
@@ -117,7 +117,7 @@ Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadan
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-To **jedyny** wpis LH Cron. Skrypt uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min) i `bin/check-discord-roles.php` (recheck roli co 5 min). Makro i urządzenia nie mają wpisu w panelu — są uruchamiane ręcznie; nowe automatyzacje dopinaj do tego wrappera, nie jako drugi wpis.
+To **jedyny** wpis LH Cron. Skrypt uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min), `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu: `.app/.runtime/*.stamp`.
 
 Ręcznie (bez panelu):
 
@@ -128,9 +128,9 @@ Ręcznie (bez panelu):
 
 `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje), więc harmonogram zmieniaj tylko w panelu LH.
 
-## 5a. Synchronizacja kalendarza makro (ręcznie)
+## 5a. Synchronizacja kalendarza makro (wrapper)
 
-Brak wpisu w LH Cron. 5-minutowy wrapper nie wywołuje makra. Ręcznie (bez panelu):
+Brak osobnego wpisu w LH Cron. 5-minutowy wrapper wywołuje `bin/sync-macro-events.php` co 15 min (throttle `.runtime/macro.stamp`). Ręcznie (bez panelu):
 
 ```bash
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-macro-events.php
@@ -296,7 +296,7 @@ Jedyne zadanie LH Cron, co 5 min, wywołuje także worker integracji i recheck r
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-Worker pilnuje progu 25 minut, więc realny import odbywa się co ok. 30 min. Makro nie ma wpisu w LH Cron. Ręcznie:
+Worker pilnuje progu 25 minut, więc realny import odbywa się co ok. 30 min. Makro i urządzenia są w tym samym wrapperze z throttle (15/30 min), bez osobnych wpisów. Ręcznie:
 
 ```bash
 /usr/bin/php ~/public_html/alphavault.pl/.app/bin/sync-exchange-trades.php --force

@@ -183,8 +183,10 @@ Wrapper `cron/sync-discord-events.sh` wykonuje kolejno:
 | Synchronizacja Discord events | `bin/sync-discord-events.php` | co 5 min | `logs/discord-sync.log` |
 | Synchronizacja integracji giełd/MetaTrader | ten sam skrypt, `Integrations::syncDue()` | co 5 min, realny sync max co 25 min | `health.integrations.sync` |
 | Recheck roli Alpha | `bin/check-discord-roles.php` | co 5 min po sync | `health.roleRecheck` |
+| Kalendarz makro | `bin/sync-macro-events.php` | co 15 min (throttle `.runtime/macro.stamp`) | `logs/macro-sync.log` |
+| Synchronizacja urządzeń | `bin/sync-wearables.php` | co 30 min (throttle `.runtime/wearables.stamp`) | `logs/wearables-sync.log` |
 
-**Poza LH Cron (tylko ręcznie):** `bin/sync-macro-events.php` (kalendarz makro, `logs/macro-sync.log`) i `bin/sync-wearables.php` (urządzenia). Nie mają wpisu w panelu, więc nie są automatyzacjami cyklicznymi.
+**Wszystkie cykliczne zadania wynikają z jednego wpisu `*/5`.** Makro i urządzenia są wywoływane przez wrapper z throttle; nie wymagają osobnych wpisów w panelu LH.
 
 **Zasada:** wszystkie automatyzacje wynikają z jednego wpisu `*/5`. Nową cykliczną czynność dopinaj do `cron/sync-discord-events.sh` z własnym throttle i wpisem w tabeli powyżej; nie dodawaj drugiego wpisu w panelu LH. `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje) — harmonogram zmienia się wyłącznie w panelu.
 
@@ -364,7 +366,7 @@ node scripts/sync-docs.mjs
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 dodaje kolumnę EA i tabele MCP |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
 | Cron integracji | `success` (health `integrations.sync`), 0 połączeń, 0 importów; wewnątrz 5-min wrappera, realny sync max co 25 min |
-| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; **brak wpisu LH Cron** — uruchamiany ręcznie `bin/sync-macro-events.php` |
+| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; wrapper `*/5` uruchamia sync co 15 min (throttle, bez osobnego wpisu) |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
@@ -377,7 +379,7 @@ node scripts/sync-docs.mjs
 | PWA na fizycznym telefonie | **niezweryfikowane** — wymaga instalacji i zgody na powiadomienia |
 | Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; **Oura skonfigurowana** (`ouraConfigured=true`, deploy 3.8.0 z 2026-11-12); Garmin i Whoop wyłączone |
 | Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
-| Cron urządzeń | **brak wpisu LH Cron**; `cron/sync-wearables.sh` uruchomiony ręcznie 2026-11-12 (`ok=0 failed=0 total=0`) |
+| Cron urządzeń | wrapper `*/5` uruchamia `bin/sync-wearables.php` co 30 min (throttle, bez osobnego wpisu) |
 | LH Cron | **1 wpis `*/5`**; sync i recheck roli 22:00:02 UTC, `stale=false` |
 | Monitoring | `monitor-production.yml` — co 15 min: health, sync, UI, docs, `.app` 403 |
 | Stage | **niezweryfikowany** |
