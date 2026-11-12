@@ -667,6 +667,7 @@ CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-s
 - Kontrakt API: [docs/API.md](docs/API.md) + [docs/openapi.yaml](docs/openapi.yaml).
 - Schemat: [docs/BAZA-DANYCH.md](docs/BAZA-DANYCH.md).
 - Deploy: [docs/DEPLOY.md](docs/DEPLOY.md).
+- MCP: [docs/MCP.md](docs/MCP.md) — mapa narzędzi, walidacje, OAuth, plan wdrożenia.
 - Zasady agenta: [AGENTS.md](AGENTS.md).
 
 Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.

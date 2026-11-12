@@ -669,6 +669,7 @@ CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-s
 - Kontrakt API: [docs/API.md](API.md) + [docs/openapi.yaml](openapi.yaml).
 - Schemat: [docs/BAZA-DANYCH.md](BAZA-DANYCH.md).
 - Deploy: [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md).
+- MCP: [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md) — mapa narzędzi, walidacje, OAuth, plan wdrożenia.
 - Zasady agenta: [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md).
 
 Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
