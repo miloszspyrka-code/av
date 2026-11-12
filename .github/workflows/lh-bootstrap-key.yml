@@ -1,0 +1,102 @@
+name: LH bootstrap deploy key
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_key:
+        description: "ED25519 public key to append to ~/.ssh/authorized_keys"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate inputs and secrets
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          LH_SSH_PRIVATE_KEY: ${{ secrets.LH_SSH_PRIVATE_KEY }}
+          PUBLIC_KEY: ${{ inputs.public_key }}
+        run: |
+          set -euo pipefail
+          for name in LH_SSH_HOST LH_SSH_USER LH_SSH_PASSWORD LH_SSH_PRIVATE_KEY PUBLIC_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing value: ${name}"
+              exit 1
+            fi
+          done
+          case "$PUBLIC_KEY" in
+            "ssh-ed25519 "*) ;;
+            *) echo "::error::public_key must start with 'ssh-ed25519 '"; exit 1 ;;
+          esac
+          echo "Inputs validated."
+
+      - name: Install sshpass
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass
+
+      - name: Scan host key and install public key
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          PUBLIC_KEY: ${{ inputs.public_key }}
+        run: |
+          set -euo pipefail
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > known_hosts.txt 2>/dev/null
+          cp known_hosts.txt "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          echo "Host key fingerprints:"
+          ssh-keygen -lf known_hosts.txt
+
+          export SSHPASS="$LH_SSH_PASSWORD"
+          SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20)
+          sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s' <<REMOTE
+          set -euo pipefail
+          mkdir -p "\$HOME/.ssh"
+          chmod 700 "\$HOME/.ssh"
+          touch "\$HOME/.ssh/authorized_keys"
+          chmod 600 "\$HOME/.ssh/authorized_keys"
+          if grep -qF "$PUBLIC_KEY" "\$HOME/.ssh/authorized_keys"; then
+            echo "KEY_ALREADY_PRESENT"
+          else
+            printf '%s\n' "$PUBLIC_KEY" >> "\$HOME/.ssh/authorized_keys"
+            echo "KEY_APPENDED"
+          fi
+          REMOTE
+
+      - name: Upload known_hosts artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lh-known-hosts
+          path: known_hosts.txt
+          retention-days: 1
+
+      - name: Verify key authentication
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PRIVATE_KEY: ${{ secrets.LH_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$LH_SSH_PRIVATE_KEY" | sed 's/\r$//' > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+          ssh -p "$LH_SSH_PORT" -i "$HOME/.ssh/deploy_key" \
+            -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=20 "$LH_SSH_USER@$LH_SSH_HOST" 'echo KEY_AUTH=OK'
