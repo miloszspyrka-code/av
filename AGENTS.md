@@ -186,12 +186,12 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 ### Testy
 
 ```powershell
-npm test                 # API 21/21
+npm test                 # API 23/23
 npm run test:roles       # rola: login + cron recheck 18/18
 npm run test:prop        # silnik prop challenge 27/27 (bez serwera)
-npm run test:ui          # UI 51/51 (Chrome/Edge)
+npm run test:ui          # UI 53/53 (Chrome/Edge)
 npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
-npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
+npm run test:ui:empty    # puste pola 12/12 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
 npm run test:macro       # kalendarz makro DB/sync
 npm run test:quotes      # notowania rynkowe 14/14 (bez sieci i bazy)
@@ -302,7 +302,7 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 23/23, UI 53/53, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 4/4, PWA 20/20, integracje 19/19, UI integracje 11/11 |
+| Testy lokalne | prop 27/27, API 23/23, UI 53/53, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 6/6, PWA 20/20, integracje 19/19, UI integracje 11/11 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
