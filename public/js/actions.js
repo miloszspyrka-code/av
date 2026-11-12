@@ -1,4 +1,4 @@
-/* Alpha Vault â€” interakcje i inicjalizacja */
+/* Alpha Vault — interakcje i inicjalizacja */
 (function () {
   'use strict';
   const AV = window.AV, $ = AV.$, $$ = AV.$$;
@@ -73,7 +73,7 @@
         s.meta.notified[key] = true;
         AV.save();
         AV.toast('Za 30 min: ' + e.name + ' (' + AV.timeFmt(e.date, s) + ')', 5000);
-        AV.pushNotification('Makro za 30 min', e.name + ' Â· ' + AV.timeFmt(e.date, s));
+        AV.pushNotification('Makro za 30 min', e.name + ' · ' + AV.timeFmt(e.date, s));
       }
     });
   };
@@ -203,26 +203,26 @@
   };
 
   AV.openDemoLogin = () => {
-    const body = AV.openModal('<div class="eyebrow">Logowanie</div><h1 style="font-size:26px;margin-top:6px">Discord nie jest jeszcze podĹ‚Ä…czony</h1>' +
-      '<p class="mut" style="margin-top:10px;line-height:1.6">Aplikacja dziaĹ‚a na MySQL i jest gotowa na OAuth Discorda. Administrator musi uzupeĹ‚niÄ‡ <code>DISCORD_CLIENT_ID</code>, <code>DISCORD_CLIENT_SECRET</code> i <code>DISCORD_REDIRECT_URI</code> w pliku <code>.env</code>.</p>' +
-      '<p class="mut" style="margin-top:10px;line-height:1.6">Do tego czasu moĹĽesz wejĹ›Ä‡ kontem demo. Wszystkie dane demo zapisujÄ… siÄ™ w bazie MySQL.</p>' +
-      '<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><button class="btn p" id="demoEnter">WejdĹş jako Kasia (demo)</button><a class="btn g" href="/docs/API.md" target="_blank">Dokumentacja logowania</a><button class="btn g" data-gclose>Anuluj</button></div>', { maxWidth: '560px' });
+    const body = AV.openModal('<div class="eyebrow">Logowanie</div><h1 style="font-size:26px;margin-top:6px">Discord nie jest jeszcze podłączony</h1>' +
+      '<p class="mut" style="margin-top:10px;line-height:1.6">Aplikacja działa na MySQL i jest gotowa na OAuth Discorda. Administrator musi uzupełnić <code>DISCORD_CLIENT_ID</code>, <code>DISCORD_CLIENT_SECRET</code> i <code>DISCORD_REDIRECT_URI</code> w pliku <code>.env</code>.</p>' +
+      '<p class="mut" style="margin-top:10px;line-height:1.6">Do tego czasu możesz wejść kontem demo. Wszystkie dane demo zapisują się w bazie MySQL.</p>' +
+      '<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><button class="btn p" id="demoEnter">Wejdź jako Kasia (demo)</button><a class="btn g" href="/docs/API.md" target="_blank">Dokumentacja logowania</a><button class="btn g" data-gclose>Anuluj</button></div>', { maxWidth: '560px' });
     const btn = $('#demoEnter', body);
     if (!AV.api.demoAllowed) {
       btn.disabled = true;
-      btn.textContent = 'Demo wyĹ‚Ä…czone';
+      btn.textContent = 'Demo wyłączone';
     } else {
       btn.onclick = async () => {
         btn.disabled = true;
-        btn.textContent = 'ĹÄ…czÄ™ z bazÄ…â€¦';
+        btn.textContent = 'Łączę z bazą…';
         try {
           await AV.serverDemoLogin();
           $('#asteps').classList.add('on');
           $$('#asteps .astep').forEach((x, i) => setTimeout(() => x.classList.add('ok'), 200 + i * 250));
           setTimeout(() => { location.href = '/'; }, 900);
         } catch (err) {
-          btn.disabled = false; btn.textContent = 'WejdĹş jako Kasia (demo)';
-          AV.toast(err.message || 'BĹ‚Ä…d logowania demo');
+          btn.disabled = false; btn.textContent = 'Wejdź jako Kasia (demo)';
+          AV.toast(err.message || 'Błąd logowania demo');
         }
       };
     }
@@ -281,7 +281,7 @@
     $('#planEditor')?.addEventListener('change', () => AV.savePlanDraft());
     $('#savePlan')?.addEventListener('click', () => {
       const p = AV.readPlanForm();
-      if (!p.market || !p.why) { AV.toast('UzupeĹ‚nij rynek i uzasadnienie planu'); return; }
+      if (!p.market || !p.why) { AV.toast('Uzupełnij rynek i uzasadnienie planu'); return; }
       p.approvedAt = Date.now();
       AV.state.plans[AV.planDate] = p;
       AV.saveNow();
@@ -336,10 +336,10 @@
         e.preventDefault();
         const t = AV.state.trades.find((x) => x.id === del.dataset.tradeDel);
         AV.confirm({
-          title: 'UsunÄ…Ä‡ transakcjÄ™?', text: (t ? t.pair + ' Â· ' + AV.dateTimeShort(t.date) : '') + '. Tej operacji nie da siÄ™ cofnÄ…Ä‡.',
-          confirmLabel: 'UsuĹ„', danger: true, onConfirm: () => {
+          title: 'Usunąć transakcję?', text: (t ? t.pair + ' · ' + AV.dateTimeShort(t.date) : '') + '. Tej operacji nie da się cofnąć.',
+          confirmLabel: 'Usuń', danger: true, onConfirm: () => {
             AV.state.trades = AV.state.trades.filter((x) => x.id !== del.dataset.tradeDel);
-            AV.saveNow(); $('#tm').classList.remove('on'); AV.renderAll(); AV.toast('Transakcja usuniÄ™ta');
+            AV.saveNow(); $('#tm').classList.remove('on'); AV.renderAll(); AV.toast('Transakcja usunięta');
           }
         });
       }
@@ -380,17 +380,17 @@
     $$('.gp').forEach((g) => g.classList.toggle('on', g.dataset.g === t.grade));
     AV.show('#cancelEdit', true);
     AV.setText('#saveTrade', 'Zapisz zmiany');
-    AV.toast('Edytujesz transakcjÄ™ z ' + AV.dateTimeShort(t.date));
+    AV.toast('Edytujesz transakcję z ' + AV.dateTimeShort(t.date));
   };
 
   AV.closeTradeModal = (id) => {
     const t = AV.state.trades.find((x) => x.id === id);
     if (!t) return;
-    const body = AV.openModal('<div class="eyebrow">ZamkniÄ™cie pozycji</div><h1 style="font-size:26px;margin-top:6px">' + AV.esc(t.pair) + ' Â· ' + (t.dir === 'l' ? 'LONG' : 'SHORT') + '</h1>' +
-      '<p class="mut" style="margin-top:8px;font-size:13.5px">Wpisz cenÄ™ wyjĹ›cia. Wynik policzÄ™ z wielkoĹ›ci pozycji. MoĹĽesz teĹĽ podaÄ‡ wynik rÄ™cznie.</p>' +
-      '<div class="grid g2" style="margin-top:14px"><div><span class="label">Cena wyjĹ›cia</span><input class="input mono" id="ctExit" value="' + AV.attr(t.exit === 'otwarta' ? t.entry : t.exit) + '"></div><div><span class="label">Wynik USDT (opcjonalnie)</span><input class="input mono" id="ctResult" placeholder="np. 65,20"></div></div>' +
-      '<div class="hint" id="ctHint" style="margin-top:10px">WejĹ›cie ' + AV.esc(t.entry) + ' Â· wielkoĹ›Ä‡ ' + AV.esc(t.size) + '</div>' +
-      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="ctSave">Zamknij pozycjÄ™</button></div>', { maxWidth: '520px' });
+    const body = AV.openModal('<div class="eyebrow">Zamknięcie pozycji</div><h1 style="font-size:26px;margin-top:6px">' + AV.esc(t.pair) + ' · ' + (t.dir === 'l' ? 'LONG' : 'SHORT') + '</h1>' +
+      '<p class="mut" style="margin-top:8px;font-size:13.5px">Wpisz cenę wyjścia. Wynik policzę z wielkości pozycji. Możesz też podać wynik ręcznie.</p>' +
+      '<div class="grid g2" style="margin-top:14px"><div><span class="label">Cena wyjścia</span><input class="input mono" id="ctExit" value="' + AV.attr(t.exit === 'otwarta' ? t.entry : t.exit) + '"></div><div><span class="label">Wynik USDT (opcjonalnie)</span><input class="input mono" id="ctResult" placeholder="np. 65,20"></div></div>' +
+      '<div class="hint" id="ctHint" style="margin-top:10px">Wejście ' + AV.esc(t.entry) + ' · wielkość ' + AV.esc(t.size) + '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="ctSave">Zamknij pozycję</button></div>', { maxWidth: '520px' });
     const updateHint = () => {
       const exit = AV.pnum($('#ctExit', body).value), entry = AV.pnum(t.entry), size = AV.pnum(t.size);
       const calc = (exit - entry) * size * (t.dir === 'l' ? 1 : -1);
@@ -470,8 +470,8 @@
     });
     $('#errChips')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
-      if (c.textContent === '+ wĹ‚asny') {
-        AV.promptText('WĹ‚asny bĹ‚Ä…d', 'Nazwa bĹ‚Ä™du', (name) => {
+      if (c.textContent === '+ własny') {
+        AV.promptText('Własny błąd', 'Nazwa błędu', (name) => {
           if (!name) return;
           const span = document.createElement('span');
           span.className = 'chip err on';
@@ -491,18 +491,18 @@
       AV.renderNewTradeForm(); AV.showView('trans'); AV.toast('Edycja anulowana');
     });
     $('#pastTrade')?.addEventListener('click', () => {
-      AV.addOverride('WpisujÄ™ wczeĹ›niejszÄ… transakcjÄ™');
+      AV.addOverride('Wpisuję wcześniejszą transakcję');
       AV.renderLock(); AV.renderNewTradeForm();
-      AV.toast('Odblokowane do wpisania wczeĹ›niejszej transakcji');
+      AV.toast('Odblokowane do wpisania wcześniejszej transakcji');
     });
     $('#override')?.addEventListener('click', () => { $('#ovBox').style.display = 'block'; });
     $('#ovGo')?.addEventListener('click', () => {
       const ta = $('#ovBox textarea');
       const reason = ta.value.trim();
-      if (AV.state.settings.requireReason && !reason) { AV.toast('Napisz powĂłd â€” mentor go zobaczy'); ta.focus(); return; }
+      if (AV.state.settings.requireReason && !reason) { AV.toast('Napisz powód — mentor go zobaczy'); ta.focus(); return; }
       AV.addOverride(reason || 'bez podania powodu');
       AV.renderLock(); AV.renderNewTradeForm();
-      AV.toast('PowĂłd zapisany. Mentor go zobaczy.');
+      AV.toast('Powód zapisany. Mentor go zobaczy.');
     });
     $$('#nowa [data-drop]').forEach((d) => {
       // bindDrops robi to centralnie; tu tylko klawiaturowe otwarcie
@@ -514,22 +514,22 @@
 
   AV.saveTrade = () => {
     const s = AV.state;
-    if (AV.lockInfo(s).active) { AV.toast('Tryb ochronny: odblokuj dziennik, ĹĽeby zapisaÄ‡ transakcjÄ™'); return; }
+    if (AV.lockInfo(s).active) { AV.toast('Tryb ochronny: odblokuj dziennik, żeby zapisać transakcję'); return; }
     const pair = $('#ntPair').value.trim().toUpperCase();
     const entry = AV.pnum($('#ntEntry').value);
     const sl = AV.pnum($('#ntSl').value);
     const tp = AV.pnum($('#ntTp').value);
     const size = AV.pnum($('#ntSize').value);
-    if (!pair) { AV.toast('Podaj parÄ™'); return; }
-    if (!entry) { AV.toast('Podaj cenÄ™ wejĹ›cia'); return; }
-    if (!size) { AV.toast('Podaj wielkoĹ›Ä‡ pozycji'); return; }
-    if (sl && ((($('#ntDir .chip.on')?.dataset.d || 'l') === 'l') ? sl >= entry : sl <= entry)) { AV.toast('Stop loss jest po zĹ‚ej stronie wejĹ›cia'); return; }
-    if (tp && ((($('#ntDir .chip.on')?.dataset.d || 'l') === 'l') ? tp <= entry : tp >= entry)) { AV.toast('Take profit jest po zĹ‚ej stronie wejĹ›cia'); return; }
+    if (!pair) { AV.toast('Podaj parę'); return; }
+    if (!entry) { AV.toast('Podaj cenę wejścia'); return; }
+    if (!size) { AV.toast('Podaj wielkość pozycji'); return; }
+    if (sl && ((($('#ntDir .chip.on')?.dataset.d || 'l') === 'l') ? sl >= entry : sl <= entry)) { AV.toast('Stop loss jest po złej stronie wejścia'); return; }
+    if (tp && ((($('#ntDir .chip.on')?.dataset.d || 'l') === 'l') ? tp <= entry : tp >= entry)) { AV.toast('Take profit jest po złej stronie wejścia'); return; }
     const checks = Object.values(AV.ui.ntChecks || {}).filter(Boolean).length;
     const total = Object.keys(AV.ui.ntChecks || {}).length || 7;
     const grade = $('.gp.on')?.dataset.g || (checks === total ? 'A' : checks >= Math.ceil(total * 0.7) ? 'B' : 'C');
     const errors = $$('#errChips .chip.err.on').map((c) => c.textContent);
-    const emotion = $('#ntEmotion .chip.on')?.textContent || 'SpokĂłj';
+    const emotion = $('#ntEmotion .chip.on')?.textContent || 'Spokój';
     const setup = $('#ntSetup .chip.on')?.dataset.s || 'Bez setupu';
     const note = $('#ntNote').value.trim();
     const plan = s.plans[AV.dateKey(new Date())];
@@ -537,10 +537,10 @@
     const payload = {
       pair, dir: $('#ntDir .chip.on')?.dataset.d || 'l',
       entry: AV.fmt(entry, AV.dec(entry)), sl: sl ? AV.fmt(sl, AV.dec(entry)) : 'brak',
-      tp: tp ? AV.fmt(tp, AV.dec(entry)) : 'â€”', size: AV.fmt(size, size < 1 ? 4 : 2),
+      tp: tp ? AV.fmt(tp, AV.dec(entry)) : '—', size: AV.fmt(size, size < 1 ? 4 : 2),
       grade, checklist: checks, checkTotal: total, errors, emotion, setup, note,
       plan: !!(plan && plan.approvedAt && setup !== 'Bez setupu'),
-      mentor: grade === 'A' ? 'Wzorowo: plan, peĹ‚na checklista, SL, spokojna gĹ‚owa. Tak wyglÄ…dajÄ… Twoje najlepsze transakcje.' : grade === 'B' ? 'Setup z planu, drobne odstÄ™pstwa. Trzymaj siÄ™ checklisty do koĹ„ca.' : (errors.length ? 'Ocena C i ' + errors.length + ' ' + AV.plural(errors.length, 'bĹ‚Ä…d', 'bĹ‚Ä™dy', 'bĹ‚Ä™dĂłw') + '. To nie pech, to decyzja. WrĂłÄ‡ do planu.' : 'Ocena C: brak setupu albo poĹ›piech. Odczekaj i wrĂłÄ‡ z planem.')
+      mentor: grade === 'A' ? 'Wzorowo: plan, pełna checklista, SL, spokojna głowa. Tak wyglądają Twoje najlepsze transakcje.' : grade === 'B' ? 'Setup z planu, drobne odstępstwa. Trzymaj się checklisty do końca.' : (errors.length ? 'Ocena C i ' + errors.length + ' ' + AV.plural(errors.length, 'błąd', 'błędy', 'błędów') + '. To nie pech, to decyzja. Wróć do planu.' : 'Ocena C: brak setupu albo pośpiech. Odczekaj i wróć z planem.')
     };
     if (AV.ui.editId) {
       const t = s.trades.find((x) => x.id === AV.ui.editId);
@@ -551,10 +551,10 @@
       const session = now.getHours() < 8 ? 'Azja' : now.getHours() < 13 ? 'Londyn' : now.getHours() < 22 ? 'Nowy Jork' : 'Po godzinach';
       s.trades.push({
         id: AV.uid('manual'), date: now.toISOString(), exit: 'otwarta', result: null, r: null,
-        mae: 0.3, mfe: 0.9, durationMin: 0, fee: 0, source: 'RÄ™cznie', account: s.accounts.find((a) => a.include)?.name || 'Konto gĹ‚Ăłwne',
+        mae: 0.3, mfe: 0.9, durationMin: 0, fee: 0, source: 'Ręcznie', account: s.accounts.find((a) => a.include)?.name || 'Konto główne',
         session, screens: AV.ui.ntScreens || {}, ...payload
       });
-      AV.toast('Transakcja zapisana' + (AV.lockInfo(s).active ? ' â€” limit strat osiÄ…gniÄ™ty' : ''));
+      AV.toast('Transakcja zapisana' + (AV.lockInfo(s).active ? ' — limit strat osiągnięty' : ''));
     }
     AV.ui.editId = null; AV.ui.ntScreens = {}; AV.saveNow(); AV.safeDel(AV.DRAFT_KEY);
     AV.renderAll(); AV.showView('trans');
@@ -577,7 +577,7 @@
             AV.saveDraft();
             AV.toast('Screen dodany');
           }
-        } catch (err) { AV.toast(err.message || 'Nie udaĹ‚o siÄ™ dodaÄ‡ obrazu'); }
+        } catch (err) { AV.toast(err.message || 'Nie udało się dodać obrazu'); }
       };
       inp.onchange = () => set(inp.files[0]);
       d.ondragover = (e) => { e.preventDefault(); d.classList.add('over'); };
@@ -588,7 +588,7 @@
         d.querySelector('img')?.remove(); d.classList.remove('has'); inp.value = '';
         if (onChange) onChange(null, key);
         else { AV.ui.ntScreens = AV.ui.ntScreens || {}; delete AV.ui.ntScreens[key]; AV.saveDraft(); }
-        AV.toast('Screen usuniÄ™ty');
+        AV.toast('Screen usunięty');
       };
       d.onclick = (e) => {
         if (e.target.closest('.x') || e.target === inp) return;
@@ -642,7 +642,7 @@
     if (x[2] === 'fx') return 10;
     return x[4];
   };
-  AV.stepsHTML = (a) => a.map((s, i) => '<li><span class="n">' + (i + 1) + '</span><span><b>' + s[0] + '</b> Â· ' + s[1] + ': ' + s[2] + '</span></li>').join('');
+  AV.stepsHTML = (a) => a.map((s, i) => '<li><span class="n">' + (i + 1) + '</span><span><b>' + s[0] + '</b> · ' + s[1] + ': ' + s[2] + '</span></li>').join('');
   AV.calcResult = () => {
     const bal = AV.pnum($('#cBal').value), risk = AV.pnum($('#cRisk').value), lev = Math.max(1, AV.pnum($('#cLev').value));
     const en = AV.pnum($('#cEn').value), sl = AV.pnum($('#cSl').value), tp = AV.pnum($('#cTp').value);
@@ -655,50 +655,50 @@
       AV.setText('#rNot', d); AV.setText('#rRR', e); AV.setText('#rRRh', f || '');
     };
     if (!bal || !risk || !en || !sl) {
-      set('â€”', 'â€”', 'â€”', 'â€”', 'â€”');
-      AV.setHTML('#rSteps', '<li>Wpisz saldo, ryzyko, wejĹ›cie i stop loss.</li>');
+      set('—', '—', '—', '—', '—');
+      AV.setHTML('#rSteps', '<li>Wpisz saldo, ryzyko, wejście i stop loss.</li>');
       return;
     }
     const bad = AV.calc.dir === 'long' ? (sl >= en || (tp && tp <= en)) : (sl <= en || (tp && tp >= en));
     if (bad) {
       if (w) {
-        w.textContent = AV.calc.dir === 'long' ? 'Przy LONG stop loss musi byÄ‡ PONIĹ»EJ wejĹ›cia, a take profit POWYĹ»EJ.' : 'Przy SHORT stop loss musi byÄ‡ POWYĹ»EJ wejĹ›cia, a take profit PONIĹ»EJ.';
+        w.textContent = AV.calc.dir === 'long' ? 'Przy LONG stop loss musi być PONIŻEJ wejścia, a take profit POWYŻEJ.' : 'Przy SHORT stop loss musi być POWYŻEJ wejścia, a take profit PONIŻEJ.';
         w.style.display = 'block';
       }
-      set('â€”', 'â€”', 'â€”', 'â€”', 'â€”');
+      set('—', '—', '—', '—', '—');
       AV.setHTML('#rSteps', '');
       return;
     }
     const ml = bal * risk / 100, slP = Math.abs(en - sl) / en, tpP = tp ? Math.abs(tp - en) / en : 0;
-    const rr = tpP / slP, rrh = rr >= 3 ? 'wystarczy ~25% skutecznoĹ›ci' : rr >= 2 ? 'wystarczy ~34% skutecznoĹ›ci' : rr > 0 ? 'poniĹĽej 1:2, przemyĹ›l cel' : '';
+    const rr = tpP / slP, rrh = rr >= 3 ? 'wystarczy ~25% skuteczności' : rr >= 2 ? 'wystarczy ~34% skuteczności' : rr > 0 ? 'poniżej 1:2, przemyśl cel' : '';
     if (AV.calc.mode === 'crypto') {
       const no = ml / slP, mg = no / lev, pf = no * tpP;
-      AV.setText('#rMainL', 'Za tÄ™ kwotÄ™ wejdĹş w trade');
-      AV.setText('#rMainH', 'depozyt przy dĹşwigni ' + lev + 'Ă— Â· ' + AV.fmt(mg / bal * 100, 1) + '% salda');
-      AV.setText('#rNotL', 'WartoĹ›Ä‡ pozycji');
-      set(AV.fmt(mg) + ' $', 'â’' + AV.fmt(ml) + ' $', tp ? '+' + AV.fmt(pf) + ' $' : 'â€”', AV.fmt(no) + ' $', tp ? '1 : ' + AV.fmt(rr, 2) : 'â€”', rrh);
+      AV.setText('#rMainL', 'Za tę kwotę wejdź w trade');
+      AV.setText('#rMainH', 'depozyt przy dźwigni ' + lev + '× · ' + AV.fmt(mg / bal * 100, 1) + '% salda');
+      AV.setText('#rNotL', 'Wartość pozycji');
+      set(AV.fmt(mg) + ' $', '−' + AV.fmt(ml) + ' $', tp ? '+' + AV.fmt(pf) + ' $' : '—', AV.fmt(no) + ' $', tp ? '1 : ' + AV.fmt(rr, 2) : '—', rrh);
       AV.setHTML('#rSteps', AV.stepsHTML([
-        ['Max strata', 'saldo Ă— ryzyko', '<b>' + AV.fmt(ml) + ' $</b>'],
-        ['OdlegĹ‚oĹ›Ä‡ SL', '|wejĹ›cie â’ SL| Ă· wejĹ›cie', '<b>' + AV.fmt(slP * 100, 2) + '%</b>'],
-        ['WartoĹ›Ä‡ pozycji', 'max strata Ă· SL%', '<b>' + AV.fmt(no) + ' $</b>'],
-        ['Kwota wejĹ›cia', 'wartoĹ›Ä‡ Ă· dĹşwignia', '<b>' + AV.fmt(mg) + ' $</b>'],
-        ['Zysk przy TP', 'wartoĹ›Ä‡ Ă— TP%', tp ? '<b>' + AV.fmt(pf) + ' $</b>' : 'â€”']
+        ['Max strata', 'saldo × ryzyko', '<b>' + AV.fmt(ml) + ' $</b>'],
+        ['Odległość SL', '|wejście − SL| ÷ wejście', '<b>' + AV.fmt(slP * 100, 2) + '%</b>'],
+        ['Wartość pozycji', 'max strata ÷ SL%', '<b>' + AV.fmt(no) + ' $</b>'],
+        ['Kwota wejścia', 'wartość ÷ dźwignia', '<b>' + AV.fmt(mg) + ' $</b>'],
+        ['Zysk przy TP', 'wartość × TP%', tp ? '<b>' + AV.fmt(pf) + ' $</b>' : '—']
       ]));
     } else {
       const x = AV.INST[AV.calc.mode][+$('#cInst').value || 0];
       const pip = x[3], sp = Math.abs(en - sl) / pip, tpp = tp ? Math.abs(tp - en) / pip : 0;
       const pv = AV.pipVal(x, en), lots = ml / (sp * pv), pf = lots * tpp * pv;
       const u = x[2] === 'ind' ? 'pkt' : 'pips';
-      AV.setText('#rMainL', 'WielkoĹ›Ä‡ pozycji (MT4 / MT5)');
-      AV.setText('#rMainH', '1 lot Â· ' + AV.fmt(pv, 2) + ' $ za ' + (u === 'pkt' ? 'punkt' : 'pip') + ' Â· sprawdĹş specyfikacjÄ™ u brokera');
-      AV.setText('#rNotL', 'OdlegĹ‚oĹ›Ä‡ SL');
-      set(AV.fmt(lots, 2) + ' lota', 'â’' + AV.fmt(ml) + ' $', tp ? '+' + AV.fmt(pf) + ' $' : 'â€”', AV.fmt(sp, 1) + ' ' + u, tp ? '1 : ' + AV.fmt(rr, 2) : 'â€”', rrh);
+      AV.setText('#rMainL', 'Wielkość pozycji (MT4 / MT5)');
+      AV.setText('#rMainH', '1 lot · ' + AV.fmt(pv, 2) + ' $ za ' + (u === 'pkt' ? 'punkt' : 'pip') + ' · sprawdź specyfikację u brokera');
+      AV.setText('#rNotL', 'Odległość SL');
+      set(AV.fmt(lots, 2) + ' lota', '−' + AV.fmt(ml) + ' $', tp ? '+' + AV.fmt(pf) + ' $' : '—', AV.fmt(sp, 1) + ' ' + u, tp ? '1 : ' + AV.fmt(rr, 2) : '—', rrh);
       AV.setHTML('#rSteps', AV.stepsHTML([
-        ['Max strata', 'saldo Ă— ryzyko', '<b>' + AV.fmt(ml) + ' $</b>'],
-        ['SL w ' + u, '|wejĹ›cie â’ SL| Ă· ' + pip, '<b>' + AV.fmt(sp, 1) + '</b>'],
-        ['WartoĹ›Ä‡ ' + (u === 'pkt' ? 'punktu' : 'pipsa'), 'na 1 lot', '<b>' + AV.fmt(pv, 2) + ' $</b>'],
-        ['Loty', 'max strata Ă· (SL Ă— wartoĹ›Ä‡)', '<b>' + AV.fmt(lots, 2) + '</b>'],
-        ['Zysk przy TP', 'loty Ă— TP Ă— wartoĹ›Ä‡', tp ? '<b>' + AV.fmt(pf) + ' $</b>' : 'â€”']
+        ['Max strata', 'saldo × ryzyko', '<b>' + AV.fmt(ml) + ' $</b>'],
+        ['SL w ' + u, '|wejście − SL| ÷ ' + pip, '<b>' + AV.fmt(sp, 1) + '</b>'],
+        ['Wartość ' + (u === 'pkt' ? 'punktu' : 'pipsa'), 'na 1 lot', '<b>' + AV.fmt(pv, 2) + ' $</b>'],
+        ['Loty', 'max strata ÷ (SL × wartość)', '<b>' + AV.fmt(lots, 2) + '</b>'],
+        ['Zysk przy TP', 'loty × TP × wartość', tp ? '<b>' + AV.fmt(pf) + ' $</b>' : '—']
       ]));
     }
   };
@@ -737,7 +737,7 @@
   };
   AV.ensureChat = () => {
     if (AV.state.chat.length) return;
-    AV.state.chat.push({ role: 'a', html: AV.fill('CzeĹ›Ä‡ {imie}. WidzÄ™ dziĹ› {straty} straty i gotowoĹ›Ä‡ {gotowosc}/100, wiÄ™c jestem w pogotowiu. Wybierz poniĹĽej, o czym chcesz pogadaÄ‡.', AV.state), at: Date.now() });
+    AV.state.chat.push({ role: 'a', html: AV.fill('Cześć {imie}. Widzę dziś {straty} straty i gotowość {gotowosc}/100, więc jestem w pogotowiu. Wybierz poniżej, o czym chcesz pogadać.', AV.state), at: Date.now() });
     AV.saveNow();
   };
   AV.renderQ = () => {
@@ -788,7 +788,7 @@
     });
     $('#reAn')?.addEventListener('click', () => {
       AV.renderMarketAnalysis(); AV.renderWeekly(); AV.renderMentor();
-      AV.toast('Analiza odĹ›wieĹĽona');
+      AV.toast('Analiza odświeżona');
     });
     $('#proClose')?.addEventListener('click', () => $('#pro').classList.remove('on'));
     $('#proGo')?.addEventListener('click', () => { $('#pro').classList.remove('on'); AV.showView('mentor'); AV.ask(0); });
@@ -800,7 +800,7 @@
       AV.state.meta.liveReminder = !AV.state.meta.liveReminder;
       AV.saveNow();
       AV.ensurePermission();
-      AV.toast(AV.state.meta.liveReminder ? 'PrzypomnÄ™ 15 minut przed live' : 'Przypomnienie wyĹ‚Ä…czone');
+      AV.toast(AV.state.meta.liveReminder ? 'Przypomnę 15 minut przed live' : 'Przypomnienie wyłączone');
     });
     $('#bookBtn')?.addEventListener('click', () => {
       const options = [];
@@ -809,8 +809,8 @@
         if (d.getDay() !== 0 && d.getDay() !== 6) options.push(new Date(d));
         d = AV.addDays(d, 1);
       }
-      const body = AV.openModal('<div class="eyebrow">Konsultacje 1:1</div><h1 style="font-size:26px;margin-top:6px">Zarezerwuj kolejnÄ…</h1><p class="mut" style="margin-top:8px;font-size:13.5px">Wybierz termin. Rezerwacja jest lokalna â€” w wersji produkcyjnej potwierdzi siÄ™ w kalendarzu.</p><div class="grid" style="margin-top:14px;gap:8px" id="bookSlots">' +
-        options.map((x, i) => '<button class="btn g" data-slot="' + i + '" style="justify-content:flex-start">' + x.toLocaleDateString('pl-PL', { weekday: 'long', day: '2-digit', month: '2-digit' }) + ' Â· 18:00</button>').join('') + '</div>', { maxWidth: '520px' });
+      const body = AV.openModal('<div class="eyebrow">Konsultacje 1:1</div><h1 style="font-size:26px;margin-top:6px">Zarezerwuj kolejną</h1><p class="mut" style="margin-top:8px;font-size:13.5px">Wybierz termin. Rezerwacja jest lokalna — w wersji produkcyjnej potwierdzi się w kalendarzu.</p><div class="grid" style="margin-top:14px;gap:8px" id="bookSlots">' +
+        options.map((x, i) => '<button class="btn g" data-slot="' + i + '" style="justify-content:flex-start">' + x.toLocaleDateString('pl-PL', { weekday: 'long', day: '2-digit', month: '2-digit' }) + ' · 18:00</button>').join('') + '</div>', { maxWidth: '520px' });
       $$('#bookSlots [data-slot]', body).forEach((b) => b.onclick = () => {
         const d2 = options[+b.dataset.slot];
         AV.state.meta.consultation = { date: AV.dateKey(d2), time: '18:00', who: 'Marcin' };
@@ -819,12 +819,12 @@
         AV.toast('Zarezerwowano: ' + d2.toLocaleDateString('pl-PL', { weekday: 'long', day: '2-digit', month: '2-digit' }) + ', 18:00');
       });
     });
-    $('#shareTrade')?.addEventListener('click', () => { AV.showView('trans'); AV.toast('Kliknij transakcjÄ™, ktĂłrÄ… chcesz omĂłwiÄ‡'); });
+    $('#shareTrade')?.addEventListener('click', () => { AV.showView('trans'); AV.toast('Kliknij transakcję, którą chcesz omówić'); });
     document.querySelector('#adminEvents')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-event-category]');
       if (!btn) return;
       const ok = await AV.setEventCategory(btn.dataset.eventId, btn.dataset.eventCategory);
-      AV.toast(ok ? 'Kategoria wydarzenia zapisana' : 'Nie udaĹ‚o siÄ™ zapisaÄ‡ kategorii');
+      AV.toast(ok ? 'Kategoria wydarzenia zapisana' : 'Nie udało się zapisać kategorii');
     });
     $('#akBack')?.addEventListener('click', () => AV.setPlan(false));
     $('#recordsAll')?.addEventListener('click', () => AV.openRecordings());
@@ -835,11 +835,11 @@
   };
 
   AV.openRecording = (title) => {
-    AV.openModal('<div class="eyebrow">Nagranie</div><h1 style="font-size:26px;margin-top:6px">' + AV.esc(title) + '</h1><div style="aspect-ratio:16/9;background:radial-gradient(ellipse at 50% 30%,rgba(var(--a),.18),transparent 60%),#0b0a09;border:1px solid var(--line2);border-radius:16px;display:grid;place-items:center;margin-top:16px"><div style="text-align:center"><div style="width:60px;height:60px;border-radius:50%;background:var(--alpha);color:var(--ink);display:grid;place-items:center;margin:0 auto 10px">' + AV.ic('play', 'width:24px;height:24px') + '</div><span class="dim" style="font-size:12.5px">Odtwarzanie w wersji produkcyjnej</span></div></div><p class="mut" style="margin-top:14px;font-size:13.5px">Nagrania live\u2019Ăłw sÄ… dostÄ™pne w bibliotece Akademii. W tym podglÄ…dzie panel odtwarzacza jest demonstracyjny.</p><div style="display:flex;gap:10px;margin-top:18px"><button class="btn p" data-gclose>Zamknij</button></div>', { maxWidth: '720px' });
+    AV.openModal('<div class="eyebrow">Nagranie</div><h1 style="font-size:26px;margin-top:6px">' + AV.esc(title) + '</h1><div style="aspect-ratio:16/9;background:radial-gradient(ellipse at 50% 30%,rgba(var(--a),.18),transparent 60%),#0b0a09;border:1px solid var(--line2);border-radius:16px;display:grid;place-items:center;margin-top:16px"><div style="text-align:center"><div style="width:60px;height:60px;border-radius:50%;background:var(--alpha);color:var(--ink);display:grid;place-items:center;margin:0 auto 10px">' + AV.ic('play', 'width:24px;height:24px') + '</div><span class="dim" style="font-size:12.5px">Odtwarzanie w wersji produkcyjnej</span></div></div><p class="mut" style="margin-top:14px;font-size:13.5px">Nagrania live\u2019ów są dostępne w bibliotece Akademii. W tym podglądzie panel odtwarzacza jest demonstracyjny.</p><div style="display:flex;gap:10px;margin-top:18px"><button class="btn p" data-gclose>Zamknij</button></div>', { maxWidth: '720px' });
   };
   AV.openRecordings = () => {
-    const list = ['NajczÄ™stsze bĹ‚Ä™dy na starcie', 'ObsĹ‚uga gieĹ‚dy krok po kroku', 'Blockchain bez ĹĽargonu', 'Plan dnia od A do Z', 'Psychologia straty'];
-    AV.openModal('<div class="eyebrow">Biblioteka</div><h1 style="font-size:26px;margin-top:6px">Wszystkie nagrania</h1><div class="grid" style="margin-top:16px;gap:8px">' + list.map((x) => '<div class="card flat" style="padding:14px;cursor:pointer" data-recording="' + AV.attr(x) + '"><b>' + AV.esc(x) + '</b><div class="hint">nagranie Akademii Â· kliknij, ĹĽeby otworzyÄ‡</div></div>').join('') + '</div>', { maxWidth: '620px' });
+    const list = ['Najczęstsze błędy na starcie', 'Obsługa giełdy krok po kroku', 'Blockchain bez żargonu', 'Plan dnia od A do Z', 'Psychologia straty'];
+    AV.openModal('<div class="eyebrow">Biblioteka</div><h1 style="font-size:26px;margin-top:6px">Wszystkie nagrania</h1><div class="grid" style="margin-top:16px;gap:8px">' + list.map((x) => '<div class="card flat" style="padding:14px;cursor:pointer" data-recording="' + AV.attr(x) + '"><b>' + AV.esc(x) + '</b><div class="hint">nagranie Akademii · kliknij, żeby otworzyć</div></div>').join('') + '</div>', { maxWidth: '620px' });
   };
 
   /* ---------- podatki ---------- */
@@ -859,7 +859,7 @@
     document.addEventListener('click', (e) => { if (!e.target.closest('#mw')) $('#mw').classList.remove('open'); });
   };
 
-  /* ---------- ciaĹ‚o ---------- */
+  /* ---------- ciało ---------- */
   AV.connectWearable = async (provider) => {
     if (!AV.api.online || !AV.api.authenticated) {
       AV.toast('Połącz urządzenie po zalogowaniu do Alpha Vault.');
@@ -1022,11 +1022,11 @@
       AV.save(); AV.renderUser(); AV.renderDashboard(); AV.renderMentor();
     }, 250));
     $('#goalIn')?.addEventListener('input', AV.debounce((e) => {
-      AV.state.user.goal = e.target.value; AV.save(); AV.setText('#goalTxt', e.target.value || 'â€”');
+      AV.state.user.goal = e.target.value; AV.save(); AV.setText('#goalTxt', e.target.value || '—');
     }, 250));
     $('#currencyIn')?.addEventListener('change', (e) => {
       AV.state.user.currency = e.target.value; AV.saveNow(); AV.renderDashboard(); AV.renderStats(); AV.renderJournal(); AV.renderNewTradeForm();
-      AV.toast('Waluta wynikĂłw: ' + e.target.value);
+      AV.toast('Waluta wyników: ' + e.target.value);
     });
     $('#tzIn')?.addEventListener('change', (e) => { AV.state.user.timezone = e.target.value; AV.saveNow(); AV.renderCalendar(); AV.renderAcademy(); AV.renderMentor(); AV.toast('Strefa czasowa: ' + e.target.value); });
     $('#hoursIn')?.addEventListener('change', (e) => { AV.state.user.hour12 = e.target.value.startsWith('12'); AV.saveNow(); AV.renderCalendar(); AV.renderAcademy(); AV.toast('Format godzin zapisany'); });
@@ -1060,7 +1060,7 @@
     $('#maxRisk')?.addEventListener('change', (e) => { AV.state.settings.maxRisk = Math.max(0.1, AV.pnum(e.target.value) || 1); AV.saveNow(); AV.renderNewTradeForm(); AV.renderNewTradeForm(); AV.toast('Max ryzyko: ' + AV.state.settings.maxRisk + '%'); });
     $('#saveRules')?.addEventListener('click', () => {
       const rules = ['#rule1', '#rule2', '#rule3'].map((x) => $(x).value.trim());
-      if (rules.some((r) => !r)) { AV.toast('UzupeĹ‚nij wszystkie 3 zasady'); return; }
+      if (rules.some((r) => !r)) { AV.toast('Uzupełnij wszystkie 3 zasady'); return; }
       AV.state.settings.rules = rules;
       AV.state.settings.checklist = $$('#rulesChecklist .chip.on').map((c) => c.dataset.c).filter(Boolean);
       AV.state.settings.maxRisk = Math.max(0.1, AV.pnum($('#maxRisk').value) || 1);
@@ -1072,9 +1072,9 @@
       AV.state.settings.checklist = $$('#rulesChecklist .chip.on').map((x) => x.dataset.c).filter(Boolean);
       AV.saveNow(); AV.renderChecklist();
     });
-    // wĹ‚asny punkt checklisty
+    // własny punkt checklisty
     const add = document.createElement('span');
-    add.className = 'chip'; add.textContent = '+ wĹ‚asny'; add.dataset.addRule = '1';
+    add.className = 'chip'; add.textContent = '+ własny'; add.dataset.addRule = '1';
     $('#rulesChecklist')?.appendChild(add);
     add.onclick = () => AV.promptText('Nowy punkt checklisty', 'Nazwa punktu', (name) => {
       if (!name) return;
@@ -1089,11 +1089,11 @@
     $('#saveAcc')?.addEventListener('click', () => {
       const name = $('#accName').value.trim();
       const start = AV.pnum($('#accStart').value);
-      if (!name) { AV.toast('Podaj nazwÄ™ konta'); return; }
+      if (!name) { AV.toast('Podaj nazwę konta'); return; }
       AV.state.accounts.push({
         id: AV.uid('acc'), name, exchange: $('#accExchange').value, type: $('#accType').value,
         currency: $('#accCurrency').value, start, date: $('#accDate').value.trim() || AV.dateLabel(new Date()),
-        lev: $('#accLev').value.trim() || '1Ă—', goal: $('#accGoal').value.trim(), balance: start, include: true, primary: false
+        lev: $('#accLev').value.trim() || '1×', goal: $('#accGoal').value.trim(), balance: start, include: true, primary: false
       });
       AV.state.meta.sessions = AV.state.meta.sessions;
       AV.saveNow(); $('#accForm').style.display = 'none';
@@ -1103,9 +1103,9 @@
     $('#accBody')?.addEventListener('click', (e) => {
       const del = e.target.closest('[data-acc-del]');
       if (del) {
-        AV.confirm({ title: 'UsunÄ…Ä‡ konto?', text: 'Transakcje przypisane do tego konta zostanÄ… w dzienniku, ale przestanÄ… wchodziÄ‡ do statystyk.', confirmLabel: 'UsuĹ„', danger: true, onConfirm: () => {
+        AV.confirm({ title: 'Usunąć konto?', text: 'Transakcje przypisane do tego konta zostaną w dzienniku, ale przestaną wchodzić do statystyk.', confirmLabel: 'Usuń', danger: true, onConfirm: () => {
           AV.state.accounts = AV.state.accounts.filter((a) => a.id !== del.dataset.accDel);
-          AV.saveNow(); AV.renderAll(); AV.toast('Konto usuniÄ™te');
+          AV.saveNow(); AV.renderAll(); AV.toast('Konto usunięte');
         } });
         return;
       }
@@ -1122,39 +1122,39 @@
       if (!del) return;
       const f = AV.state.flows.find((x) => x.id === del.dataset.flowDel);
       if (!f) return;
-      AV.confirm({ title: 'UsunÄ…Ä‡ wpĹ‚atÄ™/wypĹ‚atÄ™?', text: 'UsuniÄ™cie zmieni saldo konta i zestawienie PIT-38.', confirmLabel: 'UsuĹ„', danger: true, onConfirm: () => {
+      AV.confirm({ title: 'Usunąć wpłatę/wypłatę?', text: 'Usunięcie zmieni saldo konta i zestawienie PIT-38.', confirmLabel: 'Usuń', danger: true, onConfirm: () => {
         AV.state.flows = AV.state.flows.filter((x) => x.id !== f.id);
         const acc = AV.state.accounts.find((a) => a.name === f.account);
-        if (acc) acc.balance += f.type === 'WpĹ‚ata' ? -f.amount : f.amount;
-        AV.saveNow(); AV.renderFlows(); AV.renderAccounts(); AV.renderTax(); AV.renderSettings(); AV.toast('UsuniÄ™to');
+        if (acc) acc.balance += f.type === 'Wpłata' ? -f.amount : f.amount;
+        AV.saveNow(); AV.renderFlows(); AV.renderAccounts(); AV.renderTax(); AV.renderSettings(); AV.toast('Usunięto');
       } });
     });
     $('#outAll')?.addEventListener('click', () => {
-      AV.state.meta.sessions = [{ device: 'MacBook Â· Chrome', place: 'Warszawa', when: 'teraz' }];
-      AV.saveNow(); AV.renderSettings(); AV.toast('Wylogowano inne urzÄ…dzenia');
+      AV.state.meta.sessions = [{ device: 'MacBook · Chrome', place: 'Warszawa', when: 'teraz' }];
+      AV.saveNow(); AV.renderSettings(); AV.toast('Wylogowano inne urządzenia');
     });
     $('#dlAll')?.addEventListener('click', () => AV.downloadAll());
     $('#downloadDataExpired')?.addEventListener('click', () => AV.downloadAll());
     $('#deleteAcc')?.addEventListener('click', () => {
       const demo = !!AV.api.me?.isDemo;
       AV.confirm({
-        title: 'UsunÄ…Ä‡ konto i wszystkie dane?',
-        html: 'To trwale usunie dziennik, screeny, plany, klucze API i dane z zegarka. Tej operacji nie da siÄ™ cofnÄ…Ä‡.' + (demo ? ' <b>Konto demo po ponownym logowaniu zostanie odtworzone z danymi przykĹ‚adowymi.</b>' : ''),
-        confirmLabel: 'UsuĹ„ wszystko', danger: true, input: 'USUĹ', inputLabel: 'Wpisz USUĹ, aby potwierdziÄ‡',
+        title: 'Usunąć konto i wszystkie dane?',
+        html: 'To trwale usunie dziennik, screeny, plany, klucze API i dane z zegarka. Tej operacji nie da się cofnąć.' + (demo ? ' <b>Konto demo po ponownym logowaniu zostanie odtworzone z danymi przykładowymi.</b>' : ''),
+        confirmLabel: 'Usuń wszystko', danger: true, input: 'USUŃ', inputLabel: 'Wpisz USUŃ, aby potwierdzić',
         onConfirm: async () => {
           if (AV.api.online) {
             try {
               await AV.serverDeleteAccount();
               location.href = '/';
-            } catch (err) { AV.toast(err.message || 'Nie udaĹ‚o siÄ™ usunÄ…Ä‡ konta'); }
+            } catch (err) { AV.toast(err.message || 'Nie udało się usunąć konta'); }
             return;
           }
-          AV.resetAll(); AV.logout(); AV.toast('Konto usuniÄ™te'); setTimeout(() => location.reload(), 600);
+          AV.resetAll(); AV.logout(); AV.toast('Konto usunięte'); setTimeout(() => location.reload(), 600);
         }
       });
     });
-    $('#simExp')?.addEventListener('click', () => { AV.state.subscription.expired = true; AV.saveNow(); AV.renderExpired(); AV.toast('PodglÄ…d: subskrypcja wygasĹ‚a'); });
-    $('#expBack')?.addEventListener('click', () => { AV.state.subscription.expired = false; AV.saveNow(); AV.renderExpired(); AV.toast('WrĂłcono do panelu'); });
+    $('#simExp')?.addEventListener('click', () => { AV.state.subscription.expired = true; AV.saveNow(); AV.renderExpired(); AV.toast('Podgląd: subskrypcja wygasła'); });
+    $('#expBack')?.addEventListener('click', () => { AV.state.subscription.expired = false; AV.saveNow(); AV.renderExpired(); AV.toast('Wrócono do panelu'); });
     $('#simSolo')?.addEventListener('click', () => AV.setPlan(true));
   };
 
@@ -1165,17 +1165,17 @@
     AV.state.settings[k] = on;
     if (k === 'macroBefore' || k === 'pushLimit') { if (on) AV.ensurePermission(); }
     AV.saveNow();
-    if (k === 'remember') AV.toast(on ? 'Zostaniesz zalogowana na tym urzÄ…dzeniu' : 'Sesja wygaĹ›nie po zamkniÄ™ciu karty');
+    if (k === 'remember') AV.toast(on ? 'Zostaniesz zalogowana na tym urządzeniu' : 'Sesja wygaśnie po zamknięciu karty');
     if (k === 'macroTwo') AV.renderCalendar();
     if (k === 'safetyEnabled') AV.renderLock();
     if (k === 'requireReason' || k === 'apiCode') AV.toast('Ustawienie zapisane');
   };
 
-  /* ---------- wpĹ‚aty ---------- */
+  /* ---------- wpłaty ---------- */
   AV.flowModal = () => {
     const accounts = AV.state.accounts;
-    const body = AV.openModal('<div class="eyebrow">Konta i kapitaĹ‚</div><h1 style="font-size:26px;margin-top:6px">Dodaj wpĹ‚atÄ™ lub wypĹ‚atÄ™</h1>' +
-      '<div class="grid g2" style="margin-top:14px"><div><span class="label">Typ</span><select class="input" id="flType"><option>WpĹ‚ata</option><option>WypĹ‚ata</option></select></div><div><span class="label">Konto</span><select class="input" id="flAcc">' + accounts.map((a) => '<option value="' + AV.attr(a.name) + '">' + AV.esc(a.name) + '</option>').join('') + '</select></div>' +
+    const body = AV.openModal('<div class="eyebrow">Konta i kapitał</div><h1 style="font-size:26px;margin-top:6px">Dodaj wpłatę lub wypłatę</h1>' +
+      '<div class="grid g2" style="margin-top:14px"><div><span class="label">Typ</span><select class="input" id="flType"><option>Wpłata</option><option>Wypłata</option></select></div><div><span class="label">Konto</span><select class="input" id="flAcc">' + accounts.map((a) => '<option value="' + AV.attr(a.name) + '">' + AV.esc(a.name) + '</option>').join('') + '</select></div>' +
       '<div><span class="label">Data</span><input class="input mono" id="flDate" value="' + AV.dateKey(new Date()) + '"></div><div><span class="label">Kwota USDT</span><input class="input mono" id="flAmount" placeholder="0,00"></div>' +
       '<div><span class="label">Waluta fiat</span><select class="input" id="flCur"><option>PLN</option><option>EUR</option><option>USD</option></select></div><div><span class="label">Kwota fiat</span><input class="input mono" id="flFiat" placeholder="0,00"></div>' +
       '<div><span class="label">Kurs</span><input class="input mono" id="flFx" value="1"></div><div><span class="label">Opis</span><input class="input" id="flOp" value="P2P"></div></div>' +
@@ -1183,15 +1183,15 @@
     $('#flSave', body).onclick = () => {
       const type = $('#flType', body).value, acc = $('#flAcc', body).value;
       const amount = AV.pnum($('#flAmount', body).value), fiat = AV.pnum($('#flFiat', body).value), fx = AV.pnum($('#flFx', body).value) || 1;
-      if (!amount || !fiat) { AV.toast('Podaj kwotÄ™ USDT i kwotÄ™ fiat'); return; }
+      if (!amount || !fiat) { AV.toast('Podaj kwotę USDT i kwotę fiat'); return; }
       const flow = {
         id: AV.uid('flow'), date: $('#flDate', body).value || AV.dateKey(new Date()), account: acc,
-        type, op: $('#flOp', body).value + (type === 'WpĹ‚ata' ? ' Â· zakup USDT' : ' Â· sprzedaĹĽ USDT'),
-        amount, currency: $('#flCur', body).value, fiat, fx, tax: type === 'WpĹ‚ata' ? 'cost' : 'income'
+        type, op: $('#flOp', body).value + (type === 'Wpłata' ? ' · zakup USDT' : ' · sprzedaż USDT'),
+        amount, currency: $('#flCur', body).value, fiat, fx, tax: type === 'Wpłata' ? 'cost' : 'income'
       };
       AV.state.flows.push(flow);
       const a = AV.state.accounts.find((x) => x.name === acc);
-      if (a) a.balance += type === 'WpĹ‚ata' ? amount : -amount;
+      if (a) a.balance += type === 'Wpłata' ? amount : -amount;
       AV.saveNow(); AV.closeModal(); AV.renderFlows(); AV.renderAccounts(); AV.renderTax(); AV.renderSettings(); AV.renderDashboard();
       AV.toast(type + ' zapisana');
     };
@@ -1199,7 +1199,7 @@
 
   /* ---------- eksport ---------- */
   AV.exportTradesCsv = () => {
-    const rows = [['Data', 'Para', 'Kierunek', 'Ocena', 'Checklista', 'BĹ‚Ä™dy', 'Emocja', 'Setup', 'WejĹ›cie', 'WyjĹ›cie', 'SL', 'TP', 'WielkoĹ›Ä‡', 'R', 'Wynik USDT', 'OpĹ‚ata', 'Plan', 'Notatka']];
+    const rows = [['Data', 'Para', 'Kierunek', 'Ocena', 'Checklista', 'Błędy', 'Emocja', 'Setup', 'Wejście', 'Wyjście', 'SL', 'TP', 'Wielkość', 'R', 'Wynik USDT', 'Opłata', 'Plan', 'Notatka']];
     AV.includedTrades(AV.state).slice().sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((t) => rows.push([
       new Date(t.date).toLocaleString('pl-PL'), t.pair, t.dir === 'l' ? 'LONG' : 'SHORT', t.grade,
       t.checklist + '/7', (t.errors || []).join(' | '), t.emotion, t.setup, t.entry, t.exit, t.sl, t.tp, t.size,
@@ -1212,12 +1212,12 @@
   AV.exportTaxCsv = () => {
     const t = AV.taxData(AV.state);
     const rows = [['Data', 'Operacja', 'Rodzaj', 'Waluta', 'Kwota', 'Kurs NBP', 'W PLN']];
-    t.ev.forEach((e) => rows.push([new Date(e.date).toLocaleDateString('pl-PL'), e.op, e.kind === 'cost' ? 'koszt' : 'przychĂłd', e.currency, e.amount, e.fx, e.pln]));
+    t.ev.forEach((e) => rows.push([new Date(e.date).toLocaleDateString('pl-PL'), e.op, e.kind === 'cost' ? 'koszt' : 'przychód', e.currency, e.amount, e.fx, e.pln]));
     rows.push([]);
-    rows.push(['PrzychĂłd', '', '', '', '', '', t.revenue]);
+    rows.push(['Przychód', '', '', '', '', '', t.revenue]);
     rows.push(['Koszty', '', '', '', '', '', t.costs]);
-    rows.push(['NadwyĹĽka z 2025', '', '', '', '', '', t.carry]);
-    rows.push(['DochĂłd', '', '', '', '', '', t.income]);
+    rows.push(['Nadwyżka z 2025', '', '', '', '', '', t.carry]);
+    rows.push(['Dochód', '', '', '', '', '', t.income]);
     rows.push(['Podatek 19%', '', '', '', '', '', t.due]);
     AV.download('alpha-vault-PIT-38-2026.csv', AV.toCsv(rows));
     AV.toast('CSV podatkowy gotowy');
@@ -1225,15 +1225,15 @@
 
   AV.taxPrintHtml = () => {
     const t = AV.taxData(AV.state), s = AV.state;
-    const rows = t.ev.map((e) => '<tr><td>' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td>' + (e.kind === 'cost' ? 'koszt' : 'przychĂłd') + '</td><td>' + AV.fmt(e.amount, 2) + ' ' + e.currency + '</td><td>' + (e.fx === 1 ? 'â€“' : AV.fmt(e.fx, 4)) + '</td><td>' + AV.fmt(e.pln, 2) + ' zĹ‚</td></tr>').join('');
-    return '<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>PIT-38 Â· Alpha Vault</title><style>body{font-family:Arial,sans-serif;color:#111;margin:32px;font-size:13px}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f1ec}.sum{margin-top:20px;width:320px}.sum div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}.sum b{font-size:16px}.note{color:#666;font-size:11px;margin-top:24px;line-height:1.5}</style></head><body><h1>Zestawienie do PIT-38 Â· ' + s.tax.year + '</h1><p>' + AV.esc(s.user.name) + ' Â· wygenerowano ' + AV.nowStamp() + '</p><table><thead><tr><th>Data</th><th>Operacja</th><th>Rodzaj</th><th>Kwota</th><th>Kurs</th><th>W PLN</th></tr></thead><tbody>' + rows + '</tbody></table><div class="sum"><div><span>PrzychĂłd</span><b>' + AV.fmt(t.revenue, 2) + ' zĹ‚</b></div><div><span>Koszty</span><b>' + AV.fmt(t.costs, 2) + ' zĹ‚</b></div><div><span>NadwyĹĽka kosztĂłw z 2025</span><b>' + AV.fmt(t.carry, 2) + ' zĹ‚</b></div><div><span>DochĂłd</span><b>' + AV.fmt(t.income, 2) + ' zĹ‚</b></div><div><span>Podatek 19%</span><b>' + AV.fmt(t.due, 2) + ' zĹ‚</b></div></div><p class="note">Zestawienie pomocnicze, nie porada podatkowa. Przed zĹ‚oĹĽeniem PIT-38 zweryfikuj dane z ksiÄ™gowÄ… lub doradcÄ… podatkowym. Alpha Vault Â· dane wyĹ‚Ä…cznie uĹĽytkownika.</p><script>window.print()<\/script></body></html>';
+    const rows = t.ev.map((e) => '<tr><td>' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td>' + (e.kind === 'cost' ? 'koszt' : 'przychód') + '</td><td>' + AV.fmt(e.amount, 2) + ' ' + e.currency + '</td><td>' + (e.fx === 1 ? '–' : AV.fmt(e.fx, 4)) + '</td><td>' + AV.fmt(e.pln, 2) + ' zł</td></tr>').join('');
+    return '<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>PIT-38 · Alpha Vault</title><style>body{font-family:Arial,sans-serif;color:#111;margin:32px;font-size:13px}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f1ec}.sum{margin-top:20px;width:320px}.sum div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}.sum b{font-size:16px}.note{color:#666;font-size:11px;margin-top:24px;line-height:1.5}</style></head><body><h1>Zestawienie do PIT-38 · ' + s.tax.year + '</h1><p>' + AV.esc(s.user.name) + ' · wygenerowano ' + AV.nowStamp() + '</p><table><thead><tr><th>Data</th><th>Operacja</th><th>Rodzaj</th><th>Kwota</th><th>Kurs</th><th>W PLN</th></tr></thead><tbody>' + rows + '</tbody></table><div class="sum"><div><span>Przychód</span><b>' + AV.fmt(t.revenue, 2) + ' zł</b></div><div><span>Koszty</span><b>' + AV.fmt(t.costs, 2) + ' zł</b></div><div><span>Nadwyżka kosztów z 2025</span><b>' + AV.fmt(t.carry, 2) + ' zł</b></div><div><span>Dochód</span><b>' + AV.fmt(t.income, 2) + ' zł</b></div><div><span>Podatek 19%</span><b>' + AV.fmt(t.due, 2) + ' zł</b></div></div><p class="note">Zestawienie pomocnicze, nie porada podatkowa. Przed złożeniem PIT-38 zweryfikuj dane z księgową lub doradcą podatkowym. Alpha Vault · dane wyłącznie użytkownika.</p><script>window.print()<\/script></body></html>';
   };
 
   AV.exportTaxPdf = () => {
     const w = window.open('', '_blank');
-    if (!w) { AV.download('alpha-vault-PIT-38-2026.html', AV.taxPrintHtml(), 'text/html;charset=utf-8'); AV.toast('Popup zablokowany â€” pobrano plik do wydruku'); return; }
+    if (!w) { AV.download('alpha-vault-PIT-38-2026.html', AV.taxPrintHtml(), 'text/html;charset=utf-8'); AV.toast('Popup zablokowany — pobrano plik do wydruku'); return; }
     w.document.open(); w.document.write(AV.taxPrintHtml()); w.document.close();
-    AV.toast('Otwieram wydruk â€” wybierz â€žZapisz jako PDFâ€ť');
+    AV.toast('Otwieram wydruk — wybierz „Zapisz jako PDF”');
   };
 
   AV.downloadAll = () => {
@@ -1243,7 +1243,7 @@
     files.push({ name: 'transakcje.csv', data: AV.toCsv([['Data', 'Para', 'Kierunek', 'Ocena', 'Wynik', 'R', 'Emocja', 'Setup', 'Notatka']].concat(s.trades.map((t) => [new Date(t.date).toLocaleString('pl-PL'), t.pair, t.dir, t.grade, t.result == null ? '' : t.result, t.r == null ? '' : t.r, t.emotion, t.setup, t.note]))) });
     files.push({ name: 'podatki.csv', data: AV.toCsv([['Data', 'Operacja', 'Rodzaj', 'Kwota', 'Waluta', 'W PLN']].concat(AV.taxData(s).ev.map((e) => [new Date(e.date).toLocaleDateString('pl-PL'), e.op, e.kind, e.amount, e.currency, e.pln]))) });
     files.push({ name: 'plany.json', data: JSON.stringify(s.plans, null, 2) });
-    files.push({ name: 'README.txt', data: 'Alpha Vault â€” eksport danych\nWygenerowano: ' + AV.nowStamp() + '\n\nZawartoĹ›Ä‡:\n- dane.json: peĹ‚ny stan aplikacji (profil, transakcje, plany, ustawienia, poĹ‚Ä…czenia)\n- transakcje.csv: dziennik transakcji\n- podatki.csv: zdarzenia podatkowe\n- plany.json: plany dnia\n- screeny/: screeny wykresĂłw (jeĹ›li dodane)\n\nDane sÄ… prywatne. Klucze API sÄ… zapisane w postaci zamaskowanej.\n' });
+    files.push({ name: 'README.txt', data: 'Alpha Vault — eksport danych\nWygenerowano: ' + AV.nowStamp() + '\n\nZawartość:\n- dane.json: pełny stan aplikacji (profil, transakcje, plany, ustawienia, połączenia)\n- transakcje.csv: dziennik transakcji\n- podatki.csv: zdarzenia podatkowe\n- plany.json: plany dnia\n- screeny/: screeny wykresów (jeśli dodane)\n\nDane są prywatne. Klucze API są zapisane w postaci zamaskowanej.\n' });
     s.trades.forEach((t) => {
       ['before', 'after'].forEach((k) => {
         if (t.screens && t.screens[k]) {
@@ -1258,7 +1258,7 @@
     }
     const blob = AV.zip(files);
     AV.download('alpha-vault-dane-' + AV.dateKey(new Date()) + '.zip', blob);
-    AV.toast('Paczka ZIP z danymi gotowa (' + files.length + ' plikĂłw)');
+    AV.toast('Paczka ZIP z danymi gotowa (' + files.length + ' plików)');
   };
 
   /* ---------- dokumenty / zakup / QA ---------- */
@@ -1280,7 +1280,7 @@
       if (buy) {
         AV.buyPlan = buy.dataset.buy;
         AV.setText('#buyT', AV.buyPlan === 'full' ? 'Akademia Alpha + Vault' : 'Alpha Vault');
-        AV.setText('#buyP', AV.buyPlan === 'full' ? '168 $ / miesiÄ…c' : '49 $ / miesiÄ…c');
+        AV.setText('#buyP', AV.buyPlan === 'full' ? '168 $ / miesiąc' : '49 $ / miesiąc');
         $$('#buyM [data-ck]').forEach((c) => c.classList.remove('on'));
         $('#buyGo').disabled = true;
         $('#buyM').classList.add('on');
@@ -1296,7 +1296,7 @@
     $('#buyGo')?.addEventListener('click', () => {
       if ($('#buyGo').disabled) return;
       const plan = AV.buyPlan || 'full';
-      AV.openModal('<div class="eyebrow">PĹ‚atnoĹ›Ä‡ Â· tryb demo</div><h1 style="font-size:26px;margin-top:6px">Stripe nie jest podĹ‚Ä…czony</h1><p class="mut" style="margin-top:10px;line-height:1.6">W tym podglÄ…dzie nie pobieramy prawdziwej pĹ‚atnoĹ›ci. MoĹĽesz aktywowaÄ‡ plan demonstracyjnie, ĹĽeby sprawdziÄ‡ caĹ‚y panel.</p><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="activateDemo">Aktywuj plan demo</button></div>', { maxWidth: '520px' });
+      AV.openModal('<div class="eyebrow">Płatność · tryb demo</div><h1 style="font-size:26px;margin-top:6px">Stripe nie jest podłączony</h1><p class="mut" style="margin-top:10px;line-height:1.6">W tym podglądzie nie pobieramy prawdziwej płatności. Możesz aktywować plan demonstracyjnie, żeby sprawdzić cały panel.</p><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="activateDemo">Aktywuj plan demo</button></div>', { maxWidth: '520px' });
       $('#activateDemo').onclick = () => {
         AV.state.subscription.plan = plan;
         AV.state.subscription.expired = false;

@@ -198,6 +198,18 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 - synchronizację `public/docs` z źródłami,
 - obecność wszystkich generowanych plików.
 
+## Kodowanie — 7 scenariuszy
+
+`tests/encoding.test.mjs` + `scripts/check-encoding.mjs`:
+
+- naprawa mojibake `UTF-8 → Windows-1250 → UTF-8` (np. „Wartość” i „dźwignia 50×” po uszkodzonym zapisie),
+- brak zmian w poprawnym tekście,
+- brak mojibake w `public/js/actions.js`, `tests/prop.unit.mjs` i `tests/discord-events.test.php`,
+- skan całego repo: niepoprawne UTF-8 i pozostałości mojibake,
+- wyjątki tylko dla celowych fixture'ów testowych.
+
+Naprawa istniejących plików: `node scripts/fix-mojibake.mjs --write <plik>`.
+
 ## Live Discord
 
 `.github/workflows/discord-sync-live-test.yml`:
@@ -216,6 +228,7 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 - MySQL 8.4 service,
 - PHP 8.3 + Node 24,
 - dokumentacja (`docs:check` + `test:docs`),
+- kodowanie (`test:encoding`),
 - PHP lint,
 - migracja,
 - Discord DB/sync,

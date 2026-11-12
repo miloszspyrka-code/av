@@ -698,6 +698,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
+| Kodowanie | `tests/encoding.test.mjs` | naprawa mojibake, brak uszkodzonych znaków w repo | 7/7 PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
 | Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
 | Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | 3/3, bez duplikatów |
@@ -717,6 +718,7 @@ npm run test:macro
 npm run test:quotes
 npm run test:wearables
 npm run test:docs
+npm run test:encoding
 ```
 
 CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-state na osobnym porcie.
