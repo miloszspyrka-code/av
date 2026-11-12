@@ -1,0 +1,93 @@
+name: Provision AlphaVault database
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate secrets
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in LH_SSH_HOST LH_SSH_USER LH_SSH_PASSWORD DB_NAME DB_USER DB_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing secret: ${name}"
+              exit 1
+            fi
+          done
+          case "$DB_NAME" in
+            *[!A-Za-z0-9_]*|'') echo "::error::DB_NAME has invalid characters"; exit 1 ;;
+          esac
+          case "$DB_USER" in
+            *[!A-Za-z0-9_]*|'') echo "::error::DB_USER has invalid characters"; exit 1 ;;
+          esac
+          echo "Secrets validated."
+
+      - name: Install clients
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass default-mysql-client
+
+      - name: Create database and dedicated user
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
+          chmod 600 "$HOME/.ssh/known_hosts"
+          export SSHPASS="$LH_SSH_PASSWORD"
+          SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20)
+
+          sshpass -e ssh -N "${SSH_OPTS[@]}" -L 13306:localhost:3306 "$LH_SSH_USER@$LH_SSH_HOST" &
+          TUNNEL_PID=$!
+          trap 'kill "$TUNNEL_PID" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 20); do
+            if (echo > /dev/tcp/127.0.0.1/13306) 2>/dev/null; then break; fi
+            sleep 1
+          done
+
+          if ! MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -N -e "SELECT 1" >/dev/null 2>&1; then
+            echo "ADMIN_LOGIN=FAIL"
+            echo "The LH SSH user does not have a matching MySQL admin account. Create the database and user in panel.lh.pl, then rerun deploy."
+            exit 1
+          fi
+          echo "ADMIN_LOGIN=OK"
+
+          MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+          for host in localhost 127.0.0.1; do
+            MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -e "CREATE USER IF NOT EXISTS '$DB_USER'@'$host' IDENTIFIED BY '$DB_PASSWORD'; ALTER USER '$DB_USER'@'$host' IDENTIFIED BY '$DB_PASSWORD'; GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, DROP ON \`$DB_NAME\`.* TO '$DB_USER'@'$host';"
+          done
+          MYSQL_PWD="$LH_SSH_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$LH_SSH_USER" -e "FLUSH PRIVILEGES;"
+
+          if MYSQL_PWD="$DB_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$DB_USER" "$DB_NAME" -e "SELECT 1;" >/dev/null 2>&1; then
+            echo "DB_PROVISION=OK"
+          else
+            echo "DB_PROVISION=FAIL"
+            exit 1
+          fi
+
+          kill "$TUNNEL_PID" 2>/dev/null || true
+          wait "$TUNNEL_PID" 2>/dev/null || true
