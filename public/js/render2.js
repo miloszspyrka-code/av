@@ -278,7 +278,6 @@
     const s = AV.state;
     const data = AV.api.events || { live: [], consultations: [], unassigned: [], nextConsultation: null, sync: null };
     const live = AV.nextLiveEvent();
-    const info = AV.liveInfo();
     const todayKey = AV.warsawDateKey(new Date());
     const set = (sel, text) => AV.setText(sel, text || '');
     const showEl = (sel, visible) => {
@@ -289,20 +288,24 @@
     set('#liveTitle', live ? live.name : '');
     set('#liveWho', live ? (live.host || '') : '');
     set('#liveWhen', live ? (live.startLabel || '') : '');
-    set('#liveCd', live
-      ? (info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'))
-      : '');
-    $$('.liveIn').forEach((e) => {
-      e.textContent = live
-        ? (info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'))
-        : '';
-    });
     const isToday = !!(live && live.localDate === todayKey);
     set('#liveBadge', live ? (isToday ? 'Live dziś' : 'Najbliższy live') : '');
     set('#liveTop', live ? (isToday ? 'Live dziś ' + live.localTime : live.startLabel) : '');
+    showEl('#liveCard', !!live);
     showEl('#liveBadge', !!live);
     showEl('#liveWhen', !!live);
-    showEl('#liveJoin', !!live);
+    showEl('#liveTop', !!live);
+    showEl('#liveSep', !!live);
+    const join = document.querySelector('#liveJoin');
+    if (join) {
+      if (live && live.url) {
+        join.href = live.url;
+        join.style.display = '';
+      } else {
+        join.removeAttribute('href');
+        join.style.display = 'none';
+      }
+    }
     showEl('#liveRem', !!live);
 
     const c = data.nextConsultation;
@@ -886,9 +889,13 @@
     AV.setHTML('#flowBody', s.flows.length ? s.flows.map((f) => '<tr><td class="mono dim">' + new Date(f.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(f.account) + '</td><td>' + AV.esc(f.type) + ' · ' + AV.esc(f.op) + '</td><td class="mono" style="text-align:right">' + (f.type === 'Wpłata' ? '+' : '−') + AV.fmt(f.amount, 2) + ' USDT</td><td class="mono" style="text-align:right">' + AV.fmt(f.fiat, 2) + ' ' + (f.currency === 'PLN' ? 'zł' : f.currency) + '</td><td><span class="pill ' + (f.tax === 'cost' ? 'k' : 'p') + '">' + (f.tax === 'cost' ? 'koszt' : 'przychód') + '</span> <span class="link" data-flow-del="' + f.id + '" style="font-size:11px">✕</span></td></tr>').join('') : '<tr><td colspan="6" class="dim" style="text-align:center;padding:20px">Brak wpłat i wypłat.</td></tr>');
   };
 
-  AV.renderBadges = () => {
-    const b = AV.badges(AV.state);
-    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span>' + (x.progress != null ? '<div class="bar"><i style="width:' + x.progress + '%;background:var(--alpha)"></i></div>' : '') + '</div>').join(''));
+  AV.renderBadges = (state) => {
+    const s = state || AV.state;
+    const b = AV.badges(s);
+    const summary = AV.badgeSummary(b);
+    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span><div class="bar"><i style="width:' + AV.clamp(x.progress || 0, 0, 100) + '%;background:var(--alpha)"></i></div></div>').join(''));
+    AV.setText('#badgeSummary', summary.done + ' z ' + summary.total + ' · poziom ' + summary.level);
+    AV.setText('#levelBadge', 'poziom ' + summary.level);
   };
 
   AV.renderExpired = () => {

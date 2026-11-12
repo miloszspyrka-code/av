@@ -508,7 +508,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 - `AV.nextLiveEvent()` — aktywne lub najbliższe przyszłe wydarzenie `live`.
 - `AV.nextConsultationEvent()` — z `nextConsultation`.
-- `AV.liveInfo()` — countdown, `liveNow`.
+- `AV.liveInfo()` - `liveNow` i pozostały czas (bez countdownu w UI).
 - `renderAcademy()` ustawia:
   - `#liveTitle`, `#liveWho`, `#liveWhen`, `#liveCd`,
   - `#nextConsult`, `#nextConsultWho`, `#consultMonth`,
@@ -522,7 +522,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 | Timer | Akcja |
 | --- | --- |
-| 1 s | countdown live |
+| 1 s | countdown blokady ochronnej |
 | 12 s | ticker |
 | 60 s | kalendarz makro, powiadomienia |
 | 300 s | `loadEvents()` |
@@ -627,7 +627,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 
 - `main` wymaga PR i zielonego checku `PHP + API + UI`; bez bezpośredniego push, force push i usuwania gałęzi.
 - `enforce_admins=true`; merge commit wyłączony — dozwolone squash/rebase.
-- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje przez `deploy-alphavault.yml`.
+- `DEPLOY_ENABLED=true`; deploy na `main` startuje dopiero po zielonym CI (`workflow_run`), na commicie zweryfikowanym przez `PHP + API + UI`.
 - Environment `alphavault-production` dopuszcza deploy tylko z `main`.
 - Repo jest publiczne; secret scanning, push protection i Dependabot security updates są włączone.
 
@@ -654,8 +654,8 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
-| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy | 23/23 PASS |
-| UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
+| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy, 8 odznak | 38/38 PASS |
+| UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 12/12 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
@@ -689,7 +689,6 @@ CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-s
 - Kontrakt API: [docs/API.md](API.md) + [docs/openapi.yaml](openapi.yaml).
 - Schemat: [docs/BAZA-DANYCH.md](BAZA-DANYCH.md).
 - Deploy: [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md).
-- MCP: [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md) — mapa narzędzi, walidacje, OAuth, plan wdrożenia.
 - Zasady agenta: [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md).
 
 Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.

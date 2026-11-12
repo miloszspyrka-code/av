@@ -223,7 +223,7 @@ Wymaga sesji. Zwraca wydarzenia Discord zsynchronizowane przez CRON oraz stan sy
 }
 ```
 
-Każde wydarzenie zawiera m.in. `id`, `name`, `description`, `entityType`, `status`, `startAt` (UTC ISO), `startLocal` (`Europe/Warsaw` z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`. `raw_payload` nie jest udostępniany.
+Każde wydarzenie zawiera m.in. `id`, `url` (kanoniczny link `https://discord.com/events/{guild_id}/{event_id}`), `name`, `description`, `entityType`, `status`, `startAt` (UTC ISO), `startLocal` (`Europe/Warsaw` z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`. `url` jest `null` wyłącznie dla rekordów z identyfikatorem spoza formatu Snowflake (fixtury testowe). `raw_payload` nie jest udostępniany.
 
 ### 3.9. `GET /api/admin/events`
 

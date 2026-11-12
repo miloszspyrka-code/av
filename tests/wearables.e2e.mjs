@@ -373,7 +373,7 @@ async function main() {
   const appleList = await req('/api/wearables');
   assert.equal(appleList.json.devices.apple.connected, true);
   assert.equal(appleList.json.today.sleepMinutes, 312);
-  assert.equal(appleList.json.readiness.score, 69);
+  assert.equal(appleList.json.readiness.score, 69, JSON.stringify({ today: appleList.json.today, baseline: appleList.json.baseline, readiness: appleList.json.readiness }));
   log('Apple: dane w panelu', true, 'score=' + appleList.json.today.readiness);
 
   const replay = await req('/api/wearables/apple/ingest', {

@@ -146,7 +146,7 @@ Wydarzenia `unassigned` są widoczne na liście administracyjnej; nie są ukrywa
 
 Po udanej synchronizacji z zerem wydarzeń:
 
-- tytuł, prowadzący, godzina i countdown pozostają puste,
+- karta live jest ukryta; tytuł, prowadzący i godzina pozostają puste,
 - karta konsultacji pozostaje pusta,
 - brak tekstów „Brak wydarzeń”, „Niedostępne”, „--”, „Wkrótce”,
 - brak starych danych demo.

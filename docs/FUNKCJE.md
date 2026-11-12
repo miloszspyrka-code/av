@@ -19,7 +19,7 @@ Legenda:
 | Wylogowanie | ✅ | usuwa sesję z DB i cookie |
 | „Nie wylogowuj mnie” | ✅ | zapis w stanie; cookie 30 dni |
 | Profil (imię, e-mail, avatar) | ✅ | imię i avatar zapisują się w stanie; avatar Discord jest domyślny |
-| Subskrypcja (plan, data) | ✅ | z tabeli `users`; ekran wygasłej subskrypcji |
+| Subskrypcja (plan, data) | ✅ | z tabeli `users`; data pokazywana tylko, gdy jest ustawiona; ekran wygasłej subskrypcji |
 | Zmiana planu demo | ✅ | przyciski podglądu; nadpisanie serwerowe po odświeżeniu |
 | Usunięcie konta | ✅ | `DELETE /api/account` (kaskada) |
 | Eksport danych ZIP | ✅ | JSON, CSV transakcji, CSV podatków, plany, screeny, avatar |
@@ -152,14 +152,14 @@ Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłącze
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Harmonogram live'ów | ✅ | synchronizacja Discord Scheduled Events → `/api/events`; grupowanie po `Europe/Warsaw`, `DZIŚ`, wiele wydarzeń dnia |
-| Najbliższy live + countdown | ✅ | wyłącznie z realnego wydarzenia `live`; brak wydarzenia = puste pola |
+| Najbliższy live (bez countdownu) | ✅ | wyłącznie z realnego wydarzenia `live`; karta ukryta, gdy brak wydarzenia |
 | Liczba zainteresowanych | ✅ | z `user_count`, jeśli Discord je zwróci; brak = pole puste |
 | Konsultacje 1:1 | ✅ | karta „Najbliższa” z wydarzenia `consultation`; prowadzący i czas trwania tylko z danych wydarzenia |
 | Ręczne przypisanie kategorii | ✅ | admin `live` / `consultation` / `unassigned`; pierwszeństwo nad regułami |
 | Puste pola | ✅ | brak tekstów zastępczych, brak domyślnego 20:00 |
 | Błąd synchronizacji | ✅ | ostatni dobry zestaw pozostaje; UI pokazuje stan „błąd synchronizacji” |
 | Rezerwacja konsultacji | ✅ | niezależna od synchronizacji, zapis w stanie |
-| Dołącz / przypomnienie | ✅ | modal, powiadomienie przeglądarki (jeśli pozwolono) |
+| Dołącz / przypomnienie | ✅ | link do `https://discord.com/events/{guild}/{event}`; przypomnienie przeglądarki bez zmian |
 | Nagrania | 🟡 | karta i modal demo; brak playera |
 | Materiały / postęp kursu | ✅ | postęp w stanie |
 | Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
@@ -240,7 +240,7 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 | 3 zasady + punkty checklisty | ✅ | własny punkt checklisty |
 | Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
-| Odznaki | ✅ | postęp z danych |
+| Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
 | 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
 | Aplikacja na telefonie | ⚪ | instrukcja PWA; manifest nie jest jeszcze dodany |

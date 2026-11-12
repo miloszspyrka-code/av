@@ -159,13 +159,15 @@ gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry
 gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry_run=false
 ```
 
-Automatyczny deploy przy pushu do `main` jest sterowany zmienną repozytorium `DEPLOY_ENABLED`. Ustaw ją na `true` po skonfigurowaniu sekretów:
+Automatyczny deploy uruchamia się dopiero po zielonym CI (`PHP + API + UI`) na `main`: `deploy-alphavault.yml` reaguje na `workflow_run` CI, nie na sam push, i wypakowuje dokładnie ten commit, który przeszedł testy. Bramkuje go zmienna repozytorium `DEPLOY_ENABLED`. Ustaw ją na `true` po skonfigurowaniu sekretów:
 
 ```powershell
 gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/alphavault --body true
 ```
 
-Dopóki `DEPLOY_ENABLED` nie jest `true`, push do `main` nie uruchamia produkcyjnego zapisu; ręczny dry run nadal działa.
+Dopóki `DEPLOY_ENABLED` nie jest `true`, zielone CI na `main` nie uruchamia produkcyjnego zapisu; ręczny dry run nadal działa. Deploy z czerwonym lub nieuruchomionym CI na `main` nie startuje.
+
+Bramka bezpieczeństwa: deploy akceptuje wyłącznie run CI z `event=push` na `main` w tym repozytorium (`head_repository` musi być `miloszspyrka-code/av`). Runy z PR-ów i forków — także forka z gałęzią nazwaną `main` — są ignorowane.
 
 Alternatywa bez GitHub Actions (WSL2): `scripts/local-deploy.sh` — test DB, dry-run, deploy, rollback. Konfiguracja w `~/.config/alphavault/local.env` (600). Szczegóły: [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md).
 

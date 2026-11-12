@@ -16,7 +16,6 @@
 | [TESTOWANIE.md](TESTOWANIE.md) | testy API i UI, checklisty | tak |
 | [DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
 | [DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md) | produkcja, reverse proxy, backup | nie |
-| [MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md) | mapa narzędzi MCP, walidacje, OAuth, plan wdrożenia | nie |
 | [LOCAL-DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/LOCAL-DEPLOY.md) | deploy z WSL2 bez GitHub Actions | nie |
 | [CHANGELOG.md](https://github.com/miloszspyrka-code/alphavault/blob/main/CHANGELOG.md) | historia zmian | nie |
 

@@ -39,16 +39,8 @@
     AV.renderTicker();
   };
 
-  /* ---------- live / countdown ---------- */
+  /* ---------- countdown ---------- */
   AV.tickCountdowns = () => {
-    const info = AV.liveInfo();
-    if (!info.live) {
-      AV.setText('#liveCd', '');
-      $$('.liveIn').forEach((e) => e.textContent = '');
-    } else {
-      AV.setText('#liveCd', info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'));
-      $$('.liveIn').forEach((e) => e.textContent = info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'));
-    }
     const L = AV.lockInfo(AV.state);
     $$('.cdt').forEach((e) => {
       if (L.active && L.until) {
@@ -710,18 +702,6 @@
 
   /* ---------- akademia ---------- */
   AV.bindAcademy = () => {
-    $('#liveJoin')?.addEventListener('click', () => {
-      const info = AV.liveInfo();
-      if (!info.live) return;
-      const title = info.live.name || '';
-      const who = info.live.host || '';
-      if (info.liveNow) {
-        AV.openModal('<div class="eyebrow">Akademia Alpha</div><h1 style="font-size:26px;margin-top:6px">Live juĹĽ trwa</h1><p class="mut" style="margin-top:10px">' + AV.esc(title) + (who ? ' Â· ' + AV.esc(who) : '') + '</p><div style="display:flex;gap:10px;margin-top:20px"><a class="btn p" href="https://discord.com/app" target="_blank" rel="noopener">OtwĂłrz Discorda</a><button class="btn g" data-gclose>Zamknij</button></div>', { maxWidth: '480px' });
-      } else {
-        const sec = info.sec;
-        AV.openModal('<div class="eyebrow">Akademia Alpha</div><h1 style="font-size:26px;margin-top:6px">NajbliĹĽszy live</h1><p class="mut" style="margin-top:10px">' + AV.esc(title) + (who ? ' Â· ' + AV.esc(who) : '') + ' Â· ' + AV.esc(info.live.startLabel || '') + '</p><p class="mut" style="margin-top:8px">Start za ' + [sec / 3600 | 0, (sec % 3600) / 60 | 0, sec % 60].map((x) => String(x).padStart(2, '0')).join(':') + '.</p><div style="display:flex;gap:10px;margin-top:20px"><button class="btn g" data-gclose>Rozumiem</button></div>', { maxWidth: '480px' });
-      }
-    });
     $('#liveRem')?.addEventListener('click', () => {
       AV.state.meta.liveReminder = !AV.state.meta.liveReminder;
       AV.saveNow();

@@ -94,7 +94,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 23 scenariusze
+## UI — 38 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -107,18 +107,19 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - plan dnia, filtry dziennika, szczegóły transakcji,
 - kalkulator, statystyki, mentor, akademia,
 - kalendarz, check-in, profil,
+- 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,
 - przywrócenie stanu demo,
 - wylogowanie.
 
-## UI empty-state — 10 scenariuszy
+## UI empty-state — 12 scenariuszy
 
 `tests/ui-empty.e2e.mjs` przy poprawnym sync zwracającym `[]` sprawdza:
 
-- pusty tytuł, prowadzący i countdown,
+- pusty tytuł, prowadzący i ukryta karta live,
 - pustą kartę konsultacji,
 - puste pola w strip,
-- ukryty przycisk „Dołącz”,
+- ukryty link „Dołącz”,
 - 7 dni tygodnia bez wydarzeń,
 - `events.length === 0`,
 - dostępny stan synchronizacji.

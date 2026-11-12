@@ -479,7 +479,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     <button data-v="gieldy"><svg class="i"><use href="#i-link"/></svg>Giełdy i API</button>
     <button data-v="ust"><svg class="i"><use href="#i-user"/></svg>Konto i zasady</button>
   </div>
-  <div class="me"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av">K</div></label><div><b id="sideName">Kasia</b><span id="sidePlan">Alpha · do 03.12.2026</span></div><span class="out" id="logout" title="Wyloguj"><svg class="i"><use href="#i-out"/></svg></span></div>
+  <div class="me"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av">K</div></label><div><b id="sideName">Kasia</b><span id="sidePlan">Alpha + Akademia</span></div><span class="out" id="logout" title="Wyloguj"><svg class="i"><use href="#i-out"/></svg></span></div>
 </aside>
 
 <main>
@@ -493,7 +493,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <!-- ================= PULPIT ================= -->
 <section class="view on" id="pulpit">
   <div class="head"><div style="display:flex;gap:20px;align-items:center"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av" style="width:72px;height:72px;font-size:28px;box-shadow:0 0 0 4px rgba(var(--a),.15)">K</div><span class="ed"><svg class="i"><use href="#i-pen"/></svg></span></label><div><div class="eyebrow" id="today"></div><h1><span id="greet">Cześć</span>, <span class="serif">Kasia.</span></h1>
-<div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge">Day trader · <b>Krypto</b></span><span class="bdg">Trader Alpha · <b>poziom 3</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
+<div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge">Day trader · <b>Krypto</b></span><span class="bdg">Trader Alpha · <b id="levelBadge">poziom 1</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
 
   <div class="lock lkb" id="lockBar"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Tryb ochronny włączony</b><p id="lockTxt">Dwie straty dziś, limit osiągnięty. Nowe pozycje w dzienniku są zablokowane do północy.</p></div><div class="cd cdt">--:--:--</div></div>
 
@@ -512,7 +512,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     </div>
   </div>
 
-<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
+<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep" id="liveSep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
   <div class="grid sec" style="grid-template-columns:1.3fr 1fr">
     <div class="card ins alert" id="dashMentor"><div class="sech" style="margin:0"><span class="tag alert">Mentor · alarm</span><span class="link" data-go="mentor">Wszystkie uwagi <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div><h3>To wygląda na odgrywanie się</h3><p>12 min po stracie na ETH pojawiła się pozycja SOL 2,3× większa niż zwykle. Rynek nie wie o stracie.</p><div class="step"><b>Krok na dziś:</b> zamknij platformę i zapisz, co było w głowie przy ostatnim wejściu.</div></div>
     <div class="card" style="cursor:pointer" data-go="stat"><div class="sech" style="margin:0"><div class="lbl">Kapitał · 30 dni</div><span class="win mono" style="font-weight:700" id="dash30">+8,2%</span></div>
@@ -811,10 +811,9 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div id="akFull">
   <div class="head"><div><div class="eyebrow">Akademia Alpha Moves</div><h1>Twoja <span class="serif">Akademia.</span></h1><p>Live'y, konsultacje i materiały w jednym miejscu. Przypomnienia przychodzą same.</p></div><div style="display:flex;gap:10px"><span class="btn g" data-doc="ak">Czym jest Akademia?</span><a class="btn g" href="https://www.alphamoves.pl" target="_blank" rel="noopener">www.alphamoves.pl ↗</a></div></div>
   <div class="grid" style="grid-template-columns:1.3fr 1fr;align-items:start">
-<div class="card hl"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
+<div class="card hl" id="liveCard" style="display:none"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
 <h2 style="font-size:28px;margin-top:14px;letter-spacing:-.6px" id="liveTitle"></h2><div class="mut" style="margin-top:6px" id="liveWho"></div>
-<div style="display:flex;align-items:flex-end;gap:24px;margin-top:20px;flex-wrap:wrap"><div><div class="lbl">Start za</div><div class="mono" style="font-size:40px;font-weight:700;margin-top:6px" id="liveCd"></div></div>
-<div style="display:flex;gap:10px;margin-left:auto"><button class="btn p" id="liveJoin"><svg class="i"><use href="#i-play"/></svg>Dołącz</button><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div></div>
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><a class="btn p" id="liveJoin" target="_blank" rel="noopener"><svg class="i"><use href="#i-play"/></svg>Dołącz</a><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div>
     </div>
 <div class="card"><div class="sech" style="margin:0"><h2>Konsultacje 1:1</h2><span class="mono dim" style="font-size:12px" id="consultMonth"></span></div>
 <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-top:14px"><span class="mut">Wykorzystane</span><b id="consultUsed"></b></div><div class="bar"><i id="consultBar" style="width:0;background:var(--alpha)"></i></div>
@@ -916,7 +915,6 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <!-- ================= GIEŁDY ================= -->
 <section class="view" id="gieldy">
   <div class="head"><div><div class="eyebrow">Giełdy, MetaTrader i API</div><h1>Podłącz giełdę <span class="serif">lub brokera.</span></h1><p>Po podłączeniu wszystkie Twoje transakcje kopiują się do dziennika same: wejście, wyjście, wielkość, wynik i opłaty.</p></div><button class="btn g" id="syncNow"><svg class="i"><use href="#i-sync"/></svg>Synchronizuj teraz</button></div>
-  <div class="note" style="margin-bottom:16px"><svg class="i" style="color:var(--win)"><use href="#i-shield"/></svg><div><b>Klucz tylko do odczytu.</b> Alpha Vault nie może otworzyć pozycji ani wypłacić środków. Widzi wyłącznie historię. Klucz jest zaszyfrowany i nikt z Alpha Moves go nie zobaczy.</div></div>
   <div class="ex">
     <div class="card exl" style="padding:10px">
       <button class="on" data-ex="weex"><span class="lg" style="background:#1f1f1f;color:#fff;border:1px solid #444">WX</span><span>WEEX<small class="win" data-exstate="weex">● połączona</small></span></button>
@@ -935,7 +933,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div class="grid g2" style="align-items:start">
     <div class="grid">
       <div class="card hl"><div class="sech" style="margin:0"><h2>Subskrypcja Alpha Moves</h2><span class="tag praise">aktywna</span></div>
-        <div class="kv" style="margin-top:8px"><span>Plan</span><b id="planName">Akademia Alpha + Vault · 168 $ / mies.</b></div><div class="kv"><span>Ważna do</span><b id="planUntil">03.12.2026</b></div>
+        <div class="kv" style="margin-top:8px"><span>Plan</span><b id="planName">Akademia Alpha + Vault · 168 $ / mies.</b></div><div class="kv" id="planUntilRow"><span>Ważna do</span><b id="planValidUntil">03.12.2026</b></div>
         <div class="kv"><span>Discord</span><b style="display:flex;align-items:center;gap:6px;color:#aab2ff"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg><span id="planRole">kasia.trades · rola Alpha ✓</span></b></div><div class="kv"><span>Ostatnie sprawdzenie roli</span><b id="roleCheck">dziś, 08:12</b></div>
         <p class="dim" style="font-size:12.5px;line-height:1.5;margin-top:10px">Gdy bot zdejmie rolę Alpha na Discordzie, Alpha Vault wstrzyma dostęp. Dane zostają zachowane przez 90 dni.</p>
         <div style="display:flex;gap:10px;margin-top:12px"><a class="btn g sm" href="https://alphamoves.vercel.app/" target="_blank" rel="noopener">Zarządzaj subskrypcją</a><button class="btn g sm" id="simExp">Podgląd: subskrypcja wygasła</button><button class="btn g sm" id="simSolo">Podgląd: plan Alpha Vault</button></div></div>
@@ -974,23 +972,13 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <button class="btn p sm" data-qa style="margin-top:12px">Zobacz, jak to działa</button></div>
     </div>
     <div class="grid">
-      <div class="card"><div class="sech" style="margin:0"><h2>Odznaki</h2><span class="mono dim" style="font-size:12px">4 z 8 · poziom 3</span></div>
-        <div class="medals" id="medals" style="margin-top:14px">
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-plan"/></svg></div><b>Pierwszy plan dnia</b><span>08.03.2026</span></div>
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-book"/></svg></div><b>7 dni z dziennikiem</b><span>teraz: 12 dni</span></div>
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-shield"/></svg></div><b>50 × ze stop lossem</b><span>14.10.2026</span></div>
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-check"/></svg></div><b>Tydzień bez złamania zasad</b><span>01.11.2026</span></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-plan"/></svg></div><b>30 planów dnia</b><span>22 / 30</span><div class="bar"><i style="width:73%;background:var(--alpha)"></i></div></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-star"/></svg></div><b>100 transakcji A</b><span>21 / 100</span><div class="bar"><i style="width:21%;background:var(--alpha)"></i></div></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-pulse"/></svg></div><b>10 dni bez FOMO</b><span>4 / 10</span><div class="bar"><i style="width:40%;background:var(--alpha)"></i></div></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-stats"/></svg></div><b>Miesiąc na plusie bez C</b><span>w trakcie</span><div class="bar"><i style="width:15%;background:var(--alpha)"></i></div></div>
-        </div></div>
+      <div class="card"><div class="sech" style="margin:0"><h2>Odznaki</h2><span class="mono dim" style="font-size:12px" id="badgeSummary">0 z 8 · poziom 1</span></div>
+        <div class="medals" id="medals" style="margin-top:14px"></div></div>
       <div class="card"><div class="sech" style="margin:0"><h2>Wyłącznik bezpieczeństwa</h2><div class="toggle on" data-setting="safetyEnabled"></div></div><p class="mut" style="font-size:13.5px;margin-top:6px;line-height:1.5">Po osiągnięciu limitu dziennik przechodzi w tryb ochronny.</p>
         <div class="grid g2"><div><span class="label">Włącz po stratach</span><input class="input mono" id="maxLosses" value="2"></div><div><span class="label">albo po stracie dziennej</span><input class="input mono" id="maxDailyLoss" value="3%"></div></div>
         <span class="label">Blokada trwa</span><div class="chips sel" id="blockChips"><span class="chip on" data-block="midnight">do północy</span><span class="chip" data-block="4h">4 godziny</span><span class="chip" data-block="1h">1 godzinę</span></div>
         <div class="row" style="margin-top:8px"><div><b>Obejście wymaga powodu</b><span>mentor widzi każde obejście</span></div><div class="toggle on" data-setting="requireReason"></div></div>
-        <div class="row"><div><b>Push na telefon</b><span>„Limit osiągnięty, zamknij platformę”</span></div><div class="toggle on" data-setting="pushLimit"></div></div>
-        <div class="note r" style="margin-top:10px"><svg class="i"><use href="#i-lock"/></svg><div>Klucz API jest tylko do odczytu, więc Alpha Vault nie zablokuje samej giełdy. Blokuje dziennik, wysyła powiadomienie i zapisuje każde obejście.</div></div></div>
+        <div class="row"><div><b>Push na telefon</b><span>„Limit osiągnięty, zamknij platformę”</span></div><div class="toggle on" data-setting="pushLimit"></div></div></div>
       <div class="card"><h2>Twoje zasady</h2>
         <div class="grid g2"><div><span class="label">Kapitał łączny (z kont)</span><input class="input mono" id="totalCapital" value="2 412,80 USDT" readonly></div><div><span class="label">Max ryzyko na trade</span><input class="input mono" id="maxRisk" value="1%"></div></div>
         <span class="label">3 zasady, których nie łamiesz</span>

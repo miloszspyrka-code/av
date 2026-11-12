@@ -177,7 +177,7 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 
 ```powershell
 npm test                 # API 20/20
-npm run test:ui          # UI 23/23 (Chrome/Edge)
+npm run test:ui          # UI 38/38 (Chrome/Edge)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
 npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
@@ -286,25 +286,25 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | API 20/20, UI 23/23, empty 10/10, events 24/24 |
+| Testy lokalne | API 20/20, UI 38/38, empty 12/12, events 24/24 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (10), login OK |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
 | CI gate | `PHP + API + UI` wymagany; PR + branch protection na `main` |
-| Auto-deploy | merge/push do `main` przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
+| Auto-deploy | po zielonym CI na `main` (`workflow_run` CI → `deploy-alphavault.yml`) przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
 | Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
-| OAuth w przeglądarce | **nieprzetestowany interaktywnie** |
+| OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
 
 **Pozostałe czynności:**
 
-1. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
+1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 

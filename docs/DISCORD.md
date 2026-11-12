@@ -90,6 +90,8 @@ Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json
 
 Automatyczne testy nie symulują logowania Discord. Wymagają interaktywnego udziału użytkownika.
 
+**Stan 2026-11-12:** potwierdzone na produkcji — konto z rolą Alpha dostało sesję (`login.discord`), konto bez roli dostało 403 (`login.denied`, powód: brak roli Alpha). Pozostaje test konta spoza serwera.
+
 ## 7. Typowe błędy
 
 | Objaw | Przyczyna | Rozwiązanie |
@@ -101,3 +103,14 @@ Automatyczne testy nie symulują logowania Discord. Wymagają interaktywnego udz
 | 403 „Weryfikacja roli nie jest skonfigurowana” | brak Guild ID / Role ID | ustaw sekrety |
 | 400 „Sesja logowania wygasła” | >10 min lub zły state | odśwież stronę |
 | brak cookie | inny origin/HTTPS | `APP_URL` musi być `https://alphavault.pl` |
+
+
+## 8. Linki wydarzeń
+
+Każde wydarzenie zwracane przez `/api/events` ma pole `url` w formacie:
+
+```
+https://discord.com/events/{guild_id}/{event_id}
+```
+
+`url` powstaje wyłącznie z numerycznych identyfikatorów Snowflake. Przycisk `Dołącz` w Akademii jest linkiem `<a target="_blank" rel="noopener">` do tego adresu — nie otwiera modala ani `discord.com/app`. Gdy wydarzenia brak, karta live i link są ukryte.

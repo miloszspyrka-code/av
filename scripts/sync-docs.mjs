@@ -35,7 +35,6 @@ const REPO_ONLY = new Set([
   'docs/AGENTS.md',
   'docs/DEPLOY.md',
   'docs/DISCORD.md',
-  'docs/MCP.md',
   'docs/LOCAL-DEPLOY.md'
 ]);
 
