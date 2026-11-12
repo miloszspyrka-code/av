@@ -634,7 +634,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
-| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy | 23/23 PASS |
+| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy, 8 odznak | 35/35 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
