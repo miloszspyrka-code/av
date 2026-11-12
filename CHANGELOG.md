@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.1.1 — 2026-11-12
+
+### Produkcja / CI-CD
+- `main` chroniony: wymagany PR i check `PHP + API + UI`, linear history, `enforce_admins`, bez force push/delete; merge commit wyłączony.
+- `DEPLOY_ENABLED=true`; merge/push do `main` auto-deployuje. Environment `alphavault-production` dopuszcza tylko `main`.
+- Repo publiczne `miloszspyrka-code/av`; secret scanning, push protection i Dependabot security updates.
+- LH Cron potwierdzony: `*/5 * * * *`, log `18:10:02`; wrapper `.app/cron/sync-discord-events.sh`.
+- Deploy health: `/api/health` wszystkie flagi `true`, `/docs/` 200, `.app` i `config.json` → 403.
+
 ## 3.1.0 — 2026-11-12
 
 ### Dodane

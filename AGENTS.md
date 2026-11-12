@@ -2,7 +2,7 @@
 
 > **Agent:** AV-engineer
 > **Produkt:** Alpha Vault / Alpha Moves
-> **Repozytorium:** `miloszspyrka-code/alphavault`
+> **Repozytorium:** `miloszspyrka-code/av` (publiczne)
 > **Produkcja:** <https://alphavault.pl>
 > **Wersja kontraktu:** 3.1 · 2026-11-12
 
@@ -141,10 +141,11 @@ MySQL: serwer445119_alphavault
 | Klucz | ED25519, `LH_SSH_PRIVATE_KEY` / lokalny plik poza repo |
 | Docroot | `~/public_html/alphavault.pl` |
 | App | `~/public_html/alphavault.pl/.app` |
-| DB host/port | `localhost:3306` |
+| DB host/port | `main195.lh.pl:3306` (panel LH); `localhost` też działa z procesów na serwerze |
 | DB name/user | `serwer445119_alphavault` |
 | PHP CLI | `/usr/bin/php` (8.3) |
-| Cron | `*/5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
+| Cron (panel LH) | `*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh` |
+| Cron (ręcznie) | `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
 | Log sync | `~/public_html/alphavault.pl/.app/logs/discord-sync.log` |
 
 `open_basedir` LH nie pozwala PHP czytać katalogu poza docrootem; dlatego kod i `config.json` są w `~/public_html/alphavault.pl/.app`, zablokowanym przez `.htaccess` (`Require all denied` + `^\.app`). Nie zmieniaj tej ścieżki bez testu health checku.
@@ -187,8 +188,8 @@ UI wymaga uruchomionego serwera PHP i `APP_URL`. Empty-state wymaga serwera z `D
 ### Deploy
 
 ```powershell
-gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/alphavault --body true
-gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry_run=false
+gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/av --body true
+gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f dry_run=false
 ```
 
 Alternatywa bez Actions (WSL2):
@@ -268,7 +269,7 @@ npm run test:docs
 | CRLF w skryptach | `.gitattributes` wymusza LF; po edycji sprawdź `bash -n` i shellcheck |
 | `node -e` z cudzysłowami w PowerShell | pisz skrypt `.cjs` zamiast jednolinijkowca |
 | PHP nie w PATH | `C:\Users\milos\.local\php83\php.exe` |
-| GitHub Actions billing | job nie startuje; sprawdź Billing; alternatywnie `local-deploy.sh` |
+| GitHub Actions billing | repo jest publiczne — standard runners są darmowe; powrót do private wymaga naprawy Billing |
 | DB na LH bez tabel | uruchom `php app/db/migrate.php` po deployu |
 | Discord 401/403 | token lub uprawnienia bota; nie retryuj w pętli |
 | Discord 429 | `Retry-After`, maks. 3 próby |
@@ -286,8 +287,11 @@ npm run test:docs
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (10), login OK |
 | `https://alphavault.pl` | **200** — wdrożona |
-| GitHub Actions | działa |
+| GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
+| CI gate | `PHP + API + UI` wymagany; PR + branch protection na `main` |
+| Auto-deploy | merge/push do `main` przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
+| Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
@@ -298,7 +302,7 @@ npm run test:docs
 
 1. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
-3. Zaktualizuj §10 i [PRD.md §11](PRD.md#11-status-wdrożenia-2026-11-12).
+3. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego
 

@@ -242,7 +242,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 
 | Ryzyko | Wpływ | Mitygacja |
 | --- | --- | --- |
-| Ryzyko blokady billingu GitHub Actions | brak deployu i CI | monitoruj Billing; alternatywnie `local-deploy.sh` |
+| Ryzyko blokady billingu GitHub Actions | brak deployu i CI | repo publiczne — standard runners free; monitoruj Billing; alternatywnie `local-deploy.sh` |
 | Brak danych Discord w środowisku lokalnym | nie da się testować OAuth lokalnie | sekrety w GitHub / `local.env` poza repo |
 | LH Cron zatrzymany | brak automatycznej synchronizacji | monitoring logów i `stale=true` |
 | Stage nie wystąpił w realnym API | brak potwierdzenia Stage | fixture + oznaczenie „niezweryfikowany” |
@@ -260,7 +260,11 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | API / UI / empty-state | PASS |
 | Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
 | Deploy na `alphavault.pl` | **200** — wdrożony |
-| GitHub Actions | działa |
+| App path | `~/public_html/alphavault.pl/.app` (open_basedir, deny) |
+| GitHub Actions | działa (repo publiczne, standard runners free) |
+| CI gate / branch protection | `PHP + API + UI` wymagany; PR, linear history, admins enforced |
+| Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
+| Auto-deploy | merge do `main` przy `DEPLOY_ENABLED=true`; env tylko z `main` |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | LH Cron | **działa** — co 5 min, logi 18:05:05 i 18:10:02 |
