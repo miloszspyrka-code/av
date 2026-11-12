@@ -103,7 +103,7 @@ Publiczny. Sprawdza MySQL i konfigurację.
 {
   "ok": true,
   "service": "alpha-vault",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "db": { "ok": true, "version": "11.8.6-MariaDB", "latencyMs": 1 },
   "uptime": 123,
   "now": "2026-11-12T14:30:00Z",
