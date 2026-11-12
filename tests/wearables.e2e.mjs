@@ -327,7 +327,7 @@ async function main() {
   log('wygasły state = 400', true);
 
   const pkceFlow = await startFlow('oura');
-  const badCodeCallback = pkceFlow.callback.replace(/code=[^&]+/, 'code=fake-code-oura-WRONGCHALLENGEVALUE');
+  const badCodeCallback = pkceFlow.callback.replace(/code=[^&]+/, 'code=fake-code-oura-WRONGCHALLENGEVALUE1234567890');
   const pkceFailure = await req(badCodeCallback);
   assert.equal(pkceFailure.res.status, 502);
   log('PKCE: błędny code_verifier = 502', true);

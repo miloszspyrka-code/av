@@ -505,5 +505,8 @@ Symbole: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
 | `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja Whoop |
 | `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja Garmin Health API |
 | `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | endpointy przydzielone przez Garmin po zatwierdzeniu partnera |
+| `GARMIN_REVOKE_URL` | endpoint wyrejestrowania Garmin |
+| `GARMIN_ACCESS_PLAN`, `GARMIN_DATA_DELIVERY`, `GARMIN_PUSH_READY` | plan dostępu i tryb dostarczania danych Garmin |
+| `WEARABLES_ENCRYPTION_KEY_PREVIOUS` | poprzedni klucz AES dla rotacji tokenów urządzeń |
 | `OURA_AUTHORIZE_URL`, `OURA_TOKEN_URL`, `OURA_API_BASE` | opcjonalne nadpisania endpointów Oura |
 | `WHOOP_AUTHORIZE_URL`, `WHOOP_TOKEN_URL`, `WHOOP_API_BASE` | opcjonalne nadpisania endpointów Whoop |
