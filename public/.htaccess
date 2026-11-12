@@ -7,8 +7,10 @@ RewriteEngine On
 RewriteRule ^\.app(/|$) - [F,L]
 
 # Istniejące pliki i katalogi obsługuje Apache.
+# Wyjątek: /docs/ ma być obsłużone przez front controller (indeks dokumentacji).
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_URI} !^/docs/?$
 RewriteRule ^ - [L]
 
 # Wszystko inne trafia do front controllera.
