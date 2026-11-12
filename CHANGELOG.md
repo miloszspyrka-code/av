@@ -13,7 +13,7 @@
 
 ### Testy
 - `npm run test:wearables`: 42/42 PASS (PKCE, state, rotacja tokenów i klucza, błędy 401/429/JSON, izolacja użytkowników, Garmin push pending, UI).
-- `tests/wearables-config.test.php`: 4/4 PASS (brak fallbacku klucza, start OAuth 503).
+- `tests/wearables-config.test.php`: 6/6 PASS (brak fallbacku klucza, start OAuth 503, blokada Garmina bez planu).
 
 ## 3.6.0 - 2026-11-12
 

@@ -231,7 +231,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
 | Odłączenie urządzenia | ✅ | wycofuje dostęp u dostawcy (jeśli API to wspiera), usuwa tokeny i metryki z bazy |
 
-Pełny E2E: `npm run test:wearables` (42 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych) oraz `tests/wearables-config.test.php` (4/4, brak fallbacku klucza).
+Pełny E2E: `npm run test:wearables` (42 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych) oraz `tests/wearables-config.test.php` (6/6, brak fallbacku klucza i blokada Garmina bez planu).
 
 ---
 
