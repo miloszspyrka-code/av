@@ -48,7 +48,16 @@
     return patch === undefined ? base : patch;
   };
 
-  AV.normalize = (raw, fallback) => {
+  AV.TAX_VERSION = 2;
+  AV.normalizeTax = (raw, opts = {}) => {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const year = Number(src.year) >= 2000 ? Math.trunc(Number(src.year)) : new Date().getFullYear();
+    let carryLoss = Math.max(0, Number(src.carryLoss) || 0);
+    if (opts.migrateDemoSeed && carryLoss === 380) carryLoss = 0;
+    return { version: AV.TAX_VERSION, carryLoss, year };
+  };
+
+  AV.normalize = (raw, fallback, taxOpts) => {
     const demo = fallback || AV.buildDemo();
     const s = deepMerge(demo, raw || {});
     ['plans', 'trades', 'setups', 'accounts', 'flows', 'checkins', 'chat', 'overrides'].forEach((k) => {
@@ -60,10 +69,14 @@
     s.prop.challenges = s.prop.challenges
       .filter((c) => c && typeof c === 'object')
       .map((c) => (AV.prop ? AV.prop.normalize(c) : c));
+    s.tax = AV.normalizeTax(s.tax, taxOpts);
     s.version = 2;
     return s;
   };
-  AV.normalizeServer = (raw) => AV.normalize(raw, AV.buildEmpty());
+  AV.normalizeServer = (raw, opts = {}) => {
+    const legacyTax = Number(raw?.tax?.version || 0) < AV.TAX_VERSION;
+    return AV.normalize(raw, AV.buildEmpty(), { migrateDemoSeed: !opts.isDemo && legacyTax });
+  };
 
   AV.load = () => {
     const raw = AV.safeGet(AV.KEY);
@@ -88,6 +101,7 @@
     s.chat = [];
     s.flows = [];
     s.overrides = [];
+    s.tax = { version: AV.TAX_VERSION, carryLoss: 0, year: new Date().getFullYear() };
     s.accounts = [{
       id: 'acc1', name: 'Konto główne', exchange: 'WEEX', type: 'Futures', currency: 'USDT',
       start: 0, date: AV.dateLabel(new Date()), lev: '10×', goal: '', balance: 0, include: true, primary: true
@@ -179,11 +193,12 @@
       if (!stRes.ok) throw new Error('state HTTP ' + stRes.status);
       const payload = await stRes.json();
       const hadState = !!payload.state;
+      const taxMigrated = hadState && Number(payload.state?.tax?.version || 0) < AV.TAX_VERSION;
       if (hadState) {
-        AV.state = AV.normalizeServer(payload.state);
+        AV.state = AV.normalizeServer(payload.state, { isDemo: !!me.user?.isDemo });
         AV.api.revision = payload.revision || 1;
       } else {
-        AV.state = AV.normalizeServer(me.user?.isDemo ? AV.buildDemo() : AV.buildEmpty());
+        AV.state = AV.normalizeServer(me.user?.isDemo ? AV.buildDemo() : AV.buildEmpty(), { isDemo: !!me.user?.isDemo });
         AV.api.revision = 0;
       }
       AV.applyServerUser(me.user);
@@ -192,7 +207,7 @@
       await AV.loadMacroEvents();
       await AV.loadWearables();
       AV.api.ready = true;
-      if (!hadState || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
+      if (!hadState || taxMigrated || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
         await AV.pushStateImmediate();
       }
       return { authenticated: true, me };
@@ -344,7 +359,7 @@
         if (latest.ok) {
           const payload = await latest.json();
           if (payload.state) {
-            AV.state = AV.normalizeServer(payload.state);
+            AV.state = AV.normalizeServer(payload.state, { isDemo: !!AV.api.me?.isDemo });
             AV.applyServerUser(AV.api.me);
             AV.api.revision = payload.revision;
             AV.saveNow();
@@ -447,7 +462,7 @@
     if (!res.ok) return false;
     const payload = await res.json();
     if (!payload.state) return false;
-    AV.state = AV.normalizeServer(payload.state);
+    AV.state = AV.normalizeServer(payload.state, { isDemo: !!AV.api.me?.isDemo });
     AV.api.revision = payload.revision || 1;
     try { AV.safeSet(AV.KEY, JSON.stringify(AV.state)); } catch {}
     if (AV.renderAll) AV.renderAll();
@@ -793,23 +808,45 @@
   };
 
   /* ---------- podatki ---------- */
+  AV.taxYear = (state) => {
+    const y = Number(state.tax && state.tax.year);
+    return y >= 2000 ? Math.trunc(y) : new Date().getFullYear();
+  };
+  AV.isForexTrade = (trade, state) => {
+    const acc = (state.accounts || []).find((a) => a.id === trade.account || a.name === trade.account) || {};
+    const key = [trade.source, trade.account, acc.exchange, acc.type, acc.name].filter(Boolean).join(' ');
+    return /(^|[^a-z0-9])(mt4|mt5|metatrader)/i.test(key);
+  };
   AV.taxEvents = (state) => {
-    return (state.flows || []).map((f) => {
-      const pln = Number(f.fiat) * (Number(f.fx) || 1);
-      return {
-        id: f.id, date: f.date, op: (f.type === 'Wpłata' ? 'Zakup USDT za ' : 'Sprzedaż USDT za ') + (f.currency === 'PLN' ? 'PLN' : f.currency) + (f.op && f.op.includes('P2P') ? ' (P2P)' : ''),
-        kind: f.tax, currency: f.currency, amount: Number(f.fiat), fx: Number(f.fx) || 1, pln
-      };
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const year = AV.taxYear(state);
+    return (state.flows || [])
+      .filter((f) => !f.date || String(f.date).slice(0, 4) === String(year))
+      .map((f) => {
+        const fx = Number(f.fx) || 1;
+        const kind = f.tax === 'income' || f.tax === 'cost' ? f.tax : (f.type === 'Wpłata' ? 'cost' : 'income');
+        return {
+          id: f.id, date: f.date,
+          op: (f.type === 'Wpłata' ? 'Zakup USDT za ' : 'Sprzedaż USDT za ') + (f.currency || 'PLN') + (f.op && f.op.includes('P2P') ? ' (P2P)' : ''),
+          kind, currency: f.currency || 'PLN', amount: Number(f.fiat) || 0, fx,
+          pln: Math.round((Number(f.fiat) || 0) * fx * 100) / 100
+        };
+      })
+      .filter((e) => e.kind === 'income' || e.kind === 'cost')
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
   };
   AV.taxData = (state) => {
+    const year = AV.taxYear(state);
     const ev = AV.taxEvents(state);
-    const revenue = ev.filter((e) => e.kind === 'income').reduce((s, e) => s + e.pln, 0);
-    const costs = ev.filter((e) => e.kind === 'cost').reduce((s, e) => s + e.pln, 0);
-    const carry = Number(state.tax.carryLoss) || 0;
-    const income = Math.max(0, revenue - costs - carry);
-    const due = income * 0.19;
-    return { ev, revenue, costs, carry, income, due };
+    const sum = (kind) => Math.round(ev.filter((e) => e.kind === kind).reduce((s, e) => s + e.pln, 0) * 100) / 100;
+    const revenue = sum('income');
+    const costs = sum('cost');
+    const carry = Math.max(0, Number(state.tax && state.tax.carryLoss) || 0);
+    const income = Math.max(0, Math.round((revenue - costs - carry) * 100) / 100);
+    const due = Math.round(income * 0.19 * 100) / 100;
+    const carryForward = Math.max(0, Math.round((costs + carry - revenue) * 100) / 100);
+    const trades = (state.trades || []).filter((t) => String(t.date || '').slice(0, 4) === String(year));
+    const forex = trades.filter((t) => AV.isForexTrade(t, state)).length;
+    return { year, ev, revenue, costs, carry, income, due, carryForward, neutral: trades.length - forex, forex, trades: trades.length };
   };
 
   /* ---------- mentor ---------- */

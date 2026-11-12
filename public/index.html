@@ -869,20 +869,20 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= PODATKI ================= -->
 <section class="view" id="tax">
-  <div class="head"><div><div class="eyebrow" id="taxYearEyebrow">Podatki · rok 2026</div><h1>Zestawienie do <span class="serif">PIT-38.</span></h1><p>Alpha Vault zbiera z całego roku tylko to, co liczy się do podatku. Termin złożenia PIT-38 za 2026: <b style="color:var(--cream)">30 kwietnia 2027</b>.</p></div><div style="display:flex;gap:10px"><button class="btn g" id="taxCsv">Eksport CSV</button><button class="btn p" id="taxPdf"><svg class="i"><use href="#i-file"/></svg>PDF dla księgowej</button></div></div>
+  <div class="head"><div><div class="eyebrow" id="taxYearEyebrow">Podatki · rok 2026</div><h1>Zestawienie do <span class="serif">PIT-38.</span></h1><p>Alpha Vault zbiera z całego roku tylko to, co liczy się do podatku. Termin złożenia PIT-38 za <span id="taxYear">2026</span>: <b style="color:var(--cream)" id="taxDeadline">30 kwietnia 2027</b>.</p></div><div style="display:flex;gap:10px"><button class="btn g" id="taxCsv">Eksport CSV</button><button class="btn p" id="taxPdf"><svg class="i"><use href="#i-file"/></svg>PDF dla księgowej</button></div></div>
   <div class="note" style="margin-bottom:16px"><svg class="i" style="color:var(--win)"><use href="#i-check"/></svg><div><b>Wymiana krypto na krypto jest neutralna podatkowo.</b> Zyski i straty z transakcji w USDT na giełdzie nie wchodzą do PIT-38, dopóki nie wymienisz krypto na złotówki, euro, dolary albo nie zapłacisz nim za towar czy usługę.</div></div>
   <div class="grid g4">
-    <div class="card"><div class="lbl">Przychód</div><div class="val win" id="taxRevenue">7 420,74 zł</div><div class="hint">sprzedaż krypto za PLN i EUR</div></div>
-    <div class="card"><div class="lbl">Koszty 2026</div><div class="val" id="taxCosts">4 980,00 zł</div><div class="hint">zakup krypto i prowizje</div></div>
-    <div class="card"><div class="lbl">Nadwyżka kosztów z 2025</div><div class="val" id="taxLoss">380,00 zł</div><div class="hint">przeniesiona z zeznania za 2025</div></div>
-    <div class="card hl"><div class="lbl">Podatek 19%</div><div class="val al" id="taxDue">≈ 392 zł</div><div class="hint" id="taxDueHint">od dochodu 2 060,74 zł</div></div>
+    <div class="card"><div class="lbl">Przychód</div><div class="val win" id="taxRevenue">0,00 zł</div><div class="hint">sprzedaż krypto za PLN i EUR</div></div>
+    <div class="card"><div class="lbl">Koszty <span id="taxCostsYear">2026</span></div><div class="val" id="taxCosts">0,00 zł</div><div class="hint">zakup krypto i prowizje</div></div>
+    <div class="card"><div class="lbl">Nadwyżka kosztów z <span id="taxLossYear">2025</span> <button type="button" class="link" id="taxLossEdit" style="background:none;border:0;padding:0;font:inherit;margin-left:6px">zmień</button></div><div class="val" id="taxLoss">0,00 zł</div><div class="hint" id="taxLossHint">przeniesiona z zeznania za 2025</div></div>
+    <div class="card hl"><div class="lbl">Podatek 19%</div><div class="val al" id="taxDue">≈ 0 zł</div><div class="hint" id="taxDueHint">od dochodu 0,00 zł</div></div>
   </div>
   <div class="card sec" style="padding:0;overflow-x:auto"><div style="padding:20px 22px 6px" class="sech"><h2>Zdarzenia podatkowe</h2><span class="mono dim" style="font-size:12px">waluty obce wg kursu NBP z dnia roboczego przed transakcją</span></div>
     <table class="taxt"><thead><tr><th>Data</th><th>Operacja</th><th>Rodzaj</th><th>Waluta</th><th style="text-align:right">Kwota</th><th style="text-align:right">Kurs NBP</th><th style="text-align:right">W PLN</th></tr></thead><tbody id="taxBody"></tbody></table></div>
   <div class="grid sec g3">
-    <div class="card"><h3>Neutralne podatkowo</h3><div class="val" style="font-size:24px" id="taxNeutral">47 transakcji</div><div class="hint">futures w USDT i wymiany krypto–krypto. Są w dzienniku, ale nie w PIT-38.</div></div>
-    <div class="card"><h3>Forex i CFD (MT5)</h3><div class="val" style="font-size:24px" id="taxForex">brak w 2026</div><div class="hint">instrumenty pochodne rozlicza się w PIT-38 osobno, w części o innych przychodach kapitałowych.</div></div>
-    <div class="card"><h3>Do przeniesienia na 2027</h3><div class="val" style="font-size:24px" id="taxCarry">0,00 zł</div><div class="hint">nadwyżka kosztów przechodzi na kolejny rok, gdy koszty są wyższe niż przychód.</div></div>
+    <div class="card"><h3>Neutralne podatkowo</h3><div class="val" style="font-size:24px" id="taxNeutral">0 transakcji</div><div class="hint">futures w USDT i wymiany krypto–krypto. Są w dzienniku, ale nie w PIT-38.</div></div>
+    <div class="card"><h3>Forex i CFD (MT5)</h3><div class="val" style="font-size:24px" id="taxForex">0 transakcji</div><div class="hint">instrumenty pochodne rozlicza się w PIT-38 osobno, w części o innych przychodach kapitałowych.</div></div>
+    <div class="card"><h3>Do przeniesienia na <span id="taxCarryYear">2027</span></h3><div class="val" style="font-size:24px" id="taxCarry">0,00 zł</div><div class="hint">nadwyżka kosztów przechodzi na kolejny rok, gdy koszty są wyższe niż przychód.</div></div>
   </div>
   <div class="note r sec"><svg class="i"><use href="#i-file"/></svg><div>Zestawienie pomocnicze, nie porada podatkowa. Kwalifikacja kontraktów futures rozliczanych w USDT bywa interpretowana różnie, więc przed złożeniem PIT-38 pokaż zestawienie księgowej albo doradcy.</div></div>
 </section>
