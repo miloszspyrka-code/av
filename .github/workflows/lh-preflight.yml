@@ -1,0 +1,134 @@
+name: LH preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Discover LH.pl and database layout
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Validate required secrets
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in LH_SSH_HOST LH_SSH_USER LH_SSH_PASSWORD DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing repository secret: ${name}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Add the missing secrets in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "All required secrets are present."
+
+      - name: Install SSH and MySQL clients
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass default-mysql-client
+
+      - name: SSH, WordPress and DB preflight
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          DB_PORT="${DB_PORT:-3306}"
+
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
+          chmod 600 "$HOME/.ssh/known_hosts"
+          echo "Host key fingerprints (verify with LH.pl):"
+          ssh-keygen -lf "$HOME/.ssh/known_hosts"
+
+          export SSHPASS="$LH_SSH_PASSWORD"
+          SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=15)
+
+          echo "=== SSH identity ==="
+          sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -u
+          echo "SSH_USER=$(whoami)"
+          echo "SSH_HOST=$(hostname)"
+          echo "SSH_HOME=$HOME"
+          echo "RSYNC=$(command -v rsync 2>/dev/null || echo missing)"
+          echo "TAR=$(command -v tar 2>/dev/null || echo missing)"
+          echo "PHP=$(php -v 2>/dev/null | sed -n '1p' || echo missing)"
+          echo "MYSQL_CLIENT=$(command -v mysql 2>/dev/null || echo missing)"
+          echo "WP_CLI=$(command -v wp 2>/dev/null || echo missing)"
+          echo "--- home directories (maxdepth 2) ---"
+          find "$HOME" -maxdepth 2 -type d -print 2>/dev/null | sed -n '1,80p'
+          echo "--- wp-config.php candidates (maxdepth 4) ---"
+          found=0
+          while IFS= read -r cfg; do
+            found=1
+            dir=$(dirname "$cfg")
+            echo "WP_CONFIG=$cfg"
+            echo "WP_PATH=$dir"
+            if command -v php >/dev/null 2>&1; then
+              php -r '
+                $file=$argv[1];
+                $s=file_get_contents($file);
+                if ($s === false) { echo "WP_DB=UNREADABLE\n"; exit; }
+                $v=[];
+                foreach (["DB_NAME","DB_USER","DB_PASSWORD","DB_HOST"] as $k) {
+                  if (preg_match("/define\s*\(\s*[\x27\"]".$k."[\x27\"]\s*,\s*[\x27\"](.*?)[\x27\"]\s*\)/", $s, $m)) { $v[$k]=$m[1]; }
+                }
+                if (preg_match("/\\\$table_prefix\s*=\s*[\x27\"]([^\x27\"]+)/", $s, $m)) { echo "WP_TABLE_PREFIX=".$m[1]."\n"; }
+                if (count($v) < 4) { echo "WP_DB=UNREADABLE_CONSTANTS\n"; exit; }
+                mysqli_report(MYSQLI_REPORT_OFF);
+                $c=@new mysqli($v["DB_HOST"],$v["DB_USER"],$v["DB_PASSWORD"],$v["DB_NAME"]);
+                if ($c->connect_error) { echo "WP_DB=FAIL: ".$c->connect_error."\n"; }
+                else { echo "WP_DB=OK server=".$c->server_info."\n"; }
+              ' "$cfg" || echo "WP_DB=PHP_ERROR"
+            else
+              echo "WP_DB=PHP_MISSING"
+            fi
+            if command -v wp >/dev/null 2>&1; then
+              echo "WP_VERSION=$(wp --path="$dir" core version 2>/dev/null || echo unknown)"
+              echo "WP_SITEURL=$(wp --path="$dir" option get siteurl 2>/dev/null || echo unknown)"
+            fi
+          done < <(find "$HOME" -maxdepth 4 -name wp-config.php -print 2>/dev/null)
+          if [ "$found" -eq 0 ]; then echo "WP_CONFIG=none"; fi
+          REMOTE
+
+          echo "=== DB secrets test through SSH tunnel ==="
+          sshpass -e ssh -N "${SSH_OPTS[@]}" -L "13306:${DB_HOST}:${DB_PORT}" "$LH_SSH_USER@$LH_SSH_HOST" &
+          TUNNEL_PID=$!
+          trap 'kill "$TUNNEL_PID" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 20); do
+            if (echo > /dev/tcp/127.0.0.1/13306) 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if MYSQL_PWD="$DB_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --port=13306 --user="$DB_USER" "$DB_NAME" -e "SELECT VERSION() AS version; SHOW TABLES;"; then
+            echo "DB_SECRETS=OK"
+          else
+            echo "DB_SECRETS=FAIL"
+          fi
+          kill "$TUNNEL_PID" 2>/dev/null || true
+          wait "$TUNNEL_PID" 2>/dev/null || true
