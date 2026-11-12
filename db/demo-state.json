@@ -2222,5 +2222,76 @@
       }
     ],
     "createdAt": 1794493654375
+  },
+  "prop": {
+    "selectedId": "prop_demo_ftmo",
+    "challenges": [
+      {
+        "id": "prop_demo_ftmo",
+        "name": "FTMO 10K · Phase 1",
+        "firm": "FTMO",
+        "templateId": "ftmo-2step",
+        "phase": "Phase 1",
+        "account": "WEEX",
+        "currency": "USD",
+        "accountSize": 10000,
+        "startBalance": 10000,
+        "targetPct": 10,
+        "dailyLossPct": 5,
+        "maxLossPct": 10,
+        "drawdownType": "static",
+        "dailyBasis": "initial",
+        "minDays": 4,
+        "startDate": "2026-08-14",
+        "endDate": "2027-03-31",
+        "notes": "Demo: 10 000 USD, cel 10%, dzienny 5%, max 10%.",
+        "archived": false,
+        "createdAt": "2026-11-12T08:00:00.000Z"
+      },
+      {
+        "id": "prop_demo_fundednext",
+        "name": "FundedNext 2,5K · Phase 1",
+        "firm": "FundedNext",
+        "templateId": "fundednext-stellar",
+        "phase": "Phase 1",
+        "account": "WEEX",
+        "currency": "USD",
+        "accountSize": 2500,
+        "startBalance": 2500,
+        "targetPct": 8,
+        "dailyLossPct": 4,
+        "maxLossPct": 10,
+        "drawdownType": "static",
+        "dailyBasis": "initial",
+        "minDays": 5,
+        "startDate": "2026-10-31",
+        "endDate": "2027-01-31",
+        "notes": "Demo: blisko dziennego limitu — pokazuje alarm.",
+        "archived": false,
+        "createdAt": "2026-11-12T08:00:00.000Z"
+      },
+      {
+        "id": "prop_demo_passed",
+        "name": "FundedNext 4K · zaliczony",
+        "firm": "FundedNext",
+        "templateId": "fundednext-stellar",
+        "phase": "Phase 1",
+        "account": "WEEX",
+        "currency": "USD",
+        "accountSize": 4000,
+        "startBalance": 4000,
+        "targetPct": 6,
+        "dailyLossPct": 0,
+        "maxLossPct": 10,
+        "drawdownType": "static",
+        "dailyBasis": "initial",
+        "minDays": 4,
+        "startDate": "2026-08-14",
+        "endDate": "",
+        "notes": "Demo: cel osiągnięty, brak limitu czasu.",
+        "archived": false,
+        "createdAt": "2026-11-12T08:00:00.000Z"
+      }
+    ]
   }
 }

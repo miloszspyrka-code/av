@@ -16,6 +16,7 @@
     try { history.replaceState(null, '', '#/' + v); } catch {}
     if (v === 'trans') AV.renderJournal();
     if (v === 'stat') AV.renderStats();
+    if (v === 'prop' && AV.renderProp) AV.renderProp();
     if (v === 'plan') { AV.renderPlan(); }
     if (v === 'ust') AV.renderSettings();
     if (v === 'kal') AV.renderCalendar();
@@ -1212,16 +1213,17 @@
     AV.bindMisc(); AV.bindPlan(); AV.bindJournal(); AV.bindPlaybook(); AV.bindNewTrade();
     AV.bindCalc(); AV.bindMentor(); AV.bindAcademy(); AV.bindTax(); AV.bindCalendar();
     AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats();
+    if (AV.bindProp) AV.bindProp();
     AV.renderTicker(); AV.tickCountdowns();
     AV.updateEnvBadge();
     setInterval(AV.tickCountdowns, 1000);
     setInterval(AV.tickTicker, 12000);
-    setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); } }, 60000);
+    setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); if (AV.propNotify) AV.propNotify(); } }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && AV.isLoggedIn()) AV.loadEvents();
     });
-    setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); }, 4000);
+    setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); if (AV.propNotify) AV.propNotify(); }, 4000);
     AV.showView(AV.viewFromHash());
     if (AV.state.subscription.expired) AV.renderExpired();
     AV.ready = true;

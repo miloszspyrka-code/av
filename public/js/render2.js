@@ -747,6 +747,8 @@
     AV.renderUser();
     AV.renderLock();
     AV.renderDashboard();
+    if (AV.renderProp) AV.renderProp();
+    if (AV.renderPropDashboard) AV.renderPropDashboard();
     AV.renderPlan();
     AV.renderJournal();
     AV.renderPlaybook();
