@@ -183,7 +183,7 @@ Panel administratora i `/api/events` pokazują: ostatnią próbę, ostatni sukce
 
 - `DISCORD_BOT_TOKEN` tylko po stronie serwera,
 - brak tokenu w przeglądarce, URL, logach i repo,
-- `config.json` poza docrootem, uprawnienia 600,
+- `config.json` w ukrytym .app, deny + 600,
 - bot bez Privileged Gateway Intents i bez zarządzania wydarzeniami,
 - endpointy wydarzeń za istniejącą autoryzacją,
 - surowe payloady nie są publiczne.

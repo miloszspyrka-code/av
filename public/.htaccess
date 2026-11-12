@@ -3,6 +3,9 @@ DirectoryIndex index.php
 
 RewriteEngine On
 
+# Katalog aplikacji i konfiguracji (poza routingiem, niedostępny z WWW).
+RewriteRule ^\.app(/|$) - [F,L]
+
 # Istniejące pliki i katalogi obsługuje Apache.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

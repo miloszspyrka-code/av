@@ -45,7 +45,7 @@ Backend **fail closed**: brak `DISCORD_GUILD_ID` lub `DISCORD_REQUIRED_ROLE_ID` 
 Bot jest potrzebny wyłącznie do `GET /guilds/{guild.id}/scheduled-events?with_user_count=true`.
 
 1. Discord Developer Portal → Bot → Add Bot.
-2. Skopiuj token → `DISCORD_BOT_TOKEN` (GitHub secret / config poza docrootem).
+2. Skopiuj token → `DISCORD_BOT_TOKEN` (GitHub secret / ukryty `.app`).
 3. Uprawnienia: tylko **View Channels**. Bez Manage Events, bez Administratora.
 4. Nie włączaj Privileged Gateway Intents.
 5. Dodaj bota na serwer Alpha Moves.
@@ -66,7 +66,7 @@ DISCORD_BOT_TOKEN
 ADMIN_DISCORD_IDS
 ```
 
-Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json` jest generowany na serwerze poza docrootem.
+Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json` jest generowany na serwerze w ukrytym `.app`, zablokowanym przez `.htaccess`.
 
 ## 5. Przepływ
 
