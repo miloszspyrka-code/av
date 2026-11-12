@@ -8,6 +8,9 @@
     "test:ui": "node tests/ui.e2e.mjs",
     "test:ui:empty": "node tests/ui-empty.e2e.mjs",
     "test:events": "php tests/discord-events.test.php",
+    "test:docs": "node tests/docs.test.mjs",
+    "docs:sync": "node scripts/sync-docs.mjs",
+    "docs:check": "node scripts/sync-docs.mjs --check",
     "test:all": "node tests/api.e2e.mjs && node tests/ui.e2e.mjs"
   },
   "devDependencies": {

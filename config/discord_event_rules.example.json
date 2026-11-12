@@ -1,0 +1,10 @@
+{
+  "event_categories": {
+    "000000000000000000": "consultation"
+  },
+  "name_patterns": [
+    { "pattern": "/\\bkonsultacj/i", "category": "consultation" },
+    { "pattern": "/\\b1\\s*:\\s*1\\b/", "category": "consultation" },
+    { "pattern": "/\\bQ&A\\b/i", "category": "live" }
+  ]
+}

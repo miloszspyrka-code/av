@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 config.json
+config/discord_event_rules.json
 tests/config.test.json
 legacy/node_modules/
 node_modules/

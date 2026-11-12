@@ -197,7 +197,7 @@ REMOTE
 fi
 
 log "Preparing remote directories..."
-ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "mkdir -p '$DEPLOY_PATH' '$APP_PATH/app' '$APP_PATH/db' '$APP_PATH/bin' '$APP_PATH/logs'; chmod 755 '$DEPLOY_PATH' '$APP_PATH'; chmod 700 '$APP_PATH/logs'"
+ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "mkdir -p '$DEPLOY_PATH' '$APP_PATH/app' '$APP_PATH/db' '$APP_PATH/bin' '$APP_PATH/config' '$APP_PATH/logs'; chmod 755 '$DEPLOY_PATH' '$APP_PATH'; chmod 700 '$APP_PATH/logs'"
 
 log "Syncing public frontend..."
 rsync "${RSYNC_FLAGS[@]}" \
@@ -220,6 +220,11 @@ log "Syncing CRON scripts..."
 rsync "${RSYNC_FLAGS[@]}" \
   --exclude=config.json \
   -e "$RSYNC_SSH" bin/ "$SSH_TARGET:$APP_PATH/bin/"
+
+log "Syncing event classification config..."
+rsync "${RSYNC_FLAGS[@]}" \
+  --exclude=discord_event_rules.json \
+  -e "$RSYNC_SSH" config/ "$SSH_TARGET:$APP_PATH/config/"
 
 if [ "$DRY_RUN" = "true" ]; then
   log "Dry run finished. No server files were changed."

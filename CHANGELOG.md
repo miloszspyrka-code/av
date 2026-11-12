@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.1.0 — 2026-11-12
+
+### Dodane
+- `AGENTS.md` — kontrakt agenta AV-engineer.
+- `PRD.md` — wymagania produktowe, FR-xx i kryteria akceptacji.
+- `DOCUMENTATION.md` — działanie aplikacji i punkty styku P1–P14.
+- `scripts/sync-docs.mjs` — generowanie `public/docs` ze źródeł.
+- `tests/docs.test.mjs` — test linków, kodowania i spójności dokumentacji.
+- `config/discord_event_rules.example.json` — przykład reguł klasyfikacji.
+
+### Zmienione
+- Deploy synchronizuje katalog `config/`, bez nadpisywania aktywnego `discord_event_rules.json`.
+- CI uruchamia test dokumentacji przed testami PHP.
+- README, API, architektura, baza, funkcje, testy i deploy wskazują na nowe dokumenty.
+
 ## 3.0.0 — 2026-11-12
 
 ### Zmienione

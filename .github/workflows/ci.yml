@@ -55,6 +55,11 @@ jobs:
       - name: Install test dependencies
         run: npm ci
 
+      - name: Documentation
+        run: |
+          node scripts/sync-docs.mjs --check
+          node tests/docs.test.mjs
+
       - name: PHP syntax check
         run: |
           set -euo pipefail

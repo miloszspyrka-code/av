@@ -9,9 +9,16 @@ Aplikacja działa na hostingu współdzielonym LH.pl:
 - baza: MySQL/MariaDB,
 - logowanie: Discord OAuth2 (`identify guilds.members.read`),
 - sesje: token w cookie HttpOnly + hash w MySQL,
-- wdrożenia: GitHub Actions → SSH → `alphavault.pl`.
+- wdrożenia: GitHub Actions → SSH → `alphavault.pl` (alternatywnie `scripts/local-deploy.sh`).
 
 Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerze produkcyjnym nie działa proces Node.
+
+## Dokumentacja
+
+- [PRD.md](PRD.md) — wymagania produktowe, FR-xx, kryteria akceptacji.
+- [DOCUMENTATION.md](DOCUMENTATION.md) — jak działa aplikacja, punkty styku P1–P14.
+- [AGENTS.md](AGENTS.md) — kontrakt agenta AV-engineer.
+- [docs/README.md](docs/README.md) — indeks dokumentacji technicznej.
 
 ## Struktura
 
@@ -19,11 +26,12 @@ Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerz
 public/            # document root: index.php, index.html, js/, docs/
 app/               # PHP: Config, Db, Auth, Discord, DiscordEvents, routes
 bin/               # sync-discord-events.php (LH Cron)
+config/            # przykładowe reguły klasyfikacji wydarzeń
 db/                # schema.sql, demo-state.json, migrations
-tests/             # API i UI e2e (Node + Playwright)
+tests/             # API, UI, empty-state, Discord, dokumentacja
 docs/              # dokumentacja techniczna
 legacy/            # poprzedni backend Express (referencja, nie jest wdrażany)
-scripts/           # deploy produkcyjny, render configu
+scripts/           # deploy produkcyjny, local-deploy, sync-docs
 .github/workflows/ # CI i deployment
 ```
 
@@ -40,8 +48,11 @@ php app/db/migrate.php
 php -S 127.0.0.1:4173 -t public public/router.php
 
 npm ci
-npm test        # API: 17 scenariuszy
-npm run test:ui # UI: 19 scenariuszy
+npm test                 # API: 20 scenariuszy
+npm run test:ui          # UI: 23 scenariusze
+npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
+npm run test:events      # Discord DB/sync + DST: 24 scenariusze
+npm run test:docs        # linki i spójność dokumentacji
 ```
 
 Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL`, `DB_*`, `DISCORD_*`, `SESSION_SECRET`, `ALLOW_DEMO_LOGIN`. Plik `config.json` jest ignorowany przez Git.
@@ -56,7 +67,7 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 
 Wymagane sekrety GitHub:
 
-`LH_SSH_HOST`, `LH_SSH_PORT`, `LH_SSH_USER`, `LH_SSH_PRIVATE_KEY`, `LH_SSH_KNOWN_HOSTS`, `LH_DEPLOY_PATH`, `LH_APP_PATH`, `SESSION_SECRET`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `DISCORD_GUILD_ID`, `DISCORD_REQUIRED_ROLE_ID`.
+`LH_SSH_HOST`, `LH_SSH_PORT`, `LH_SSH_USER`, `LH_SSH_PRIVATE_KEY`, `LH_SSH_KNOWN_HOSTS`, `LH_DEPLOY_PATH`, `LH_APP_PATH`, `SESSION_SECRET`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `DISCORD_GUILD_ID`, `DISCORD_REQUIRED_ROLE_ID`, `DISCORD_BOT_TOKEN`, `ADMIN_DISCORD_IDS`.
 
 `config.json` jest generowany na serwerze z sekretów podczas deployu, z uprawnieniami `600`, poza `public_html`. Nie ma go w repozytorium.
 
@@ -84,7 +95,7 @@ Konfiguracja Cron: `docs/DEPLOY.md`.
 
 ## CI/CD
 
-- `ci.yml`: PHP lint, MySQL 8.4, migracja, API e2e, UI e2e.
+- `ci.yml`: dokumentacja, PHP lint, MySQL 8.4, migracja, Discord DB/sync, API e2e, UI e2e, empty-state.
 - `deploy-alphavault.yml`: lint, SSH, backup, rsync, migracja, health check.
 - Deployment nigdy nie dotyka katalogów WordPressa ani innych domen.
 

@@ -6,18 +6,20 @@
 - domena `https://alphavault.pl`,
 - document root `~/public_html/alphavault.pl`,
 - kod PHP i konfiguracja `~/alphavault-app` (poza publicznym katalogiem),
-- MySQL/MariaDB LH.pl,
+- MySQL/MariaDB LH.pl (MariaDB 11.8),
 - brak procesu Node na produkcji.
 
 ## 2. Baza danych
 
-W panelu LH.pl (`https://panel.lh.pl/` → Serwery → serwer445119 → Bazy danych MySQL) utwórz:
+W panelu LH.pl (`https://panel.lh.pl/` → Serwery → serwer445119 → Bazy danych MySQL):
 
-- bazę `serwer445119_alphavault`, charset `utf8mb4`, collation `utf8mb4_unicode_ci`,
-- użytkownika `serwer445119_alphavault` z silnym hasłem, dostęp tylko do tej bazy,
+- baza `serwer445119_alphavault`, charset `utf8mb4`, collation `utf8mb4_unicode_ci`,
+- użytkownik `serwer445119_alphavault` z silnym hasłem, dostęp tylko do tej bazy,
 - uprawnienia: `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, DROP`.
 
 Nie używaj bazy ani użytkownika WordPressa.
+
+**Stan 2026-11-12:** baza i użytkownik istnieją, logowanie działa, tabel brak. Migracja wykona się przy deployu.
 
 Hasło użytkownika bazy trafia do GitHub secret `DB_PASSWORD` przez `gh secret set`; nie jest zapisywane w repo.
 
@@ -43,7 +45,7 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `LH_DEPLOY_PATH` | `~/public_html/alphavault.pl` |
 | `LH_APP_PATH` | `~/alphavault-app` |
 | `SESSION_SECRET` | 64+ losowych znaków |
-| `DB_HOST` | `main195.lh.pl` (host MySQL z panelu LH.pl; musi zgadzać się z hostem użytkownika MySQL) |
+| `DB_HOST` | host MySQL z panelu LH.pl (np. `main195.lh.pl`); `localhost` działa dla procesów na serwerze |
 | `DB_PORT` | `3306` |
 | `DB_NAME` | `serwer445119_alphavault` |
 | `DB_USER` | `serwer445119_alphavault` |
@@ -59,7 +61,7 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 Zmienne repozytorium:
 
 - `APP_URL=https://alphavault.pl`
-- `DEPLOY_ENABLED=false` (ustaw `true` po utworzeniu bazy)
+- `DEPLOY_ENABLED=false` (ustaw `true` po odblokowaniu GitHub Actions)
 - `ADMIN_DISCORD_IDS` (opcjonalnie, zamiast sekretu)
 
 ## 4. Discord
@@ -68,7 +70,8 @@ W Discord Developer Portal:
 
 - OAuth2 → Redirects: dodaj `https://alphavault.pl/auth/discord/callback`,
 - scopes: `identify`, `guilds.members.read`,
-- aplikacja nie potrzebuje bota do sprawdzania roli; backend używa tokenu użytkownika i endpointu `GET /users/@me/guilds/{guild_id}/member`.
+- weryfikacja roli używa tokenu użytkownika i `GET /users/@me/guilds/{guild_id}/member` — bot nie jest do tego potrzebny,
+- bot jest potrzebny wyłącznie do odczytu scheduled events; ma tylko `View Channels`, bez Manage Events i bez Privileged Gateway Intents.
 
 Backend odmawia dostępu, gdy:
 
@@ -88,7 +91,14 @@ Wymagania:
 
 - `DISCORD_BOT_TOKEN` i `DISCORD_GUILD_ID` w `~/alphavault-app/config.json`,
 - bot z uprawnieniem `View Channels`, bez uprawnień do zarządzania wydarzeniami,
-- brak Privileged Gateway Intents.
+- brak Privileged Gateway Intents,
+- katalog `~/alphavault-app/logs` z prawami 700.
+
+Reguły klasyfikacji (opcjonalne):
+
+- przykład: `config/discord_event_rules.example.json`,
+- aktywny plik na serwerze: `~/alphavault-app/config/discord_event_rules.json`,
+- deploy synchronizuje katalog `config/`, ale celowo **nie nadpisuje** aktywnego `discord_event_rules.json`.
 
 Ręczny test:
 
@@ -106,7 +116,7 @@ Workflow `.github/workflows/deploy-alphavault.yml`:
 2. weryfikacja sekretów,
 3. zapis klucza SSH i `known_hosts` z `StrictHostKeyChecking=yes`,
 4. backup `~/public_html/alphavault.pl` i `~/alphavault-app` do `~/alphavault-backups`,
-5. `rsync` frontendu do docrootu i PHP do `~/alphavault-app`,
+5. `rsync` frontendu do docrootu i PHP/`bin`/`db`/`config` do `~/alphavault-app`,
 6. wygenerowanie `public/app-path.php`,
 7. wygenerowanie `~/alphavault-app/config.json` (600) z sekretów,
 8. `php app/db/migrate.php`,
@@ -119,13 +129,15 @@ gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry
 gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry_run=false
 ```
 
-Automatyczny deploy przy pushu do `main` jest sterowany zmienną repozytorium `DEPLOY_ENABLED`. Ustaw ją na `true` po utworzeniu bazy i skonfigurowaniu sekretów:
+Automatyczny deploy przy pushu do `main` jest sterowany zmienną repozytorium `DEPLOY_ENABLED`. Ustaw ją na `true` po skonfigurowaniu sekretów:
 
 ```powershell
 gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/alphavault --body true
 ```
 
 Dopóki `DEPLOY_ENABLED` nie jest `true`, push do `main` nie uruchamia produkcyjnego zapisu; ręczny dry run nadal działa.
+
+Alternatywa bez GitHub Actions (WSL2): `scripts/local-deploy.sh` — test DB, dry-run, deploy, rollback. Konfiguracja w `~/.config/alphavault/local.env` (600). Szczegóły: [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md).
 
 Rollback:
 
@@ -141,7 +153,7 @@ tar -xzf ~/alphavault-backups/<PLIK>-public.tar.gz -C ~/public_html
 tar -xzf ~/alphavault-backups/<PLIK>-app.tar.gz -C ~
 ```
 
-## 6. Weryfikacja
+## 7. Weryfikacja
 
 ```bash
 curl -fsS https://alphavault.pl/api/health
@@ -151,11 +163,19 @@ curl -fsS -o /dev/null -w '%{http_code}\n' https://alphavault.pl/
 
 Oczekiwane:
 
-- health: `ok=true`, `db.ok=true`, `discordConfigured=true`, `roleCheckConfigured=true`, `demoAllowed=false`,
+- health: `ok=true`, `db.ok=true`, `discordConfigured=true`, `roleCheckConfigured=true`, `eventsConfigured=true`, `demoAllowed=false`,
 - `/api/me` bez sesji: `authenticated=false`, `demoAllowed=false`,
 - `/` zwraca UI Alpha Vault.
 
-## 7. Bezpieczeństwo
+Po deployu:
+
+1. zaloguj się kontem z rolą Alpha,
+2. sprawdź `/api/events` (3 wydarzenia VOICE w dniu testu),
+3. uruchom ręcznie sync i porównaj `events_count` z Discordem,
+4. skonfiguruj Cron i potwierdź wpis w logu po 5 minutach,
+5. sprawdź puste pola na środowisku testowym, nie na produkcji.
+
+## 8. Bezpieczeństwo
 
 - `config.json` poza docrootem, `600`,
 - brak `.env` i kluczy w repo,
@@ -166,8 +186,9 @@ Oczekiwane:
 - sesje hashowane SHA-256, cookie HttpOnly/SameSite=Lax,
 - deployment nie dotyka WordPressów ani innych domen.
 
-## 8. Znane ograniczenia
+## 9. Znane ograniczenia
 
 - Hosting współdzielony: brak Node.js na produkcji, brak własnego procesu daemon.
 - `rsync --delete` jest używany tylko w dedykowanych katalogach `alphavault.pl` i `alphavault-app`; przed nim wykonywany jest backup.
 - Testy Discord wymagają interaktywnego logowania użytkownika z wymaganą rolą.
+- GitHub Actions może być zablokowane przez billing — wtedy deploy nie startuje mimo poprawnych sekretów.

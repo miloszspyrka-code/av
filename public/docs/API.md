@@ -1,3 +1,5 @@
+<!-- Wygenerowane z docs/API.md przez scripts/sync-docs.mjs. Nie edytuj ręcznie. -->
+
 # Alpha Vault — API i logowanie
 
 Wersja: **3.0.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord**
@@ -41,7 +43,7 @@ API: `/api/*` · logowanie: `/auth/*` · UI: `/` · dokumentacja: `/docs/`.
 
 Wymagane są `DISCORD_GUILD_ID` i `DISCORD_REQUIRED_ROLE_ID`. Backend **fail closed**: brak konfiguracji oznacza odmowę dostępu.
 
-Nie jest używany `DISCORD_BOT_TOKEN`. Scope `guilds.members.read` pozwala odczytać członkostwo i role zalogowanego użytkownika.
+Do weryfikacji roli **nie jest używany** `DISCORD_BOT_TOKEN`; scope `guilds.members.read` pozwala odczytać członkostwo i role zalogowanego użytkownika. Token bota służy wyłącznie do synchronizacji scheduled events.
 
 ### 2.3. Tryb demo
 
@@ -99,6 +101,7 @@ Publiczny. Sprawdza MySQL i konfigurację.
   "now": "2026-11-12T14:30:00Z",
   "discordConfigured": true,
   "roleCheckConfigured": true,
+  "eventsConfigured": true,
   "demoAllowed": false
 }
 ```
@@ -114,7 +117,9 @@ Publiczny. Zawsze `200`, także bez sesji.
   "authenticated": true,
   "discordConfigured": true,
   "roleCheckConfigured": true,
+  "eventsConfigured": true,
   "demoAllowed": false,
+  "isAdmin": false,
   "db": "serwer445119_alphavault",
   "user": {
     "id": 1,
