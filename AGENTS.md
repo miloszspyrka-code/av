@@ -361,7 +361,7 @@ node scripts/sync-docs.mjs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy (ostatni pełny CI) | prop 27/27, router 18/18, API 23/23, UI 55/55, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 6/6, PWA 20/20, integracje 20/20, UI integracje 11/11, izolacja 9/9 |
+| Testy (ostatni pełny CI) | prop 27/27, router 18/18, API 23/23, UI 55/55, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 5/5, PWA 20/20, integracje 20/20, UI integracje 11/11, izolacja 9/9 |
 | Realny Discord API | aktualna liczba w `/api/health` → `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 dodaje kolumnę EA i tabele MCP |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
