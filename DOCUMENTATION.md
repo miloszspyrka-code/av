@@ -46,7 +46,7 @@ Przeglądarka
   ▼
 Apache + PHP 8.3 (LH.pl)
   ├── public/            document root: index.php, index.html, js/, docs/
-  ├── ~/alphavault-app/  app/, bin/, db/, config.json, logs/  (poza docrootem)
+  ├── ~/public_html/alphavault.pl/.app/  app/, bin/, db/, config.json, logs/  (ukryty .app, deny)
   └── MySQL/MariaDB      users, sessions, user_states, wydarzenia Discord
         ▲
         │  co 5 minut
@@ -267,8 +267,8 @@ Dodatkowo wyliczane:
 
 **Aktor:** LH Cron. **Trigger:** harmonogram `*/5 * * * *`.
 
-1. `php ~/alphavault-app/bin/sync-discord-events.php`.
-2. `bootstrap.php` ładuje `config.json` (poza docrootem).
+1. `php ~/public_html/alphavault.pl/.app/bin/sync-discord-events.php`.
+2. `bootstrap.php` ładuje `config.json` (ukryty .app, deny).
 3. **Blokada:** `UPDATE discord_sync_state SET lock_token=?, locked_until=UTC_TIMESTAMP()+INTERVAL 10 MINUTE WHERE id=1 AND (locked_until IS NULL OR locked_until < UTC_TIMESTAMP())`.
 4. Brak wiersza → inny sync trwa; skrypt kończy się kodem 0 i loguje `skipped`.
 5. `last_attempt_at = UTC_TIMESTAMP()`, `last_status='running'`.
@@ -373,10 +373,10 @@ Testy: `tests/discord-events.test.php`. Sortowanie odbywa się po UTC, nie po te
 Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 
 ```text
-*/5 * * * * /usr/bin/php /home/platne/serwer445119/alphavault-app/bin/sync-discord-events.php
+*/5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
 ```
 
-Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/alphavault-app`, katalog `logs/` z prawami 700.
+Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
 ### 9.2. Blokada
 
@@ -401,7 +401,7 @@ Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/alphavault-app
 
 ### 9.4. Logi
 
-- `~/alphavault-app/logs/discord-sync.log` (700, poza docrootem),
+- `~/public_html/alphavault.pl/.app/logs/discord-sync.log` (700, ukryty .app),
 - `error_log('[discord-sync] ...')`,
 - token jest redagowany (`[redacted]`) przed zapisem,
 - historia w `discord_sync_runs` (30 dni).
@@ -560,9 +560,9 @@ Plik: `.github/workflows/deploy-alphavault.yml`.
    - test SSH,
    - backup `public` i `app` (5 ostatnich),
    - `rsync public/` → `~/public_html/alphavault.pl`,
-   - `rsync app/`, `db/`, `bin/`, `config/` → `~/alphavault-app`,
+   - `rsync app/`, `db/`, `bin/`, `config/` → `~/public_html/alphavault.pl/.app`,
    - `app-path.php`,
-   - `config.json` z sekretów (600, poza docrootem),
+   - `config.json` z sekretów (600, ukryty .app),
    - `php app/db/migrate.php`,
    - health check,
    - rollback przy błędzie.
@@ -596,7 +596,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 
 | Obszar | Mechanizm |
 | --- | --- |
-| Sekrety | `config.json` poza docrootem, 600; brak w repo; `.env` ignorowany |
+| Sekrety | `config.json` w ukrytym .app, deny + 600; brak w repo; `.env` ignorowany |
 | Token bota | tylko PHP/CLI; redagowany w logach; nigdy w HTML/JS/URL |
 | Bot | `View Channels`, bez Manage Events, bez Privileged Intents |
 | Sesja | cookie HttpOnly, SameSite=Lax, Secure, hash w DB |

@@ -14,7 +14,7 @@ Apache + PHP 8.3 (LH.pl)
    │     ├── index.html  UI
    │     ├── js/         frontend
    │     └── docs/       dokumentacja publiczna (generowana)
-   ├── ~/alphavault-app/  app/, bin/, db/, config/, config.json, logs/
+   ├── ~/public_html/alphavault.pl/.app/  app/, bin/, db/, config/, config.json, logs/
    └── MySQL/MariaDB LH.pl
         ▲
         │ co 5 minut
@@ -64,7 +64,7 @@ Puste pola i stany brzegowe: [DOCUMENTATION.md §12](DOCUMENTATION.md#12-puste-p
 
 ## Deployment
 
-`main` → GitHub Actions → SSH/rsync → `~/public_html/alphavault.pl` + `~/alphavault-app` → migracja PHP → health check. `config.json` jest generowany z sekretów na serwerze. Alternatywa: `scripts/local-deploy.sh` (WSL2) bez GitHub Actions.
+`main` → GitHub Actions → SSH/rsync → `~/public_html/alphavault.pl` + `~/public_html/alphavault.pl/.app` → migracja PHP → health check. `config.json` jest generowany z sekretów na serwerze. Alternatywa: `scripts/local-deploy.sh` (WSL2) bez GitHub Actions.
 
 - deploy: [DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md)
 - deploy lokalny: [LOCAL-DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/LOCAL-DEPLOY.md)

@@ -61,7 +61,7 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 
 - Domena: `https://alphavault.pl`
 - Document root: `~/public_html/alphavault.pl`
-- Kod aplikacji i `config.json`: `~/alphavault-app` (poza publicznym katalogiem)
+- Kod aplikacji i `config.json`: `~/public_html/alphavault.pl/.app` (ukryty katalog, deny)
 - Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml`.
 - Rollback: ręczne uruchomienie workflow z `rollback=true` (przywraca ostatni backup z `~/alphavault-backups`).
 
@@ -79,7 +79,7 @@ Wymagane sekrety GitHub:
 - CSRF: kontrola `Origin` dla mutujących żądań,
 - rate limiting w MySQL,
 - CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`,
-- `config.json` poza docrootem, `.env` i klucze w `.gitignore`.
+- `config.json` w ukrytym `.app` (deny), `.env` i klucze w `.gitignore`.
 
 ## Discord Scheduled Events
 

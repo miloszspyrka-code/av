@@ -23,7 +23,7 @@
 - Schemat MySQL/MariaDB: `utf8mb4_unicode_ci`, tabela `rate_limits`.
 - Weryfikacja roli Discord przez OAuth `guilds.members.read` (bez bota i `DISCORD_BOT_TOKEN`).
 - Deployment GitHub Actions: SSH/rsync, backup, migracja PHP, health check, rollback.
-- `config.json` generowany z sekretów poza publicznym docrootem.
+- `config.json` generowany z sekretów poza routingiem (`.app`, deny).
 - CI: PHP lint + MySQL 8.4 + API/UI e2e.
 
 ### Zachowane

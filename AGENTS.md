@@ -85,7 +85,7 @@ Nie zaczynaj od zgadywania. Najpierw ustal, który punkt styku zmieniasz.
 - `DISCORD_BOT_TOKEN` tylko po stronie serwera.
 - Nigdy nie wysyłaj tokenu do przeglądarki, URL, logów, czatu, issue ani repo.
 - Nie próbuj odczytywać sekretów GitHub (są write-only).
-- `config.json` poza docrootem, 600.
+- `config.json` w ukrytym .app, deny + 600.
 - Endpointy wydarzeń za istniejącą autoryzacją.
 - `raw_payload` nie jest publiczny.
 - Nie dodawaj publicznego endpointu uruchamiającego synchronizację.
@@ -128,7 +128,7 @@ Produkcja:
 
 ```text
 ~/public_html/alphavault.pl   ← public/
-~/alphavault-app/             ← app/, bin/, db/, config.json, logs/
+~/public_html/alphavault.pl/.app/             ← app/, bin/, db/, config.json, logs/
 ~/alphavault-backups/         ← backupy public/app
 MySQL: serwer445119_alphavault
 ```
@@ -140,12 +140,14 @@ MySQL: serwer445119_alphavault
 | SSH | `serwer445119@serwer445119.lh.pl:40022` |
 | Klucz | ED25519, `LH_SSH_PRIVATE_KEY` / lokalny plik poza repo |
 | Docroot | `~/public_html/alphavault.pl` |
-| App | `~/alphavault-app` |
+| App | `~/public_html/alphavault.pl/.app` |
 | DB host/port | `localhost:3306` |
 | DB name/user | `serwer445119_alphavault` |
 | PHP CLI | `/usr/bin/php` (8.3) |
-| Cron | `*/5 * * * * /usr/bin/php /home/platne/serwer445119/alphavault-app/bin/sync-discord-events.php` |
-| Log sync | `~/alphavault-app/logs/discord-sync.log` |
+| Cron | `*/5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
+| Log sync | `~/public_html/alphavault.pl/.app/logs/discord-sync.log` |
+
+`open_basedir` LH nie pozwala PHP czytać katalogu poza docrootem; dlatego kod i `config.json` są w `~/public_html/alphavault.pl/.app`, zablokowanym przez `.htaccess` (`Require all denied` + `^\.app`). Nie zmieniaj tej ścieżki bez testu health checku.
 
 **Baza na LH (stan 2026-11-12):** istnieje, logowanie działa, **brak tabel** — migracja wykona się przy deployu.
 
@@ -204,8 +206,8 @@ Konfiguracja: `~/.config/alphavault/local.env` (600). Szczegóły: [docs/LOCAL-D
 ```powershell
 curl.exe -sS https://alphavault.pl/api/health
 curl.exe -sS -I https://alphavault.pl
-ssh serwer445119@serwer445119.lh.pl "php ~/alphavault-app/bin/sync-discord-events.php"
-ssh serwer445119@serwer445119.lh.pl "tail -20 ~/alphavault-app/logs/discord-sync.log"
+ssh serwer445119@serwer445119.lh.pl "php ~/public_html/alphavault.pl/.app/bin/sync-discord-events.php"
+ssh serwer445119@serwer445119.lh.pl "tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log"
 ```
 
 `/api/events` wymaga sesji — nie testuj go bez logowania.

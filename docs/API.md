@@ -238,7 +238,7 @@ Dozwolone: `live`, `consultation`, `unassigned`. Ręczne przypisanie (`manual_ca
 - CSRF: `Origin` dla mutujących żądań + SameSite=Lax,
 - rate limiting w MySQL,
 - CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`,
-- `config.json` poza docrootem, `600`,
+- `config.json` w ukrytym `.app`, `600`, deny w `.htaccess`,
 - brak sekretów w frontendzie i repo.
 
 ## 5. Zmienne konfiguracji
