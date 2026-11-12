@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.7.1 — 2026-11-12
+
+### Naprawione
+- PIT-38: zdarzenia podatkowe i transakcje są liczone wyłącznie z wybranego roku podatkowego; zmiana roku w stanie nie miesza lat.
+- Nadwyżka kosztów z poprzedniego roku jest edytowalna w panelu i zapisywana w stanie; nowe konta startują z 0,00 zł zamiast demo 380,00 zł. Stare stany bez wersji schematu są migrowane przy logowaniu i zapisie.
+- „Neutralne podatkowo” liczy transakcje z dziennika (futures w USDT i krypto–krypto), a „Forex i CFD (MT5)” rozpoznaje konto/źródło MT4/MT5 zamiast pola `source`.
+- „Do przeniesienia na kolejny rok” liczy się z kosztów, nadwyżki i przychodu roku podatkowego; CSV i wydruk PDF mają rok w nazwie i podsumowaniu, a także liczbę transakcji neutralnych i MT4/MT5.
+- Formularz wpłaty/wypłaty wymaga kursu NBP dla waluty obcej i nie wlicza zdarzenia spoza roku podatkowego do zestawienia.
+
+### Dodane
+- `npm run test:tax` — 8 scenariuszy: odczyt z MySQL, edycja nadwyżki, CSV, PDF, formularz wpłaty/wypłaty, puste konto i brak błędów JS.
+
 ## 3.7.0 - 2026-11-12
 
 ### Zmienione
@@ -14,6 +26,7 @@
 ### Testy
 - `npm run test:wearables`: 42/42 PASS (PKCE, state, rotacja tokenów i klucza, błędy 401/429/JSON, izolacja użytkowników, Garmin push pending, UI).
 - `tests/wearables-config.test.php`: 4/4 PASS (brak fallbacku klucza, start OAuth 503).
+
 
 ## 3.6.0 - 2026-11-12
 
@@ -38,6 +51,7 @@
 ### Testy
 - Integracje: WEEX z kluczem `weex-trade` = 201 i `permissions: any` (było 422).
 - UI integracje: formularz WEEX przyjmuje klucz z handlem i pokazuje uprawnienia „dowolne (odczyt wystarcza)”.
+
 
 ## 3.4.0 — 2026-11-12
 
