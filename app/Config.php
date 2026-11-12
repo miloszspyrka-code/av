@@ -14,6 +14,8 @@ final class Config
         public readonly string $sessionSecret,
         public readonly string $sessionCookie,
         public readonly string $oauthCookie,
+        public readonly string $demoCookie,
+        public readonly bool $trustProxy,
         public readonly int $sessionDays,
         public readonly int $maxStateBytes,
         public readonly bool $allowDemoLogin,
@@ -200,6 +202,8 @@ final class Config
             sessionSecret: $sessionSecret,
             sessionCookie: 'av_session',
             oauthCookie: 'av_oauth',
+            demoCookie: 'av_demo',
+            trustProxy: $parseBool($env('TRUST_PROXY'), false),
             sessionDays: 30,
             maxStateBytes: $parseInt($env('MAX_STATE_BYTES'), 12 * 1024 * 1024),
             allowDemoLogin: $parseBool($env('ALLOW_DEMO_LOGIN'), !$isProd),
@@ -220,7 +224,7 @@ final class Config
             quotesBase: rtrim((string) $env('QUOTES_BASE', 'https://query1.finance.yahoo.com'), '/'),
             quotesTtl: max(0, min(3600, $parseInt($env('QUOTES_TTL'), 60))),
             quotesCacheFile: (string) $env('QUOTES_CACHE', $root . '/cache/quotes.json'),
-            version: '3.8.0',
+            version: '3.9.0',
         );
     }
 }

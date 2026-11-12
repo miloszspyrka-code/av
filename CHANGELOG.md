@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.9.0 — 2026-11-13
+
+### Naprawione
+- Demo: każda przeglądarka ma osobne konto `demo-<hash>` (cookie `av_demo`), koniec współdzielonego `demo-local` i wycieku dziennika między osobami.
+- Frontend: cache `localStorage` jest namespace'owany po `user.id` (`alphavault.state.v3.<id>.*`), drafty również; wylogowanie i zmiana konta usuwają prywatny cache, a ekran logowania nie renderuje danych poprzednika.
+- `PUT /api/state` przyjmuje `ownerId`; karta z sesją innego konta dostaje `409 session_changed` i nie nadpisuje stanu. Stan z obcym `user.discordId` jest odrzucany również bez `ownerId`.
+- Migracje: `php app/db/migrate.php` wykonuje teraz `db/migrations/*.sql` z wersjonowaniem w `schema_migrations` (naprawia brak tabel MCP na czystej bazie).
+- Rate limit używa `REMOTE_ADDR`, a `X-Forwarded-For` tylko przy `TRUST_PROXY=true`.
+
+### Bezpieczeństwo
+- Kody parowania EA wygasają po 15 minutach, jeśli nie zostały użyte, i po 90 dniach od ostatniej synchronizacji; API nie zwraca prefiksu hasha kodu, a EA nie loguje kodu.
+- Parowanie EA nie usuwa połączenia MetaApi; wiersze EA są wyłączone z serwerowego pollingu.
+- Nowy kod Apple unieważnia poprzednie nieużyte kody.
+- Tokeny MCP mają domyślny TTL 90 dni.
+
+### Testy
+- Nowy `tests/isolation.e2e.mjs` — 9/9 scenariuszy izolacji dwóch kont i blokady stanu z obcej karty.
+- API 23/23, UI 53/53, integracje 20/20, wearables 42/42, PWA 20/20, MCP 17/17.
+
+## 3.8.0 - 2026-11-12
+
 ## 3.8.1 — 2026-11-12
 
 ### Zmienione
@@ -81,7 +102,6 @@
 ### Testy
 - Integracje: WEEX z kluczem `weex-trade` = 201 i `permissions: any` (było 422).
 - UI integracje: formularz WEEX przyjmuje klucz z handlem i pokazuje uprawnienia „dowolne (odczyt wystarcza)”.
-
 
 ## 3.4.0 — 2026-11-12
 

@@ -92,6 +92,9 @@ final class Mcp
             throw new McpException('scope_required', 'Token musi mieć zakres panel:read.', 400);
         }
         $token = 'avm_' . bin2hex(random_bytes(24));
+        if ($expiresAt === null || $expiresAt === '') {
+            $expiresAt = gmdate('Y-m-d H:i:s', time() + 90 * 86400);
+        }
         $this->db->execute(
             'INSERT INTO mcp_tokens (user_id, name, token_hash, scopes, expires_at) VALUES (?, ?, ?, ?, ?)',
             [$userId, $name, hash('sha256', $token), implode(' ', $scopes), $expiresAt]

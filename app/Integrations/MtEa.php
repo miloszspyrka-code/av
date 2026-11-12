@@ -24,10 +24,12 @@ final class MtEa
                 continue;
             }
             $full = $this->store->findForUser($userId, (int) $row['id']);
-            if ($full !== null) {
-                $this->sync->disconnect($full);
-                $this->store->delete($userId, (int) $row['id']);
+            if ($full === null || empty($full['pairing_hash'])) {
+                // MetaApi to też provider mt4/mt5 — nie usuwaj go przy parowaniu EA.
+                continue;
             }
+            $this->sync->disconnect($full);
+            $this->store->delete($userId, (int) $row['id']);
         }
         return $this->store->createPairing($userId, $platform);
     }
@@ -67,7 +69,7 @@ final class MtEa
         $provider = (string) $row['provider'];
         $label = (string) ($row['label'] ?? 'MetaTrader');
         $result = $this->sync->mergeIntoTrades((int) $row['user_id'], $provider, $trades, $label);
-        $this->store->markPairingConnected((int) $row['id'], 'ea:' . substr(hash('sha256', $code), 0, 16), (int) $result['imported']);
+        $this->store->markPairingConnected((int) $row['id'], 'ea', (int) $result['imported']);
 
         return [
             'imported' => (int) $result['imported'],

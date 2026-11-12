@@ -103,9 +103,9 @@
   };
 
   /* ---------- storage ---------- */
-  AV.safeGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-  AV.safeSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } };
-  AV.safeDel = (k) => { try { localStorage.removeItem(k); } catch {} };
+  AV.safeGet = (k) => { try { return k ? localStorage.getItem(k) : null; } catch { return null; } };
+  AV.safeSet = (k, v) => { try { if (!k) return false; localStorage.setItem(k, v); return true; } catch { return false; } };
+  AV.safeDel = (k) => { try { if (k) localStorage.removeItem(k); } catch {} };
 
   /* ---------- toast ---------- */
   AV.toast = (msg, ms = 2600) => {

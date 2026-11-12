@@ -21,7 +21,7 @@ final class ConnectionStore
     {
         $rows = $this->db->query(
             'SELECT id, provider, label, account_ref, key_mask, permissions, status, last_sync_at,
-                    last_sync_status, last_error, imported_count, created_at
+                    last_sync_status, last_error, imported_count, created_at, pairing_hash
              FROM exchange_connections WHERE user_id = ? ORDER BY id ASC',
             [$userId]
         );
@@ -65,15 +65,13 @@ final class ConnectionStore
                 permissions = VALUES(permissions), status = VALUES(status), last_error = NULL, updated_at = NOW()',
             [$userId, $provider, $label, $accountRef, $keyMask, $sealed, $permissions, $status]
         );
-        $row = $this->db->queryOne(
-            'SELECT id FROM exchange_connections WHERE user_id = ? AND provider = ? AND account_ref = ?',
+        $fresh = $this->db->queryOne(
+            'SELECT * FROM exchange_connections WHERE user_id = ? AND provider = ? AND account_ref = ?',
             [$userId, $provider, $accountRef]
         );
-        if ($row === null) {
+        if ($fresh === null) {
             throw new IntegrationException('store_failed', 'Nie można zapisać połączenia.', 500);
         }
-        $id = (int) $row['id'];
-        $fresh = $this->db->queryOne('SELECT * FROM exchange_connections WHERE id = ?', [$id]) ?? [];
         return $this->publicRow($fresh);
     }
 
@@ -88,6 +86,7 @@ final class ConnectionStore
         $rows = $this->db->query(
             "SELECT * FROM exchange_connections
              WHERE status IN ('connected', 'error', 'pending')
+               AND pairing_hash IS NULL
                AND (last_sync_at IS NULL OR last_sync_at < DATE_SUB(NOW(), INTERVAL 25 MINUTE))
              ORDER BY COALESCE(last_sync_at, '1970-01-01') ASC LIMIT " . max(1, min(200, $limit))
         );
@@ -180,18 +179,20 @@ final class ConnectionStore
             [$userId, $platform]
         );
         $sealed = $this->crypto->seal(['pairing_hash' => $hash, 'platform' => $platform]);
+        $expires = gmdate('Y-m-d H:i:s', time() + 900);
         $this->db->execute(
             'INSERT INTO exchange_connections
-                (user_id, provider, label, account_ref, key_mask, credentials, pairing_hash, permissions, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+                (user_id, provider, label, account_ref, key_mask, credentials, pairing_hash, pairing_expires_at, permissions, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
             [
                 $userId,
                 $platform,
                 $platform === 'mt4' ? 'MetaTrader 4' : 'MetaTrader 5',
-                'pairing:' . substr($hash, 0, 16),
+                'pending',
                 'EA ••••',
                 $sealed,
                 $hash,
+                $expires,
                 'read-only',
                 'pending',
             ]
@@ -203,7 +204,11 @@ final class ConnectionStore
     public function findByPairingHash(string $hash): ?array
     {
         $row = $this->db->queryOne(
-            "SELECT * FROM exchange_connections WHERE pairing_hash = ? AND status IN ('pending', 'connected') ORDER BY id DESC LIMIT 1",
+            "SELECT * FROM exchange_connections
+             WHERE pairing_hash = ?
+               AND status IN ('pending', 'connected')
+               AND (pairing_expires_at IS NULL OR pairing_expires_at > UTC_TIMESTAMP())
+             ORDER BY id DESC LIMIT 1",
             [$hash]
         );
         return $row === null ? null : $this->privateRow($row);
@@ -213,7 +218,8 @@ final class ConnectionStore
     {
         $this->db->execute(
             "UPDATE exchange_connections
-             SET status = 'connected', account_ref = ?, key_mask = 'EA ••••', permissions = 'read-only',
+             SET status = 'connected', account_ref = ?, pairing_expires_at = UTC_TIMESTAMP() + INTERVAL 90 DAY,
+                 key_mask = 'EA ••••', permissions = 'read-only',
                  last_sync_at = NOW(), last_sync_status = 'success', last_error = NULL,
                  imported_count = imported_count + ?, updated_at = NOW()
              WHERE id = ?",
@@ -252,6 +258,7 @@ final class ConnectionStore
             'createdAt' => $row['created_at'] ?? null,
             'platform' => str_starts_with((string) ($row['provider'] ?? ''), 'mt') ? (string) $row['provider'] : null,
             'serverRef' => $this->serverRef($row),
+            'pairing' => !empty($row['pairing_hash']),
         ];
     }
 

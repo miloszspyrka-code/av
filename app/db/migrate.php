@@ -5,8 +5,8 @@ $root = dirname(__DIR__, 2);
 
 try {
     [$config, $db] = require $root . '/app/bootstrap.php';
-    $db->migrate($root . '/db/schema.sql');
-    fwrite(STDOUT, "AlphaVault schema ready\n");
+    $applied = $db->migrate($root . '/db/schema.sql', $root . '/db/migrations');
+    fwrite(STDOUT, "AlphaVault schema ready" . ($applied !== [] ? ' (migrations: ' . implode(', ', $applied) . ')' : '') . "\n");
     exit(0);
 } catch (\Throwable $err) {
     fwrite(STDERR, 'AlphaVault migration failed: ' . $err->getMessage() . "\n");

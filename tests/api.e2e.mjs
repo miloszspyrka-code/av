@@ -132,6 +132,7 @@ async function main() {
   assert.equal(state.res.status, 200);
   assert.ok(state.json.state, 'brak stanu demo');
   assert.ok(Array.isArray(state.json.state.trades));
+  assert.equal(typeof state.json.userId, 'number');
   log('GET /api/state', true, `rewizja ${state.json.revision}, transakcje ${state.json.state.trades.length}`);
 
   const originalState = state.json.state;

@@ -148,6 +148,9 @@ try {
   assert.equal(demo.res.status, 200, demo.text);
   cookie = cookieFrom(demo.res);
   assert.ok(cookie, 'brak cookie sesji');
+  const seeded = await req('/api/state');
+  assert.equal(seeded.res.status, 200, seeded.text);
+  assert.ok(seeded.json.state, 'brak seedu stanu demo');
   log('logowanie demo', true);
 
   const initial = await req('/api/connections');
@@ -244,6 +247,14 @@ try {
   assert.equal(pair.res.status, 201, pair.text);
   assert.match(pair.json.code, /^AV-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
   const code = pair.json.code;
+  const afterPair = await req('/api/connections');
+  assert.ok(afterPair.json.connections.some((c) => c.id === mt.json.connection.id), 'parowanie EA usunęło MetaApi');
+  const pending = afterPair.json.connections.find((c) => c.id === pair.json.connectionId);
+  assert.ok(pending && pending.accountRef === 'pending', 'kod parowania nie powinien ujawniać hasha');
+  const eaSync = await req('/api/connections/' + pair.json.connectionId + '/sync', { method: 'POST', headers: { Origin: BASE } });
+  assert.equal(eaSync.res.status, 422, eaSync.text);
+  assert.equal(eaSync.json.error, 'ea_push_only');
+  log('EA: parowanie nie usuwa MetaApi i nie ujawnia hasha', true);
 
   const nowSec = Math.floor(Date.now() / 1000);
   const ea = await req('/api/mt/ea', {
@@ -275,8 +286,8 @@ try {
   // ---------- podsumowanie ----------
   const list = await req('/api/connections');
   assert.equal(list.res.status, 200);
-  assert.equal(list.json.connections.length, 4);
-  assert.ok(!/okx-secret|weex-secret|bingx-secret|investor/.test(list.text), 'wyciek sekretów w API');
+  assert.equal(list.json.connections.length, 5);
+  assert.ok(!/okx-secret|weex-secret|bingx-secret|investorMode|"password"/.test(list.text), 'wyciek sekretów w API');
   const okxConn = list.json.connections.find((c) => c.provider === 'okx');
   assert.ok(okxConn && okxConn.keyMask.includes('••••'));
   assert.ok(okxConn.lastSyncAt);
