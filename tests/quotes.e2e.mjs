@@ -146,6 +146,16 @@ async function main() {
   assert.equal(hitsAfterSecond, hitsAfterFirst, 'cache nie powinien odpytywać dostawcy w TTL');
   log('cache TTL — brak drugiego zapytania do dostawcy', true, `hits=${hitsAfterSecond}`);
 
+  const hitsBeforeFilter = (await getJson(FAKE, '/__hits')).json.hits;
+  const filtered = await getJson(OK, '/api/quotes?symbols=' + encodeURIComponent('SOL/USDT,EUR/USD'));
+  assert.equal(filtered.res.status, 200, filtered.text);
+  assert.deepEqual(filtered.json.quotes.map((q) => q.symbol), ['SOL/USDT', 'EUR/USD']);
+  assert.equal(filtered.json.stale, false);
+  assert.ok(filtered.json.quotes.every((q) => Number.isFinite(q.price) && q.price > 0));
+  const hitsAfterFilter = (await getJson(FAKE, '/__hits')).json.hits;
+  assert.equal(hitsAfterFilter - hitsBeforeFilter, 2, 'filtr pobiera tylko zamówione instrumenty');
+  log('GET /api/quotes?symbols — filtr instrumentów kalkulatora', true, filtered.json.quotes.map((q) => `${q.symbol}=${q.price}`).join(' '));
+
   stopAll();
   servers.length = 0;
   start(['-S', `127.0.0.1:${APP_PORT}`, '-t', 'public', 'public/router.php'],
@@ -160,7 +170,7 @@ async function main() {
   assert.equal(failed.json.stale, true, 'po błędzie dostawcy flaga stale');
   assert.equal(failed.json.quotes.length, SYMBOLS.length, 'błąd nie może wyczyścić ostatniego zestawu');
   assert.deepEqual(failed.json.quotes.map((q) => q.price), first.json.quotes.map((q) => q.price));
-  assert.equal(failed.json.updatedAt, first.json.updatedAt);
+  assert.equal(failed.json.updatedAt, filtered.json.updatedAt);
   log('błąd dostawcy — ostatni dobry zestaw zachowany', true, `stale=${failed.json.stale}`);
 
   const empty = await getJson(EMPTY, '/api/quotes');

@@ -99,6 +99,28 @@ $brokenQuotes = new Quotes($broken, 'https://quotes.test', 60, fn (): array => [
 $brokenResult = $brokenQuotes->get();
 check(count($brokenResult['quotes']) === 1 && $brokenResult['stale'] === true, 'broken: cache zignorowany, dostawca uzyty');
 
+// 8. Filtr instrumentów kalkulatora: normalizacja etykiet UI i tylko zamówione symbole.
+check(Quotes::normalize('NAS100 · Nasdaq 100') === 'NAS100', 'normalize: etykieta z separatorem');
+check(Quotes::normalize('NAS100 – Nasdaq 100') === 'NAS100', 'normalize: etykieta z myślnikiem');
+check(Quotes::normalize(' sol/usdt ') === 'SOL/USDT', 'normalize: spacje i wielkość liter');
+check(Quotes::normalize('') === '', 'normalize: pusty string');
+$supported = Quotes::supported();
+check(in_array('BTC', $supported, true) && in_array('SOL/USDT', $supported, true) && in_array('XAGUSD', $supported, true), 'supported: ticker + instrumenty');
+
+$filterCache = $dir . '/filter.json';
+$filtered = new Quotes($filterCache, 'https://quotes.test', 60, fn (): array => array_replace($full, [
+    'SOL/USDT' => ['price' => 164.9, 'change' => -2.1],
+    'NAS100' => ['price' => 21426.0, 'change' => 0.4],
+]));
+$only = $filtered->get(['SOL/USDT', 'NAS100 · Nasdaq 100']);
+check(array_column($only['quotes'], 'symbol') === ['SOL/USDT', 'NAS100'], 'filter: tylko zamówione instrumenty');
+check($only['stale'] === false, 'filter: komplet danych bez stale');
+check(($only['quotes'][0]['price'] ?? null) === 164.9, 'filter: cena SOL/USDT z dostawcy');
+check(($only['quotes'][1]['price'] ?? null) === 21426.0, 'filter: cena NAS100 po normalizacji etykiety');
+
+$unknown = $filtered->get(['NIEZNANY/PAIR']);
+check($unknown === ['quotes' => [], 'updatedAt' => null, 'stale' => true], 'filter: nieznany symbol bez wyjątku');
+
 foreach (glob($dir . '/*') ?: [] as $file) {
     @unlink($file);
 }

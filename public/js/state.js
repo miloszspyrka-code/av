@@ -559,8 +559,7 @@
     const el = document.getElementById('envBadge');
     if (!el) return;
     if (AV.api.online && AV.api.authenticated) {
-      const plan = AV.state?.subscription?.plan === 'solo' ? 'Alpha Vault' : 'Alpha + Akademia';
-      el.textContent = plan + (AV.api.lastError ? ' · zapis wstrzymany' : ' · zapis automatyczny');
+      el.textContent = 'POŁĄCZONO Z MYSQL' + (AV.api.lastError ? ' · ostatni zapis: błąd' : '');
     } else if (AV.api.online) {
       el.textContent = 'ALPHA VAULT · logowanie przez Discord';
     } else {

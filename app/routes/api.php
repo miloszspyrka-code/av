@@ -113,8 +113,15 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
         }
 
         if ($path === '/api/quotes' && $method === 'GET') {
+            $requested = [];
+            foreach (explode(',', (string) ($_GET['symbols'] ?? '')) as $label) {
+                $label = trim($label);
+                if ($label !== '') {
+                    $requested[] = $label;
+                }
+            }
             $quotes = new Quotes($config->quotesCacheFile, $config->quotesBase, $config->quotesTtl);
-            Http::json($quotes->get());
+            Http::json($quotes->get($requested));
         }
 
         if ($path === '/api/state' && $method === 'GET') {
