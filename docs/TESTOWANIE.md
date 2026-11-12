@@ -318,7 +318,7 @@ Wykonane na `https://alphavault.pl`:
 | Realny sync | 3 wydarzenia VOICE, 3 unikalne ID |
 | Baza | 3 rekordy `live`, `sync.status=success` |
 | Błąd 401 (zły token) | `sync.status=error`, 3 wydarzenia zachowane, `last_success_at` bez zmian |
-| LH Cron | logi `18:05:05` i `18:10:02` — uruchomienie co 5 min |
+| LH Cron | 1 wpis `*/5`; `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` = 22:00:02 UTC, `stale=false` |
 | Monitoring | `monitor-production.yml` — health + `sync.status`/`stale`, co 15 min |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
 | PWA manifest/SW/ikony | 200, `application/manifest+json`, ikony `/assets/pwa/*`, installability bez błędów |

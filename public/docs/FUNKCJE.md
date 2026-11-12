@@ -221,7 +221,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Twoje dane w dni makro | ✅ | z transakcji |
 | Powiadomienia 30 min | ✅ | toast + Notification API, jeśli pozwolono |
 | Widget MAKRO | ✅ | te same dane co kalendarz |
-| Synchronizacja | ✅ | `bin/sync-macro-events.php`, LH Cron co 15 min |
+| Synchronizacja | ✅ | `bin/sync-macro-events.php`; ręcznie, brak wpisu LH Cron |
 
 ---
 

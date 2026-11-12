@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Naprawione
+- Dokumentacja: LH Cron ma **jeden** wpis `*/5` (`cron/sync-discord-events.sh`). Z niego wynikają Discord events, worker integracji i recheck roli. Makro i urządzenia nie mają wpisów w panelu — są uruchamiane ręcznie. Usunięto nieaktualne instrukcje dodawania zadań `*/15` i `*/30`.
+
 ## 3.9.0 — 2026-11-13
 
 ### Naprawione
@@ -18,8 +23,6 @@
 ### Testy
 - Nowy `tests/isolation.e2e.mjs` — 9/9 scenariuszy izolacji dwóch kont i blokady stanu z obcej karty.
 - API 23/23, UI 53/53, integracje 20/20, wearables 42/42, PWA 20/20, MCP 17/17.
-
-## 3.8.0 - 2026-11-12
 
 ## 3.8.1 — 2026-11-12
 
