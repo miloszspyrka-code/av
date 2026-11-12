@@ -158,6 +158,7 @@ Wykonane na `https://alphavault.pl`:
 | `GET /api/events` bez sesji | 401 |
 | Realny sync | 3 wydarzenia VOICE, 3 unikalne ID |
 | Baza | 3 rekordy `live`, `sync.status=success` |
+| Błąd 401 (zły token) | `sync.status=error`, 3 wydarzenia zachowane, `last_success_at` bez zmian |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
 
 Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
