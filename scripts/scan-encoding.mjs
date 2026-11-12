@@ -8,7 +8,7 @@ const SKIP = new Set(['.git', 'node_modules', 'vendor', 'cache', 'logs']);
 const EXT = /\.(php|js|mjs|cjs|ts|json|html|css|md|yml|yaml|sh|sql|txt|xml|svg)$/i;
 
 // Mojibake markers: characters that appear when UTF-8 bytes are decoded as CP1252/Latin-1.
-const MOJI = /(?:Ĺ|Ă|â€|Ã|Å|Â[·×°]|Ľ|ĺ|Ä[™„…]|â‚¬|â€“|â€”|â€ž|â€ś|â€¦|Â)/;
+const MOJI = /(?:\u0139|\u0102|\u00e2\u20ac|\u00c3|\u00c5|\u00c2[\u00b7\u00d7\u00b0]|\u013d|\u013a|\u00c4[\u2122\u201e\u2026]|\u00e2\u201a\u00ac|\u00e2\u20ac\u201c|\u00e2\u20ac\u201d|\u00e2\u20ac\u017e|\u00e2\u20ac\u015b|\u00e2\u20ac\u00a6|\u00c2)/;
 
 const files = [];
 async function walk(dir) {
