@@ -485,6 +485,7 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 ```text
 index.html
   → core.js       (AV, $, $$, esc, fmt)
+  → pwa.js        (instalacja PWA, powiadomienia, deep link)
   → data.js       (dane demo/statyczne)
   → state.js      (stan, API, rewizje, wydarzenia)
   → render1.js    (widoki, pulpit, dziennik)
@@ -534,13 +535,24 @@ Skrypty mają `defer`; kolejność jest istotna.
 - `liveReminder` w stanie użytkownika,
 - okno 15 minut przed startem (840–900 s),
 - jednorazowy `liveNotified`,
-- toast + `Notification` przeglądarki, jeśli dozwolone.
+- toast + `AV.pwa.notify` (service worker, jeśli zarejestrowany; w przeciwnym razie `Notification`).
 
 ### 11.6. Offline
 
 - `localStorage` przechowuje ostatni stan i sesję UI.
 - Po utracie sieci UI działa, ale zapisy są odkładane.
 - Po powrocie stan serwera ma pierwszeństwo; konflikt rewizji rozwiązuje 409.
+
+### 11.7. PWA i powiadomienia
+
+- `manifest.webmanifest` + ikony + meta iOS czynią panel instalowalnym bez App Store.
+- `pwa.js` rejestruje `/sw.js`, obsługuje `beforeinstallprompt`, `appinstalled` i przyciski `[data-install]`, `[data-pwa-notify]`.
+- `sw.js` cache'uje powłokę (HTML/JS/ikony), ale **nie** cache'uje `/api/` ani `/auth/`; nawigacja jest network-first z fallbackiem offline.
+- `AV.pwa.notify()` używa `registration.showNotification()` (iOS/Android) albo `Notification` w przeglądarce; `notifyTradeClosed()` wysyła deep link `/?qa=<tradeId>`.
+- `notificationclick` fokusuje istniejące okno albo otwiera nowe z deep linkiem; `AV.quickAddFromUrl()` otwiera modal i czyści parametr z URL.
+- `AV.openQuickAdd()` wybiera transakcję: wskazany `id` → najnowsza bez emocji/oceny → najnowsza zamknięta → najnowsza. Modal pokazuje prawdziwe dane, nie statyczny BTC.
+- Zapis quick add: emocja + ocena wymagane, zdjęcie opcjonalne (`capture="environment"`). Czas od otwarcia do zapisu jest mierzony w `AV.ui.qaLastSeconds`.
+- Push serwerowy: SW ma handler `push` i `notificationclick`; nie ma jeszcze serwerowego źródła zdarzeń i VAPID. Do wdrożenia z auto-importem.
 
 ## 12. Puste pola i stany brzegowe
 
@@ -656,6 +668,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
 | UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy, 8 odznak | 37/37 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
+| PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
@@ -671,6 +684,7 @@ Komendy:
 npm test
 npm run test:ui
 npm run test:ui:empty
+npm run test:pwa
 npm run test:events
 npm run test:wearables
 npm run test:docs

@@ -1,0 +1,52 @@
+{
+  "id": "/",
+  "name": "Alpha Vault",
+  "short_name": "Alpha Vault",
+  "description": "Prywatna strefa tradera Alpha Moves: dziennik, plan dnia, statystyki, mentor i Akademia.",
+  "lang": "pl",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#080707",
+  "theme_color": "#080707",
+  "categories": ["finance", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Szybkie dodanie",
+      "short_name": "Dodaj",
+      "description": "Dodaj emocję, ocenę i zdjęcie wykresu do ostatniej transakcji.",
+      "url": "/?qa=1",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

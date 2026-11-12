@@ -144,6 +144,12 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
         run: node tests/ui.e2e.mjs
 
+      - name: PWA E2E (iPhone emulation)
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/pwa.e2e.mjs
+
       - name: Start empty-events PHP server
         run: |
           set -euo pipefail

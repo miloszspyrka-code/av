@@ -178,13 +178,14 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 ```powershell
 npm test                 # API 20/20
 npm run test:ui          # UI 37/37 (Chrome/Edge)
+npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
 npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
 npm run test:docs        # linki i spójność dokumentacji
 ```
 
-UI wymaga uruchomionego serwera PHP i `APP_URL`. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
+UI wymaga uruchomionego serwera PHP i `APP_URL`. PWA używa tego samego serwera i Chrome/Edge. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
 
 ### Deploy
 
