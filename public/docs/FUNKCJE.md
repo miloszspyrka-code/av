@@ -143,6 +143,7 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Raport tygodnia | ✅ | z ostatnich 7 dni |
 | Odświeżenie analizy | ✅ | |
 | Proaktywna wiadomość przy limicie strat | ✅ | po zalogowaniu |
+| Krok „plan dnia przed pierwszą transakcją” | ✅ | klik prowadzi do zakładki Plan dnia (pulpit i czat mentora) |
 
 Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłączenie LLM to przyszły krok.
 
