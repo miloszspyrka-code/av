@@ -132,3 +132,58 @@ jobs:
           fi
           kill "$TUNNEL_PID" 2>/dev/null || true
           wait "$TUNNEL_PID" 2>/dev/null || true
+
+      - name: Deeper WordPress and DB check
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          DB_PORT="${DB_PORT:-3306}"
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
+          chmod 600 "$HOME/.ssh/known_hosts"
+          export SSHPASS="$LH_SSH_PASSWORD"
+          SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20)
+
+          echo "=== public_html tree and WordPress markers ==="
+          sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -u
+          echo "--- domain directories ---"
+          find "$HOME/public_html" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort
+          echo "--- WordPress markers (maxdepth 5) ---"
+          find "$HOME/public_html" -maxdepth 5 \( -name wp-config.php -o -name wp-load.php -o -name wp-content \) -print 2>/dev/null
+          echo "--- per-domain files ---"
+          for d in "$HOME"/public_html/*/; do
+            echo "### $d"
+            ls -la "$d" 2>/dev/null | sed -n '1,25p'
+            for f in index.php wp-config.php wp-load.php package.json server.js app.js; do
+              if [ -e "$d$f" ]; then echo "FOUND $f"; fi
+            done
+          done
+          REMOTE
+
+          echo "=== DB secrets test on LH host ==="
+          {
+            printf 'DB_HOST=%q\n' "$DB_HOST"
+            printf 'DB_PORT=%q\n' "$DB_PORT"
+            printf 'DB_NAME=%q\n' "$DB_NAME"
+            printf 'DB_USER=%q\n' "$DB_USER"
+            printf 'DB_PASSWORD=%q\n' "$DB_PASSWORD"
+            cat <<'REMOTE'
+          if MYSQL_PWD="$DB_PASSWORD" mysql --protocol=TCP --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" "$DB_NAME" -e "SELECT VERSION() AS version; SHOW TABLES;"; then
+            echo "DB_LOCAL=OK"
+          else
+            echo "DB_LOCAL=FAIL"
+          fi
+          REMOTE
+          } | sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s'
+
