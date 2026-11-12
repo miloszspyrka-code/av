@@ -2,10 +2,18 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Alpha Vault · prywatna strefa tradera · Alpha Moves</title>
 <meta name="description" content="Alpha Vault — prywatna strefa tradera Alpha Moves: plan dnia, dziennik, statystyki, kalkulator, mentor i kalendarz makro.">
 <meta name="theme-color" content="#080707">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alpha Vault">
+<meta name="application-name" content="Alpha Vault">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
 :root{
@@ -368,8 +376,11 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--cream);color:var(--ink);font-weight:700;border-radius:99px;padding:11px 20px;font-size:14px;opacity:0;transition:.25s var(--ease);z-index:200;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%)}
 
-@media(max-width:1100px){.hero{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr}.rules4{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){#auth{grid-template-columns:1fr}.auth-art{display:none}.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto;gap:4px;padding:10px}aside .logo,.me,.navg .gl{display:none}.navg{flex-direction:row}.navg button{white-space:nowrap}.navg button.on:before{display:none}.g3,.g4,.g2{grid-template-columns:1fr 1fr}.wrap{padding:26px 16px 110px}.top{padding:10px 16px}.ex{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero>:first-child{grid-column:auto}.lvl{grid-template-columns:1fr 1fr}}
+.qa-grid{grid-template-columns:auto 1fr;gap:34px}
+.qa-float{display:none}
+#qaSave:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){.modal{padding:18px 10px}#qa .mbox{padding:20px 16px 92px;border-radius:18px}.qa-grid{grid-template-columns:1fr;gap:20px}.qa-grid .phone{width:100%;height:auto;border-width:6px;border-radius:28px;margin:0;box-shadow:0 20px 40px -24px #000}.qa-grid .phone:before{display:none}.qa-grid .phone .scr{height:auto;padding:18px 14px 20px}.qa-float{display:block;position:fixed;left:14px;right:14px;bottom:14px;z-index:70;box-shadow:0 12px 30px rgba(0,0,0,.6)}.qa-float:disabled{opacity:.55}}
+@media(max-width:1100px){.hero{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr}.rules4{grid-template-columns:1fr 1fr}}@media(max-width:900px){#auth{grid-template-columns:1fr}.auth-art{display:none}.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto;gap:4px;padding:10px}aside .logo,.me,.navg .gl{display:none}.navg{flex-direction:row}.navg button{white-space:nowrap}.navg button.on:before{display:none}.g3,.g4,.g2{grid-template-columns:1fr 1fr}.wrap{padding:26px 16px 110px}.top{padding:10px 16px}.ex{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero>:first-child{grid-column:auto}.lvl{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.g3,.g4,.g2,.res,.rules4,.gradepick,.biasseg{grid-template-columns:1fr}.res .big{grid-column:auto}h1{font-size:30px}h1 .serif{font-size:36px}.ev{grid-template-columns:70px 1fr auto}.ev .flag{display:none}.chipst{display:none}.mw{right:12px;bottom:12px}.mw-panel{width:calc(100vw - 24px)}.lock{flex-wrap:wrap}.cd{margin-left:0}}
 </style>
 </head>
@@ -939,7 +950,12 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <div class="row"><div><b class="loss">Usuń konto i wszystkie dane</b><span>Trwale usuwa dziennik, screeny, dane z zegarka i klucze API.</span></div><button class="btn g sm" id="deleteAcc">Usuń</button></div>
       <div class="card"><div class="sech" style="margin:0"><h2>Alpha Vault na telefonie</h2><span class="tag info">bez App Store</span></div>
         <p class="mut" style="font-size:13.5px;line-height:1.55;margin-top:6px">Zainstaluj panel jak aplikację. Po zamknięciu transakcji dostaniesz powiadomienie i dodasz emocję, ocenę i zdjęcie wykresu w 10 sekund.</p>
-        <button class="btn p sm" data-qa style="margin-top:12px">Zobacz, jak to działa</button></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn p sm" data-install>Jak zainstalować</button>
+          <button class="btn g sm" data-pwa-notify>Włącz powiadomienia</button>
+          <button class="btn g sm" data-qa>Zobacz, jak to działa</button>
+        </div>
+        <div class="dim" data-pwa-status style="font-size:12px;line-height:1.5;margin-top:10px"></div></div>
     </div>
     <div class="grid">
       <div class="card"><div class="sech" style="margin:0"><h2>Odznaki</h2><span class="mono dim" style="font-size:12px" id="badgeSummary">0 z 8 · poziom 1</span></div>
@@ -1001,16 +1017,18 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 </div></div>
 <div class="modal" id="qa"><div class="mbox" style="max-width:860px"><span class="mclose" data-close="qa"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></span>
   <div class="eyebrow">Alpha Vault na telefonie</div><h1 style="font-size:30px">Szybkie dodanie w <span class="serif">10 sekund.</span></h1>
-  <div class="grid" style="grid-template-columns:auto 1fr;gap:34px;margin-top:22px;align-items:start">
+  <div class="grid qa-grid" style="margin-top:22px;align-items:start">
     <div class="phone"><div class="scr">
-      <div class="push"><span class="pi">α</span><div><b>Alpha Vault · teraz</b><br>Zamknięta: BTC/USDT long +65,00. Dodaj emocję i ocenę.</div></div>
-      <div style="margin-top:16px;font-weight:800;font-size:16px">BTC/USDT <span class="pill l" style="font-size:10px">LONG</span> <span class="win mono" style="float:right">+65,00</span></div>
-      <div class="dim" style="font-size:11.5px;margin-top:2px">WEEX · 15:30 · zaimportowana automatycznie</div>
-      <div class="lbl" style="margin-top:16px">Jak się czujesz?</div><div class="chips sel" style="margin-top:8px" id="qaEmotion"><span class="chip on">Spokój</span><span class="chip">Skupienie</span><span class="chip">FOMO</span><span class="chip">Złość</span><span class="chip">Zmęczenie</span></div>
-      <div class="lbl" style="margin-top:16px">Ocena</div><div class="gq" style="margin-top:8px" id="qaG"><div class="A on">A</div><div class="B">B</div><div class="C">C</div></div>
-      <div class="lbl" style="margin-top:16px">Błąd?</div><div class="chips sel" style="margin-top:8px" id="qaError"><span class="chip on">Brak</span><span class="chip">Za wcześnie</span><span class="chip">Za wczesne wyjście</span><span class="chip">Przesunięty SL</span></div>
+      <div class="push"><span class="pi">α</span><div><b>Alpha Vault · teraz</b><br><span id="qaPushText">Transakcja zamknięta. Dodaj emocję i ocenę.</span></div></div>
+      <div style="margin-top:16px;font-weight:800;font-size:16px"><span id="qaPair">BTC/USDT</span> <span class="pill l" id="qaDir" style="font-size:10px">LONG</span> <span class="win mono" id="qaResult" style="float:right">+65,00</span></div>
+      <div class="dim" id="qaMeta" style="font-size:11.5px;margin-top:2px">WEEX · 15:30 · zamknięta</div>
+      <div class="lbl" style="margin-top:16px">Jak się czujesz?</div><div class="chips sel" style="margin-top:8px" id="qaEmotion"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">FOMO</span><span class="chip">Złość</span><span class="chip">Zmęczenie</span></div>
+      <div class="lbl" style="margin-top:16px">Ocena</div><div class="gq" style="margin-top:8px" id="qaG"><div class="A">A</div><div class="B">B</div><div class="C">C</div></div>      <div class="lbl" style="margin-top:16px">Błąd?</div><div class="chips sel" style="margin-top:8px" id="qaError"><span class="chip on">Brak</span><span class="chip">Za wcześnie</span><span class="chip">Za wczesne wyjście</span><span class="chip">Przesunięty SL</span></div>
       <button class="btn g" style="width:100%;margin-top:16px" id="qaPhoto">📷 Zdjęcie wykresu</button>
-      <button class="btn p" style="width:100%;margin-top:10px" id="qaSave">Zapisz</button>
+      <input type="file" id="qaPhotoInput" accept="image/*" capture="environment" hidden>
+      <img id="qaPhotoPreview" alt="Zdjęcie wykresu" hidden style="width:100%;border-radius:12px;margin-top:10px;border:1px solid var(--line2)">
+      <div class="hint" id="qaHint" style="margin-top:12px">Wybierz emocję i ocenę.</div>
+      <button class="btn p" style="width:100%;margin-top:8px" id="qaSave" disabled>Wybierz emocję i ocenę</button>
     </div></div>
     <div>
       <h3>Jak zainstalować</h3>
@@ -1019,14 +1037,21 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <li><span><b>Android:</b> otwórz w Chrome, stuknij <b>⋮</b> i wybierz <b>Zainstaluj aplikację</b>.</span></li>
         <li><span>Zaloguj się przez Discord i <b>zezwól na powiadomienia</b>.</span></li>
       </ol>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn p sm" data-install>Jak zainstalować</button>
+        <button class="btn g sm" data-pwa-notify>Włącz powiadomienia</button>
+      </div>
+      <div class="dim" data-pwa-status style="font-size:12px;line-height:1.5;margin-top:10px"></div>
       <h3 style="margin-top:16px">Jak to działa na co dzień</h3>
       <ol class="howto" style="margin-top:6px">
-        <li><span>Zamykasz pozycję na giełdzie albo w MetaTraderze.</span></li>
-        <li><span>Po chwili przychodzi powiadomienie z wynikiem transakcji.</span></li>
+        <li><span>Zamykasz pozycję w Alpha Vault albo wgrywasz historię z giełdy.</span></li>
+        <li><span>Dostajesz powiadomienie z wynikiem transakcji.</span></li>
         <li><span>Stukasz w nie, zaznaczasz emocję, ocenę i ewentualny błąd. <b>Gotowe.</b> Resztę uzupełnisz wieczorem na komputerze, jeśli chcesz.</span></li>
       </ol>
     </div>
-  </div></div></div>
+  </div></div>
+  <button class="btn p qa-float" id="qaSaveFloat" type="button" disabled>Wybierz emocję i ocenę</button>
+</div>
 <div class="modal" id="buyM"><div class="mbox" style="max-width:560px"><span class="mclose" data-close="buyM"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></span>
   <div class="eyebrow">Zakup</div><h1 style="font-size:28px" id="buyT">Akademia Alpha + Vault</h1><div class="mono al" style="margin-top:6px;font-size:15px" id="buyP">168 $ / miesiąc</div>
   <p class="mut" style="font-size:13.5px;margin-top:10px;line-height:1.55">Subskrypcja odnawia się co miesiąc. Anulujesz w każdej chwili, dostęp trwa do końca opłaconego okresu.</p>
@@ -1113,6 +1138,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <div class="toast" id="toast"></div>
 
 <script src="js/core.js" defer></script>
+<script src="js/pwa.js" defer></script>
 <script src="js/data.js" defer></script>
 <script src="js/state.js" defer></script>
 <script src="js/render1.js" defer></script>

@@ -18,6 +18,7 @@ npm ci
 $env:APP_URL = "http://127.0.0.1:4173"
 npm test
 npm run test:ui
+npm run test:pwa
 ```
 
 Test pustych pól wymaga drugiego serwera z gildią bez wydarzeń:
@@ -106,6 +107,25 @@ npm run test:ui:empty
 - `events.length === 0`,
 - dostępny stan synchronizacji.
 
+## PWA mobile — 20 scenariuszy
+
+`tests/pwa.e2e.mjs` używa Playwright + systemowego Chrome w emulacji iPhone 14 (390×844, touch, iOS UA). Sprawdza:
+
+- manifest: `display=standalone`, `start_url`, ikony 192/512/maskable,
+- meta iOS i `apple-touch-icon`,
+- rejestrację service workera i przejęcie kontroli nad stroną,
+- `Page.getAppManifest` i `Page.getInstallabilityErrors` bez błędów,
+- brak poziomego przewijania na pulpicie,
+- przycisk instalacji i stan powiadomień,
+- zamknięcie transakcji → powiadomienie systemowe z deep linkiem `?qa=<id>`,
+- deep link otwiera modal z prawdziwą transakcją,
+- emocja + ocena + zdjęcie zapisane w ≤ 10 s (mierzone `AV.ui.qaLastSeconds`),
+- stały przycisk zapisu na telefonie,
+- push przez CDP `ServiceWorker.deliverPushMessage`,
+- offline: powłoka aplikacji z cache service workera.
+
+To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu początkowego) i powiadomienia iOS wymagają testu ręcznego; patrz „Czego testy nie obejmują”.
+
 ## Dokumentacja — 16 scenariuszy
 
 `tests/docs.test.mjs` sprawdza:
@@ -142,6 +162,7 @@ npm run test:ui:empty
 - Discord DB/sync,
 - API e2e,
 - UI e2e (systemowy Chrome),
+- PWA e2e (emulacja iPhone 14, Chrome),
 - empty-state na osobnym porcie.
 
 ## Produkcja — 2026-11-12
@@ -167,6 +188,7 @@ Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy u�
 ## Czego testy nie obejmują
 
 - prawdziwego logowania Discord (wymaga interakcji użytkownika),
+- instalacji PWA na fizycznym telefonie i powiadomień iOS (wymaga urządzenia),
 - realnego Stage (brak wydarzenia w API — tylko fixture),
 - produkcyjnego SSH/rsync (sprawdzane przez dry run deployu),
 - LH Cron (wymaga panelu LH),

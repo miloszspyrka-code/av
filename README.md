@@ -50,6 +50,7 @@ php -S 127.0.0.1:4173 -t public public/router.php
 npm ci
 npm test                 # API: 20 scenariuszy
 npm run test:ui          # UI: 37 scenariuszy
+npm run test:pwa         # PWA mobile: 20 scenariuszy
 npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
