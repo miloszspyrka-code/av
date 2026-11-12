@@ -53,25 +53,41 @@ $fixture = [
         'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true], 'user_count' => 3, 'entity_metadata' => null,
     ],
     [
-        'id' => '1003', 'guild_id' => $guild, 'name' => 'Wydarzenie zewnętrzne - Hubert',
+        'id' => '1003', 'guild_id' => $guild, 'name' => 'Wydarzenie zewnÄ™trzne - Hubert',
         'description' => 'Spotkanie', 'scheduled_start_time' => '2026-11-16T18:00:00+00:00',
         'status' => 1, 'entity_type' => 3, 'channel_id' => null,
         'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true], 'user_count' => 3,
         'entity_metadata' => ['location' => 'Discord'],
     ],
+    [
+        'id' => '1004', 'guild_id' => $guild, 'name' => 'Stage - Marcin - AKADEMIA',
+        'description' => 'Stage wydarzenie', 'scheduled_start_time' => '2026-11-18T18:00:00+00:00',
+        'status' => 1, 'entity_type' => 1, 'channel_id' => '113',
+        'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true],
+        'entity_metadata' => null,
+    ],
 ];
 
 $result = $events->syncPayload($fixture);
-check($result['events_count'] === 3, 'first sync inserts 3 events');
+check($result['events_count'] === 4, 'first sync inserts 4 events');
 $list = $events->listForApi(false);
-check(count($list['events']) === 3, 'list returns 3 events');
+check(count($list['events']) === 4, 'list returns 4 events');
 check($list['live'] && $list['consultations'], 'classification live + consultation');
 check(($list['nextConsultation']['id'] ?? null) === '1002', 'next consultation is 1002');
+$stage = null; $external = null;
+foreach ($list['events'] as $item) {
+    if ($item['id'] === '1004') $stage = $item;
+    if ($item['id'] === '1003') $external = $item;
+}
+check($stage !== null && $stage['entityType'] === 'STAGE_INSTANCE', 'STAGE_INSTANCE mapping');
+check($stage !== null && $stage['durationMinutes'] === null, 'missing end time gives no duration');
+check($stage !== null && $stage['userCount'] === null, 'missing user_count stays null');
+check($external !== null && $external['entityType'] === 'EXTERNAL' && $external['location'] === 'Discord', 'EXTERNAL location mapping');
 check(($list['events'][0]['startLabel'] ?? '') !== '', 'start label generated');
 
 $events->syncPayload($fixture);
 $count = $db->queryOne('SELECT COUNT(*) AS c FROM discord_scheduled_events WHERE guild_id = ?', [$guild]);
-check((int) $count['c'] === 3, 'second sync does not duplicate');
+check((int) $count['c'] === 4, 'second sync does not duplicate');
 
 $changed = $fixture;
 $changed[0]['name'] = 'AT - Marcin - AKADEMIA (zmienione)';
@@ -100,11 +116,11 @@ $events->syncPayload([]);
 $list = $events->listForApi(false);
 check(count($list['events']) === 0, 'empty successful sync returns no events');
 $deleted = $db->queryOne('SELECT COUNT(*) AS c FROM discord_scheduled_events WHERE guild_id = ? AND is_deleted = 1', [$guild]);
-check((int) $deleted['c'] === 3, 'empty sync soft-deletes old events');
+check((int) $deleted['c'] === 4, 'empty sync soft-deletes old events');
 
 $events->syncPayload($fixture);
 $list = $events->listForApi(false);
-check(count($list['events']) === 3, 'reappearing events are restored');
+check(count($list['events']) === 4, 'reappearing events are restored');
 
 $db->execute('DELETE FROM discord_scheduled_events WHERE guild_id = ?', [$guild]);
 

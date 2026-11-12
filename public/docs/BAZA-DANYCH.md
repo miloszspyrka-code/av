@@ -14,6 +14,9 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `user_states` | cały stan JSON + rewizja + rozmiar |
 | `audit_log` | logowania, zapisy stanu, usunięcie konta |
 | `rate_limits` | limity per bucket/IP/window |
+| `discord_scheduled_events` | zsynchronizowane wydarzenia Discord (UPSERT, soft delete) |
+| `discord_sync_state` | ostatnia próba/sukces, licznik, błąd, blokada CRON |
+| `discord_sync_runs` | historia synchronizacji (30 dni) |
 | `schema_migrations` | wersje migracji |
 
 ## Stan JSON

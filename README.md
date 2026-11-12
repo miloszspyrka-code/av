@@ -17,8 +17,9 @@ Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerz
 
 ```text
 public/            # document root: index.php, index.html, js/, docs/
-app/               # PHP: Config, Db, Auth, Discord, routes
-db/                # schema.sql, demo-state.json
+app/               # PHP: Config, Db, Auth, Discord, DiscordEvents, routes
+bin/               # sync-discord-events.php (LH Cron)
+db/                # schema.sql, demo-state.json, migrations
 tests/             # API i UI e2e (Node + Playwright)
 docs/              # dokumentacja techniczna
 legacy/            # poprzedni backend Express (referencja, nie jest wdrażany)
