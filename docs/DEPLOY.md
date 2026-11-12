@@ -58,6 +58,11 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `DISCORD_REQUIRED_ROLE_ID` | ID roli Alpha |
 | `DISCORD_BOT_TOKEN` | token bota read-only do scheduled events |
 | `ADMIN_DISCORD_IDS` | opcjonalna lista Discord ID administratorów (po przecinku) |
+| `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja Oura (opcjonalne; bez nich kafelek jest nieaktywny) |
+| `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja Whoop (opcjonalne) |
+| `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja Garmin Health API (opcjonalne; wymaga zatwierdzenia partnera) |
+| `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | endpointy przydzielone przez Garmin |
+| `WEARABLES_ENCRYPTION_KEY` | opcjonalny klucz AES tokenów urządzeń |
 
 Zmienne repozytorium:
 
@@ -79,6 +84,26 @@ Backend odmawia dostępu, gdy:
 - użytkownik nie jest członkiem serwera,
 - użytkownik nie ma wymaganej roli,
 - `DISCORD_GUILD_ID` lub `DISCORD_REQUIRED_ROLE_ID` nie są ustawione (fail closed).
+
+## 4a. Urządzenia zdrowotne
+
+Redirect URI do zarejestrowania u dostawców:
+
+```text
+https://alphavault.pl/auth/wearables/garmin/callback
+https://alphavault.pl/auth/wearables/oura/callback
+https://alphavault.pl/auth/wearables/whoop/callback
+```
+
+Oura: scope `daily sleep heartrate personal`. Whoop: `read:recovery read:sleep read:profile offline`. Garmin: wartości `GARMIN_*` pochodzą z programu Garmin Health API i są przydzielane po zatwierdzeniu partnera; bez nich kafelek Garmin jest nieaktywny, a reszta działa.
+
+Apple Watch nie używa OAuth. Panel generuje kod `AV-XXXX-XXXX`; aplikacja iPhone wysyła nim `POST /api/wearables/apple/ingest` i dostaje token urządzenia. Sama aplikacja iPhone nie jest częścią tego repozytorium — backend jest gotowy, ale do realnego użycia potrzebna jest aplikacja klienta.
+
+Synchronizacja OAuth2 może być uruchamiana ręcznie z panelu i przez cron:
+
+```cron
+*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh >> /public_html/alphavault.pl/.app/logs/wearables-sync.log 2>&1
+```
 
 ## 5. Synchronizacja Discord (CRON)
 

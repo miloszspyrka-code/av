@@ -160,6 +160,76 @@ CREATE TABLE IF NOT EXISTS discord_sync_runs (
   KEY idx_sync_runs_started (started_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Integracje urządzeń: OAuth2 (Garmin/Oura/Whoop), most Apple Health.
+CREATE TABLE IF NOT EXISTS wearable_connections (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  provider ENUM('garmin','apple','oura','whoop') NOT NULL,
+  status ENUM('connected','revoked') NOT NULL DEFAULT 'connected',
+  external_user_id VARCHAR(191) NULL,
+  scopes VARCHAR(500) NULL,
+  access_token_enc TEXT NULL,
+  refresh_token_enc TEXT NULL,
+  token_expires_at DATETIME NULL,
+  device_token_hash CHAR(64) NULL,
+  device_name VARCHAR(100) NULL,
+  last_sync_at DATETIME NULL,
+  last_sync_status VARCHAR(20) NULL,
+  last_error VARCHAR(300) NULL,
+  consent_at DATETIME NOT NULL,
+  revoked_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_wearable_user_provider (user_id, provider),
+  KEY idx_wearable_device_token (device_token_hash),
+  KEY idx_wearable_status (status),
+  CONSTRAINT fk_wearable_conn_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS wearable_daily_metrics (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  provider ENUM('garmin','apple','oura','whoop') NOT NULL,
+  metric_date DATE NOT NULL,
+  sleep_minutes SMALLINT UNSIGNED NULL,
+  hrv_ms DECIMAL(6,1) NULL,
+  resting_hr SMALLINT UNSIGNED NULL,
+  body_battery TINYINT UNSIGNED NULL,
+  provider_score TINYINT UNSIGNED NULL,
+  raw_payload JSON NULL,
+  synced_at DATETIME NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_wearable_metric (user_id, provider, metric_date),
+  KEY idx_wearable_metric_date (user_id, metric_date),
+  CONSTRAINT fk_wearable_metric_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS wearable_oauth_states (
+  state CHAR(64) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  provider ENUM('garmin','oura','whoop') NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  PRIMARY KEY (state),
+  KEY idx_wearable_state_expires (expires_at),
+  KEY idx_wearable_state_user (user_id),
+  CONSTRAINT fk_wearable_state_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS wearable_pair_codes (
+  code_hash CHAR(64) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  PRIMARY KEY (code_hash),
+  KEY idx_wearable_pair_expires (expires_at),
+  KEY idx_wearable_pair_user (user_id),
+  CONSTRAINT fk_wearable_pair_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version VARCHAR(64) NOT NULL,
   applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

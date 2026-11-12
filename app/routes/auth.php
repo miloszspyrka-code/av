@@ -167,6 +167,53 @@ function av_handle_auth(Config $config, Db $db, Auth $auth, Discord $discord, ?a
             ]);
         }
 
+        if (preg_match('#^/auth/wearables/(garmin|oura|whoop)/start$#', $path, $matches) && $method === 'GET') {
+            $current = $user;
+            if ($current === null) {
+                av_auth_error(401, 'Zaloguj się', 'Połączenie urządzenia wymaga zalogowania do Alpha Vault.');
+            }
+            $auth->rateLimit('wearables-start', 30, 60000);
+            try {
+                $wearables = new Wearables($config, $db, $auth);
+                $url = $wearables->startUrl((int) $current['id'], $matches[1]);
+            } catch (HttpException $err) {
+                av_auth_error($err->status, 'Nie można połączyć urządzenia', $err->getMessage());
+            } catch (\Throwable $err) {
+                error_log('[wearables] start: ' . $err->getMessage());
+                av_auth_error(500, 'Błąd integracji', $config->isProd ? 'Spróbuj ponownie za chwilę.' : $err->getMessage());
+            }
+            Http::redirect($url);
+        }
+
+        if (preg_match('#^/auth/wearables/(garmin|oura|whoop)/callback$#', $path, $matches) && $method === 'GET') {
+            $current = $user;
+            if ($current === null) {
+                av_auth_error(401, 'Sesja wygasła', 'Zaloguj się ponownie i połącz urządzenie.');
+            }
+            $provider = $matches[1];
+            if (isset($_GET['error'])) {
+                $auth->audit((int) $current['id'], 'wearables.cancelled', ['provider' => $provider, 'error' => (string) $_GET['error']]);
+                av_auth_error(400, 'Połączenie anulowane', 'Dostawca nie ukończył autoryzacji urządzenia.');
+            }
+            $state = (string) ($_GET['state'] ?? '');
+            $code = (string) ($_GET['code'] ?? '');
+            try {
+                $wearables = new Wearables($config, $db, $auth);
+                $result = $wearables->handleCallback((int) $current['id'], $provider, $code, $state);
+            } catch (HttpException $err) {
+                $auth->audit((int) $current['id'], 'wearables.connect_failed', ['provider' => $provider, 'error' => $err->errorCode]);
+                av_auth_error($err->status, 'Nie udało się połączyć urządzenia', $err->getMessage());
+            } catch (\Throwable $err) {
+                error_log('[wearables] callback: ' . $err->getMessage());
+                av_auth_error(500, 'Błąd integracji', $config->isProd ? 'Spróbuj ponownie za chwilę.' : $err->getMessage());
+            }
+            $query = 'connected=' . rawurlencode($provider);
+            if (!empty($result['syncError'])) {
+                $query .= '&sync=error';
+            }
+            Http::redirect('/?' . $query . '#cialo');
+        }
+
         if ($path === '/auth/logout' && ($method === 'GET' || $method === 'POST')) {
             $auth->requireSameOrigin();
             $auth->audit($user !== null ? (int) $user['id'] : null, 'logout');

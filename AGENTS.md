@@ -181,6 +181,7 @@ npm run test:ui          # UI 37/37 (Chrome/Edge)
 npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
+npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
 npm run test:docs        # linki i spójność dokumentacji
 ```
 
@@ -222,6 +223,7 @@ Przed PR uruchom **wszystkie** suites, które dotyczą zmiany. Przy zmianie back
 ```powershell
 php -l <zmienione pliki>
 npm run test:events
+npm run test:wearables
 npm test
 npm run test:ui
 npm run test:ui:empty

@@ -159,6 +159,8 @@ textarea.input{resize:vertical;line-height:1.5}
 /* ===== PULPIT ===== */
 .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
 .ready{display:flex;gap:20px;align-items:center}
+.bodygrid{grid-template-columns:1fr 1.4fr;align-items:start}
+@media(max-width:900px){.bodygrid{grid-template-columns:1fr}}
 .lock{display:flex;align-items:center;gap:16px;border-radius:18px;padding:16px 20px;border:1px solid rgba(255,93,98,.3);background:linear-gradient(90deg,rgba(255,93,98,.12),rgba(255,93,98,.02));margin-bottom:16px}
 .lock .ic{width:42px;height:42px;border-radius:12px;background:var(--lossS);color:var(--loss);display:grid;place-items:center;flex-shrink:0}
 .lock b{font-size:15.5px}.lock p{font-size:13.5px;color:#ffc5c7;margin-top:2px}
@@ -280,6 +282,8 @@ textarea.input{resize:vertical;line-height:1.5}
 .dev .lg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:13px;flex-shrink:0}
 .dev b{display:block;font-size:14.5px}.dev span{font-size:12.5px;color:var(--dim)}
 .dev .btn{margin-left:auto}
+.dev .btn[data-sync]{margin-left:auto}
+.dev .btn[data-sync] + .btn{margin-left:0}
 .trend{font-size:12px;font-weight:700;margin-top:4px}
 .ex{display:grid;grid-template-columns:240px 1fr;gap:16px}
 .exl button{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid transparent;margin-bottom:6px;font-weight:700}
@@ -886,13 +890,36 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= CIAŁO ================= -->
 <section class="view" id="cialo">
-  <div class="head"><div><div class="eyebrow">Ciało i głowa</div><h1>Check-in <span class="serif">przed rynkiem.</span></h1><p>30 sekund, zanim otworzysz wykres. Zapisz nastrój, energię i to, co siedzi w głowie — mentor bierze to pod uwagę.</p></div></div>
-  <div class="grid" style="grid-template-columns:1fr;max-width:640px;align-items:start">
-    <div class="card"><h2>Check-in przed rynkiem</h2><p class="mut" style="font-size:13.5px;margin-top:4px">30 sekund, zanim otworzysz wykres.</p>
-      <span class="label">Jak się teraz czujesz?</span><div class="chips sel" id="checkMood"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip on">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Złość</span></div>
-      <span class="label">Energia</span><div class="chips sel" id="checkEnergy"><span class="chip">1</span><span class="chip on">2</span><span class="chip">3</span><span class="chip">4</span><span class="chip">5</span></div>
-      <span class="label">Co dziś siedzi w głowie?</span><textarea class="input" rows="2" id="checkNote">Wczorajsza strata, chęć odrobienia…</textarea>
-      <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
+  <div class="head"><div><div class="eyebrow">Ciało i głowa</div><h1>Twoja forma <span class="serif">pod trading.</span></h1><p>Niewyspany trader to drogi trader. Połącz zegarek, a Alpha Vault policzy gotowość i pokaże, jak sen wpływa na wyniki.</p></div></div>
+  <div class="grid bodygrid">
+    <div class="grid">
+      <div class="card"><h2>Urządzenia</h2><p class="dim" style="font-size:12.5px;line-height:1.5;margin-top:6px">Łącząc urządzenie, wyrażasz zgodę na przetwarzanie danych o zdrowiu (sen, HRV, tętno) tylko do liczenia Twojej gotowości. Zgodę wycofasz w każdej chwili, odłączając urządzenie.</p>
+        <div class="grid" style="margin-top:14px;gap:10px" id="devList">
+          <div class="dev" data-provider="garmin"><div class="lg" style="background:#007cc3;color:#fff">G</div><div><b>Garmin Connect</b><span data-devstate>sen, HRV, Body Battery</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+          <div class="dev" data-provider="apple"><div class="lg" style="background:#f2f2f2;color:#111;font-size:19px">⌚</div><div><b>Apple Watch · Zdrowie</b><span data-devstate>przez aplikację Alpha Vault na iPhone</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev>Połącz</button></div>
+          <div class="dev" data-provider="oura"><div class="lg" style="background:#1c1c1c;color:#fff;border:1px solid #444">◯</div><div><b>Oura Ring</b><span data-devstate>sen, HRV, gotowość</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+          <div class="dev" data-provider="whoop"><div class="lg" style="background:#333;color:#fff">W</div><div><b>Whoop</b><span data-devstate>regeneracja, obciążenie</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+        </div>
+        <p class="dim" id="wearablesNotice" style="font-size:12px;line-height:1.5;margin-top:10px"></p>
+      </div>
+      <div class="card"><h2>Check-in przed rynkiem</h2><p class="mut" style="font-size:13.5px;margin-top:4px">30 sekund, zanim otworzysz wykres.</p>
+        <span class="label">Jak się teraz czujesz?</span><div class="chips sel" id="checkMood"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Złość</span></div>
+        <span class="label">Energia</span><div class="chips sel" id="checkEnergy"><span class="chip">1</span><span class="chip">2</span><span class="chip">3</span><span class="chip">4</span><span class="chip">5</span></div>
+        <span class="label">Co dziś siedzi w głowie?</span><textarea class="input" rows="2" id="checkNote" placeholder="Jedno zdanie, szczerze."></textarea>
+        <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
+    </div>
+    <div class="grid">
+      <div class="card hl"><div class="ready"><div class="ring" id="bodyRing" style="width:128px;height:128px"><div style="width:106px;height:106px"><b id="bodyReady"></b><small>GOTOWOŚĆ</small></div></div>
+        <div><div class="lbl" id="bodyReadyDay">Dziś</div><h2 style="margin-top:6px;font-size:22px" id="bodyReadyTitle"></h2><p class="mut" style="font-size:14px;line-height:1.55;margin-top:6px" id="bodyReadyDesc"></p></div></div></div>
+      <div class="grid g4">
+        <div class="card"><div class="lbl">Sen</div><div class="val" id="metricSleep"></div><div class="trend" id="metricSleepTrend"></div></div>
+        <div class="card"><div class="lbl">HRV</div><div class="val" id="metricHrv"></div><div class="trend" id="metricHrvTrend"></div></div>
+        <div class="card"><div class="lbl">Tętno</div><div class="val" id="metricHr"></div><div class="trend" id="metricHrTrend"></div></div>
+        <div class="card"><div class="lbl">Body Battery</div><div class="val" id="metricBattery"></div><div class="trend" id="metricBatteryTrend"></div></div>
+      </div>
+      <div class="card" id="sleepCard" hidden><h3 style="margin-bottom:10px">Średni wynik dnia a sen</h3>
+        <div id="sleepChart"></div></div>
+    </div>
   </div>
 </section>
 

@@ -106,6 +106,12 @@ jobs:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php tests/discord-events.test.php
 
+      - name: Wearables E2E
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/wearables.e2e.mjs
+
       - name: Start PHP server
         run: |
           set -euo pipefail

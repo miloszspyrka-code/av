@@ -219,6 +219,55 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             Http::json(['ok' => true, 'id' => $matches[1], 'category' => $category]);
         }
 
+        if ($path === '/api/wearables' && $method === 'GET') {
+            $current = $auth->requireAuth($user);
+            $wearables = new Wearables($config, $db, $auth);
+            Http::json($wearables->listForUser((int) $current['id']));
+        }
+
+        if (preg_match('#^/api/wearables/(garmin|apple|oura|whoop)/sync$#', $path, $matches) && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('wearables-sync', 20, 60000);
+            $wearables = new Wearables($config, $db, $auth);
+            $result = $wearables->sync((int) $current['id'], $matches[1]);
+            Http::json(['ok' => true, ...$result]);
+        }
+
+        if (preg_match('#^/api/wearables/(garmin|apple|oura|whoop)$#', $path, $matches) && $method === 'DELETE') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $wearables = new Wearables($config, $db, $auth);
+            $wearables->disconnect((int) $current['id'], $matches[1]);
+            Http::json(['ok' => true, 'provider' => $matches[1]]);
+        }
+
+        if ($path === '/api/wearables/apple/pair' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('wearables-apple-pair', 10, 60000);
+            $wearables = new Wearables($config, $db, $auth);
+            Http::json(['ok' => true, ...$wearables->applePairCode((int) $current['id'])]);
+        }
+
+        if ($path === '/api/wearables/apple/ingest' && $method === 'POST') {
+            // Ingest z iPhone nie ma sesji: autoryzacją jest kod parowania
+            // (jednorazowo) albo token urządzenia (nagłówek Bearer).
+            $auth->rateLimit('wearables-apple-ingest', 120, 60000);
+            $body = Http::readJsonBody(262144);
+            $authorization = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+            if ($authorization === '' && function_exists('getallheaders')) {
+                $headers = getallheaders();
+                $authorization = (string) ($headers['Authorization'] ?? $headers['authorization'] ?? '');
+            }
+            $bearer = null;
+            if (preg_match('/^Bearer\s+(.+)$/i', $authorization, $m) === 1) {
+                $bearer = trim($m[1]);
+            }
+            $wearables = new Wearables($config, $db, $auth);
+            Http::json($wearables->appleIngest($body, $bearer));
+        }
+
         if (str_starts_with($path, '/api/')) {
             Http::json(['error' => 'not_found', 'message' => 'Nie ma takiego endpointu.'], 404);
         }

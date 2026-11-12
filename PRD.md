@@ -200,6 +200,10 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 
 Panel jest instalowalny z przeglądarki bez App Store i Google Play (`manifest.webmanifest`, service worker, ikony 192/512/maskable). Po zamknięciu transakcji w panelu użytkownik dostaje powiadomienie z deep linkiem do szybkiego dodania, gdzie w ≤ 10 s zapisuje emocję, ocenę i zdjęcie wykresu. Powłoka aplikacji działa offline; `/api/` i `/auth/` nie są cache'owane. Powiadomienia o transakcjach zamkniętych na giełdzie przy zamkniętej aplikacji wymagają serwerowego workera giełdowego i Web Push — poza zakresem do czasu auto-importu.
 
+### FR-18 — Integracje urządzeń i gotowość
+
+Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Watch przez jednorazowy kod parowania i ingest z iPhone. Alpha Vault pobiera sen, HRV, tętno spoczynkowe, Body Battery i wynik regeneracji, liczy gotowość oraz pokazuje, jak sen wpływa na wynik dnia. Tokeny są szyfrowane, dane o zdrowiu przetwarzane tylko za zgodą, a odłączenie urządzenia usuwa je z bazy. Check-in przed rynkiem wnosi 30% gotowości.
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -234,6 +238,10 @@ Panel jest instalowalny z przeglądarki bez App Store i Google Play (`manifest.w
 | AC-12 | Produkcyjne E2E przechodzi | health + events + login + sync na `alphavault.pl` |
 | AC-13 | Dokumentacja spójna i aktualna | `npm run test:docs` |
 | AC-14 | PWA jest instalowalna, a szybkie dodanie z powiadomienia zajmuje ≤ 10 s | `tests/pwa.e2e.mjs` 20/20 |
+| AC-15 | OAuth2 Garmin/Oura/Whoop kończy się zapisem metryk | `npm run test:wearables` 33/33 |
+| AC-16 | Apple Health przyjmuje dane po kodzie parowania i tokenie urządzenia | `npm run test:wearables` |
+| AC-17 | Gotowość łączy urządzenie z check-inem i czyści się po odłączeniu | test API + UI E2E |
+| AC-18 | Tokeny dostawców nie są widoczne w API ani logach | test odpowiedzi API + audyt |
 
 ## 9. Metryki sukcesu
 

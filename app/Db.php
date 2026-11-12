@@ -79,7 +79,9 @@ final class Db
             throw new \RuntimeException('Nie można odczytać schematu bazy.');
         }
 
-        $lines = preg_split('/\R/', $schema) ?: [];
+        // Tylko rzeczywiste końce linii. Bez trybu /u \R traktuje bajt 0x85
+        // (część UTF-8 liter ą/ń) jako separator i rozcina komentarze SQL.
+        $lines = preg_split('/\r\n|\n|\r/', $schema) ?: [];
         $clean = [];
         foreach ($lines as $line) {
             if (str_starts_with(ltrim($line), '--')) {

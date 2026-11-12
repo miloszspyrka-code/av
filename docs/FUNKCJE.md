@@ -199,8 +199,16 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na podpowiedzi mentora |
-| Gotowość i urządzenia | ⛔ | usunięte z UI; brak realnej integracji z API producentów zegarków |
+| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na gotowość oraz podpowiedzi mentora |
+| Garmin Connect | 🟡 | OAuth2 + backfill `dailies`/`sleeps`/`hrv`; wymaga zatwierdzenia Garmin Health API i konfiguracji `GARMIN_*` |
+| Apple Watch · Zdrowie | ✅ | kod parowania + `POST /api/wearables/apple/ingest` z tokenem urządzenia; aplikacja iPhone poza repo |
+| Oura Ring | ✅ | OAuth2, `daily_readiness` + `sleep`; wystarczy `OURA_CLIENT_ID`/`OURA_CLIENT_SECRET` |
+| Whoop | ✅ | OAuth2, `recovery` + `activity/sleep`; wystarczy `WHOOP_CLIENT_ID`/`WHOOP_CLIENT_SECRET` |
+| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
+| Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
+| Odłączenie urządzenia | ✅ | usuwa tokeny i metryki z bazy (wycofanie zgody) |
+
+Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych).
 
 ---
 

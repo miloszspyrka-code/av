@@ -36,6 +36,24 @@ $env:APP_URL = "http://127.0.0.1:4174"
 npm run test:ui:empty
 ```
 
+## Urządzenia zdrowotne — 33 scenariusze
+
+`npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
+
+Zakres:
+
+- `GET /api/wearables` bez sesji = 401,
+- OAuth2 Garmin/Oura/Whoop: start → authorize → callback → token → dane → gotowość,
+- poprawność snu (312 min), HRV (38 ms), tętna (61), Body Battery (34) i baseline (HRV 52),
+- ręczna synchronizacja zwraca 14 dni,
+- odłączenie usuwa połączenie, metryki i baseline,
+- Apple: jednorazowy kod parowania, ingest dwóch dni, token urządzenia, odrzucenie powtórzonego kodu i złego tokenu,
+- gotowość łączy urządzenie i check-in (73/100),
+- UI: puste pola bez urządzenia, check-in 80/100, połączenie i metryki dla Garmin/Oura/Whoop, odłączenie czyści pola, Apple przez kod parowania, brak błędów JS,
+- brak tokenów dostawców w odpowiedziach API.
+
+Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przechodzi, a część UI jest jawnie pominięta.
+
 ## Discord DB/sync — 24 scenariusze
 
 `tests/discord-events.test.php` sprawdza:
@@ -97,7 +115,7 @@ npm run test:ui:empty
 - przywrócenie stanu demo,
 - wylogowanie.
 
-## UI empty-state — 10 scenariuszy
+## UI empty-state — 12 scenariuszy
 
 `tests/ui-empty.e2e.mjs` przy poprawnym sync zwracającym `[]` sprawdza:
 

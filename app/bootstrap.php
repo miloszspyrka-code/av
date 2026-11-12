@@ -15,6 +15,7 @@ require_once $root . '/app/Auth.php';
 require_once $root . '/app/Discord.php';
 require_once $root . '/app/DiscordApiException.php';
 require_once $root . '/app/DiscordEvents.php';
+require_once $root . '/app/Wearables.php';
 
 $config = \AlphaVault\Config::load($root);
 $db = new \AlphaVault\Db($config->db);
