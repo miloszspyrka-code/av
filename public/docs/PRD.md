@@ -198,6 +198,10 @@ Panel administratora i `/api/events` pokazują: ostatnią próbę, ostatni sukce
 
 Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują na siebie i są weryfikowane automatycznie (`npm run test:docs`).
 
+### FR-17 — Integracje urządzeń i gotowość
+
+Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Watch przez jednorazowy kod parowania i ingest z iPhone. Alpha Vault pobiera sen, HRV, tętno spoczynkowe, Body Battery i wynik regeneracji, liczy gotowość oraz pokazuje, jak sen wpływa na wynik dnia. Tokeny są szyfrowane, dane o zdrowiu przetwarzane tylko za zgodą, a odłączenie urządzenia usuwa je z bazy. Check-in przed rynkiem wnosi 30% gotowości.
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -231,6 +235,10 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | AC-11 | Token bota pozostaje bezpieczny | audyt sekretów i logów |
 | AC-12 | Produkcyjne E2E przechodzi | health + events + login + sync na `alphavault.pl` |
 | AC-13 | Dokumentacja spójna i aktualna | `npm run test:docs` |
+| AC-14 | OAuth2 Garmin/Oura/Whoop kończy się zapisem metryk | `npm run test:wearables` 33/33 |
+| AC-15 | Apple Health przyjmuje dane po kodzie parowania i tokenie urządzenia | `npm run test:wearables` |
+| AC-16 | Gotowość łączy urządzenie z check-inem i czyści się po odłączeniu | test API + UI E2E |
+| AC-17 | Tokeny dostawców nie są widoczne w API ani logach | test odpowiedzi API + audyt |
 
 ## 9. Metryki sukcesu
 

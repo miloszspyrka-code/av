@@ -52,6 +52,7 @@ npm test                 # API: 20 scenariuszy
 npm run test:ui          # UI: 23 scenariusze
 npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze
+npm run test:wearables   # urządzenia zdrowotne API + UI: 33 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
 ```
 

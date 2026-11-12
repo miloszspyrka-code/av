@@ -17,11 +17,24 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `discord_scheduled_events` | zsynchronizowane wydarzenia Discord (UPSERT, soft delete) |
 | `discord_sync_state` | ostatnia próba/sukces, licznik, błąd, blokada CRON |
 | `discord_sync_runs` | historia synchronizacji (30 dni) |
+| `wearable_connections` | jedno połączenie użytkownika z dostawcą; status, zaszyfrowane tokeny, token urządzenia Apple (hash), last sync |
+| `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
+| `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) |
+| `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
 | `schema_migrations` | wersje migracji |
 
 ## Stan JSON
 
 `user_states.state` to jeden dokument JSON. Limit `MAX_STATE_BYTES` = 12 MiB. Zapis jest optymistyczny: `revision` + `baseRevision`; konflikt → 409. Przy setkach screenów należy przenieść obrazy do osobnego storage i trzymać w stanie URL.
+
+## Dane zdrowotne
+
+- `wearable_connections` ma unikalny klucz `(user_id, provider)` i klucz obcy do `users` z `ON DELETE CASCADE`.
+- `wearable_daily_metrics` ma unikalny klucz `(user_id, provider, metric_date)`, więc ponowna synchronizacja robi UPSERT.
+- `access_token_enc` / `refresh_token_enc` to AES-256-GCM (`v1:` + nonce + tag + ciphertext); klucz nie jest w bazie.
+- `raw_payload` nie jest zwracany przez API.
+- `DELETE /api/wearables/{provider}` usuwa wiersze metryk i połączenia w jednej transakcji.
+- Apple `device_token_hash` to SHA-256; sam token jest zwracany tylko przy parowaniu.
 
 ## MariaDB
 

@@ -24,7 +24,10 @@
     events: null,
     eventsLoaded: false,
     eventsSync: null,
-    isAdmin: false
+    isAdmin: false,
+    wearables: null,
+    wearablesLoaded: false,
+    wearablesError: null
   };
 
   const deepMerge = (base, patch) => {
@@ -170,6 +173,7 @@
       }
       AV.applyServerUser(me.user);
       await AV.loadEvents();
+      await AV.loadWearables();
       AV.api.ready = true;
       if (!hadState || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
         await AV.pushStateImmediate();
@@ -206,6 +210,31 @@
       return true;
     } catch (err) {
       AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.loadWearables = async () => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.api.wearables = null;
+      AV.api.wearablesLoaded = false;
+      return false;
+    }
+    try {
+      const res = await AV.apiFetch('/api/wearables');
+      if (res.status === 401) {
+        AV.api.wearables = null;
+        AV.api.wearablesLoaded = false;
+        return false;
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      AV.api.wearables = await res.json();
+      AV.api.wearablesLoaded = true;
+      AV.api.wearablesError = null;
+      if (AV.renderBody) AV.renderBody();
+      return true;
+    } catch (err) {
+      AV.api.wearablesError = err.message;
       return false;
     }
   };
@@ -556,18 +585,47 @@
   };
 
   /* ---------- forma ---------- */
+  AV.sleepLabel = (minutes) => {
+    if (minutes == null || !Number.isFinite(Number(minutes))) return '';
+    const total = Math.max(0, Math.round(Number(minutes)));
+    return Math.floor(total / 60) + ' h ' + String(total % 60).padStart(2, '0') + ' min';
+  };
+
   AV.readiness = (state) => {
     const check = (state.checkins || []).filter((c) => c.date === AV.dateKey(new Date())).sort((a, b) => b.score - a.score)[0];
     const moodMod = { 'Spokój': 10, 'Skupienie': 7, 'Pewność': 5, 'Nuda': -3, 'Zmęczenie': -8, 'Strach': -10, 'FOMO': -12, 'Złość': -14, 'Chciwość': -6 }[check?.mood] || 0;
-    const checkScore = check ? AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100) : 55;
-    const score = Math.round(checkScore);
-    let title = 'Świetna forma', cls = 'win';
-    if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
-    if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
-    if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
-    // Brak integracji ze sprzętem: gotowość liczymy wyłącznie z check-inu.
-    const desc = 'Gotowość liczona z check-inu: nastrój, energia i notatka.';
-    return { score, title, cls, desc, garmin: false, checkScore, sleepScore: 0, hrvScore: 0, hrScore: 0, check };
+    const checkScore = check ? Math.round(AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100)) : null;
+    const w = AV.api.wearables;
+    const components = w?.readiness?.components || {};
+    const physiology = components.physiology != null ? Number(components.physiology) : null;
+    const today = w?.today || null;
+    let score = null;
+    let source = 'none';
+    if (physiology != null && checkScore != null) { score = Math.round(physiology * 0.7 + checkScore * 0.3); source = 'devices+checkin'; }
+    else if (physiology != null) { score = Math.round(physiology); source = 'devices'; }
+    else if (checkScore != null) { score = checkScore; source = 'checkin'; }
+
+    let title = '', cls = '';
+    if (score != null) {
+      title = 'Świetna forma'; cls = 'win';
+      if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
+      if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
+      if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
+    }
+
+    let desc = '';
+    if (physiology != null && today) {
+      const bits = [];
+      if (today.sleepMinutes != null) bits.push('Sen ' + AV.sleepLabel(today.sleepMinutes));
+      if (today.hrvMs != null) bits.push('HRV ' + Math.round(Number(today.hrvMs)) + ' ms');
+      if (today.restingHr != null) bits.push('tętno ' + today.restingHr);
+      if (bits.length) {
+        desc = bits.join(', ') + '. ' + (score != null && score < 60 ? 'Połowa normalnej pozycji albo odpuść.' : 'Możesz grać normalnie, ale trzymaj się planu.');
+      }
+    } else if (checkScore != null) {
+      desc = 'Gotowość liczona z check-inu: nastrój i energia. Podłącz urządzenie, żeby dodać sen, HRV i tętno.';
+    }
+    return { score, title, cls, desc, source, physiology, checkScore, check, today, components };
   };
 
   /* ---------- podatki ---------- */
@@ -645,7 +703,7 @@
       cWynik: AV.money(c.reduce((s, t) => s + t.result, 0), 2, ''), cN: c.length,
       aWr: a.length ? Math.round(a.filter((t) => t.result > 0).length / a.length * 100) : 0,
       planZgodne: planOK + ' z ' + todayPlanTrades.length,
-      gotowosc: r.score,
+      gotowosc: r.score == null ? '' : r.score,
       clFull: full.length ? Math.round(full.filter((t) => t.result > 0).length / full.length * 100) : 0,
       clNo: part.length ? Math.round(part.filter((t) => t.result > 0).length / part.length * 100) : 0,
       tr: today.count, event: next ? next.name : 'brak ważnych publikacji',

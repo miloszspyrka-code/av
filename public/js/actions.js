@@ -786,14 +786,102 @@
   };
 
   /* ---------- ciaĹ‚o ---------- */
+  AV.connectWearable = async (provider) => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.toast('Połącz urządzenie po zalogowaniu do Alpha Vault.');
+      return;
+    }
+    if (provider === 'apple') {
+      await AV.openApplePair();
+      return;
+    }
+    location.href = '/auth/wearables/' + encodeURIComponent(provider) + '/start';
+  };
+
+  AV.disconnectWearable = (provider) => {
+    const label = AV.api.wearables?.devices?.[provider]?.label || provider;
+    AV.confirm({
+      eyebrow: 'Zgoda na dane zdrowotne',
+      title: 'Odłączyć ' + label + '?',
+      text: 'Odłączenie usuwa z Alpha Vault dane o zdrowiu z tego urządzenia i wycofuje zgodę na ich przetwarzanie. Możesz połączyć je ponownie w każdej chwili.',
+      confirmLabel: 'Odłącz i usuń dane',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          const res = await AV.apiFetch('/api/wearables/' + encodeURIComponent(provider), { method: 'DELETE' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          await AV.loadWearables();
+          AV.renderBody();
+          AV.toast('Urządzenie odłączone. Dane zostały usunięte.');
+        } catch (err) {
+          AV.toast('Nie udało się odłączyć urządzenia.');
+        }
+      }
+    });
+  };
+
+  AV.syncWearable = async (provider) => {
+    if (!AV.api.authenticated) return;
+    try {
+      const res = await AV.apiFetch('/api/wearables/' + encodeURIComponent(provider) + '/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+      await AV.loadWearables();
+      AV.renderBody();
+      AV.toast('Zsynchronizowano ' + (AV.api.wearables?.devices?.[provider]?.label || provider) + '.');
+    } catch (err) {
+      AV.toast('Synchronizacja nie powiodła się: ' + err.message);
+    }
+  };
+
+  AV.openApplePair = async () => {
+    try {
+      const res = await AV.apiFetch('/api/wearables/apple/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+      const expires = new Date(data.expiresAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' });
+      const body = AV.openModal(
+        '<div class="eyebrow">Apple Watch · Zdrowie</div><h1 style="font-size:26px;margin-top:6px">Kod parowania</h1>' +
+        '<p class="mut" style="margin-top:10px;line-height:1.6">Otwórz aplikację Alpha Vault na iPhone, wejdź w Ustawienia → Urządzenia i wpisz kod. Kod jest jednorazowy i wygasa o ' + AV.esc(expires) + '.</p>' +
+        '<div class="mono" style="font-size:30px;font-weight:700;letter-spacing:.12em;text-align:center;margin:22px 0;padding:18px;border:1px dashed rgba(var(--a),.45);border-radius:16px;background:rgba(var(--a),.06)">' + AV.esc(data.code) + '</div>' +
+        '<p class="dim" style="font-size:12.5px;line-height:1.5">Dane trafiają do Alpha Vault tylko z Twojego iPhone’a i tylko do liczenia gotowości. Po sparowaniu telefon zapisze token urządzenia; nie pokazujemy go w panelu.</p>' +
+        '<div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end"><button class="btn g" data-gclose>Zamknij</button><button class="btn p" id="applePairCheck">Sprawdź połączenie</button></div>',
+        { maxWidth: '520px' }
+      );
+      const check = async () => {
+        await AV.loadWearables();
+        AV.renderBody();
+        if (AV.api.wearables?.devices?.apple?.connected) {
+          AV.closeModal();
+          AV.toast('Apple Watch połączony.');
+          return true;
+        }
+        return false;
+      };
+      AV.$('#applePairCheck', body)?.addEventListener('click', check);
+      let tries = 0;
+      const timer = setInterval(async () => {
+        tries++;
+        if (tries > 60 || AV.api.wearables?.devices?.apple?.connected) { clearInterval(timer); return; }
+        await check();
+      }, 5000);
+    } catch (err) {
+      AV.toast('Nie udało się utworzyć kodu parowania: ' + err.message);
+    }
+  };
+
   AV.bindBody = () => {
     $('#devList')?.addEventListener('click', (e) => {
       const b = e.target.closest('[data-dev]'); if (!b) return;
-      const row = b.closest('[data-device]'), key = row.dataset.device;
-      const on = !AV.state.settings.devices[key];
-      AV.state.settings.devices[key] = on;
-      AV.saveNow(); AV.renderBody(); AV.renderDashboard(); AV.renderSettings();
-      AV.toast(on ? 'UrzÄ…dzenie poĹ‚Ä…czone' : 'UrzÄ…dzenie odĹ‚Ä…czone');
+      const row = b.closest('[data-provider]'), key = row?.dataset.provider;
+      if (!key) return;
+      if (b.dataset.mode === 'disconnect') AV.disconnectWearable(key);
+      else AV.connectWearable(key);
+    });
+    $('#devList')?.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-sync]'); if (!b) return;
+      const key = b.closest('[data-provider]')?.dataset.provider;
+      if (key) AV.syncWearable(key);
     });
     $('#checkMood')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
@@ -804,15 +892,22 @@
       $$('#checkEnergy .chip').forEach((x) => x.classList.toggle('on', x === c));
     });
     $('#saveCheck')?.addEventListener('click', () => {
-      const mood = $('#checkMood .chip.on')?.textContent || 'SpokĂłj';
-      const energy = Number($('#checkEnergy .chip.on')?.textContent || 3);
+      const moodEl = $('#checkMood .chip.on');
+      const energyEl = $('#checkEnergy .chip.on');
+      if (!moodEl || !energyEl) {
+        AV.toast('Wybierz nastrój i poziom energii.');
+        return;
+      }
+      const mood = moodEl.textContent;
+      const energy = Number(energyEl.textContent);
       const note = $('#checkNote').value.trim();
-      const score = AV.clamp(50 + (energy - 3) * 10 + ({ 'SpokĂłj': 10, 'Skupienie': 7, 'PewnoĹ›Ä‡': 5, 'Nuda': -3, 'ZmÄ™czenie': -8, 'Strach': -10, 'FOMO': -12, 'ZĹ‚oĹ›Ä‡': -14, 'ChciwoĹ›Ä‡': -6 }[mood] || 0), 0, 100);
+      const moodMod = { 'Spokój': 10, 'Skupienie': 7, 'Pewność': 5, 'Nuda': -3, 'Zmęczenie': -8, 'Strach': -10, 'FOMO': -12, 'Złość': -14, 'Chciwość': -6 }[mood] || 0;
+      const score = Math.round(AV.clamp(50 + (energy - 3) * 10 + moodMod, 0, 100));
       const key = AV.dateKey(new Date());
       AV.state.checkins = AV.state.checkins.filter((c) => c.date !== key);
       AV.state.checkins.push({ date: key, mood, energy, note, score });
       AV.saveNow(); AV.renderBody(); AV.renderDashboard(); AV.renderMentor();
-      AV.toast('Check-in zapisany. Mentor go uwzglÄ™dni.');
+      AV.toast('Check-in zapisany. Mentor go uwzględni.');
     });
   };
 
@@ -1214,12 +1309,20 @@
     AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats();
     AV.renderTicker(); AV.tickCountdowns();
     AV.updateEnvBadge();
+    const params = new URLSearchParams(location.search);
+    const connected = params.get('connected');
+    if (connected && AV.api.authenticated) {
+      const label = AV.api.wearables?.devices?.[connected]?.label || connected;
+      AV.toast(params.get('sync') === 'error' ? label + ' połączony, ale pierwsza synchronizacja się nie udała.' : label + ' połączony.');
+      history.replaceState(null, '', location.pathname + '#cialo');
+    }
     setInterval(AV.tickCountdowns, 1000);
     setInterval(AV.tickTicker, 12000);
     setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); } }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
+    setInterval(() => { if (AV.isLoggedIn()) AV.loadWearables(); }, 300000);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && AV.isLoggedIn()) AV.loadEvents();
+      if (document.visibilityState === 'visible' && AV.isLoggedIn()) { AV.loadEvents(); AV.loadWearables(); }
     });
     setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); }, 4000);
     AV.showView(AV.viewFromHash());

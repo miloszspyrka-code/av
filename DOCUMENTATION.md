@@ -196,6 +196,13 @@ Pełny kontrakt: [docs/API.md](docs/API.md). Specyfikacja: [docs/openapi.yaml](d
 | GET | `/api/events` | tak | wydarzenia, live, konsultacje, sync |
 | GET | `/api/admin/events` | admin | wszystkie wydarzenia + sync |
 | PUT | `/api/admin/events/{id}/category` | admin | ręczne przypisanie |
+| GET | `/api/wearables` | tak | urządzenia, metryki, baseline, gotowość |
+| POST | `/api/wearables/{provider}/sync` | tak | ręczna synchronizacja |
+| DELETE | `/api/wearables/{provider}` | tak | odłączenie + usunięcie danych |
+| POST | `/api/wearables/apple/pair` | tak | kod parowania iPhone |
+| POST | `/api/wearables/apple/ingest` | kod/token | ingest danych Apple Health |
+| GET | `/auth/wearables/{provider}/start` | tak | start OAuth2 |
+| GET | `/auth/wearables/{provider}/callback` | tak | callback OAuth2 |
 
 **Zasady:**
 
@@ -204,6 +211,11 @@ Pełny kontrakt: [docs/API.md](docs/API.md). Specyfikacja: [docs/openapi.yaml](d
 - Błędy mają `{ error, message }`.
 - `/api/events` nie zwraca `raw_payload`.
 - `isAdmin` wynika wyłącznie z `ADMIN_DISCORD_IDS`.
+- `/api/wearables` nigdy nie zwraca tokenów dostawców ani `raw_payload`.
+
+### 6.1. Urządzenia zdrowotne
+
+Garmin/Oura/Whoop używają OAuth2 z jednorazowym `state`; tokeny są szyfrowane AES-256-GCM. Apple Watch używa kodu parowania i tokenu urządzenia. Połączenie zapisuje metryki w `wearable_daily_metrics`, a `GET /api/wearables` liczy gotowość z dostępnych składników (sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%) i łączy ją z check-inem w proporcji 70/30. Odłączenie usuwa tokeny i metryki w transakcji.
 
 ## 7. Discord Scheduled Events — pełny przepływ
 
@@ -437,6 +449,10 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 | `discord_scheduled_events` | wydarzenia Discord | `discord_event_id` (UNIQUE) |
 | `discord_sync_state` | stan i blokada sync | `id=1` |
 | `discord_sync_runs` | historia sync (30 dni) | `id` |
+| `wearable_connections` | połączenie z urządzeniem, zaszyfrowane tokeny | `(user_id, provider)` |
+| `wearable_daily_metrics` | dzienne metryki zdrowotne | `(user_id, provider, metric_date)` |
+| `wearable_oauth_states` | jednorazowe stany OAuth2 urządzeń | `state` |
+| `wearable_pair_codes` | jednorazowe kody Apple | `code_hash` |
 | `schema_migrations` | wersje migracji | `version` |
 
 ### 10.2. Indeksy wydarzeń
@@ -483,7 +499,8 @@ Skrypty mają `defer`; kolejność jest istotna.
 3. Sesja → `GET /api/state`; brak stanu → `buildEmpty()` lub `buildDemo()` dla demo.
 4. `AV.applyServerUser()`.
 5. `AV.loadEvents()` → `GET /api/events`.
-6. `AV.renderAll()` → `renderAcademy()`.
+6. `AV.loadWearables()` → `GET /api/wearables` (błąd nie blokuje panelu).
+7. `AV.renderAll()` → `renderAcademy()`, `renderBody()`.
 
 ### 11.3. Render Akademii
 
@@ -624,6 +641,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Rate limit | MySQL, per bucket/IP |
 | Nagłówki | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` |
 | Payloady | `raw_payload` niewysyłany do klienta |
+| Urządzenia | tokeny dostawców AES-256-GCM; token Apple tylko SHA-256; odłączenie usuwa metryki |
 | Admin | lista Discord ID, nie rola w UI |
 | Logi | bez tokenów, haseł i pełnych danych osobowych |
 | WordPress | deploy nie dotyka innych katalogów ani baz |
@@ -636,6 +654,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
 | UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy | 23/23 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
+| Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
 | Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
@@ -651,6 +670,7 @@ npm test
 npm run test:ui
 npm run test:ui:empty
 npm run test:events
+npm run test:wearables
 npm run test:docs
 ```
 
