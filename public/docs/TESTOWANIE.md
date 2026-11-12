@@ -75,7 +75,20 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - pusty sukces czyści listę i soft-deletuje rekordy,
 - powrót wydarzenia przywraca rekord.
 
-## API — 20 scenariuszy
+## Prop challenge — 27 scenariuszy
+
+`tests/prop.unit.mjs` (`npm run test:prop`) testuje czysty silnik `public/js/prop.js` bez serwera i bazy:
+
+- katalog szablonów i normalizację danych,
+- filtr konta i zakresu dat (włącznie z końcem),
+- cel zysku, brak 1 centa, min. dni handlowe,
+- dzienny limit 75/90/100%, podstawę initial/dayStart, limit 0,
+- obsunięcie static i trailing, linię stopu i bufor,
+- termin, brak terminu, min. dni przed deadlinem,
+- statystyki, serię strat, najlepszy/najgorszy dzień,
+- archiwum poza metrykami i zachowanie waluty.
+
+## API — 21 scenariuszy
 
 `tests/api.e2e.mjs` sprawdza:
 
@@ -89,6 +102,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - `/api/events` z sesją,
 - `/api/admin/events` bez uprawnień = 403,
 - GET/PUT state + MySQL,
+- round-trip `prop.challenges` i `selectedId` przez MySQL,
 - konflikt rewizji = 409,
 - CSRF / złe `Origin` = 403,
 - UI `/`,
@@ -97,7 +111,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 37 scenariuszy
+## UI — 51 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -106,9 +120,14 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - 47 transakcji z MySQL,
 - live i konsultacja z `/api/events`,
 - harmonogram tygodnia i strip,
-- nawigacja 14 widoków,
+- nawigacja 15 widoków (w tym prop),
 - plan dnia, filtry dziennika, szczegóły transakcji,
 - kalkulator, statystyki, mentor, akademia,
+- prop: 9 szablonów, nowy challenge + 4 KPI,
+- prop: walidacja formularza i XSS w nazwie,
+- prop: alarm limitu + banner na pulpicie,
+- prop: archiwum, empty state i przywrócenie,
+- prop: zapis w MySQL, reload i usunięcie,
 - kalendarz, check-in, profil,
 - 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,

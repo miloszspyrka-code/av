@@ -1,12 +1,20 @@
 # Changelog
 
-## 3.3.0 — 2026-11-12
+## 3.4.0 — 2026-11-12
 
 ### Dodane
 - Integracje giełd: WEEX, OKX i BingX — klucze tylko do odczytu, szyfrowanie AES-256-GCM, walidacja uprawnień i automatyczna synchronizacja transakcji.
 - MetaTrader 4/5 przez MetaApi (hasło inwestora, `investorMode`) oraz przez EA z kodem parowania (`integrations/mt5/AlphaVault.mq5`).
 - Endpointy `/api/connections*`, `/api/mt/ea`, worker `bin/sync-exchange-trades.php` i tabela deduplikacji `exchange_imports`.
 - Testy: integracje 19/19, UI integracje 11/11; dokumentacja API, bazy, deployu i testów.
+
+## 3.3.0 — 2026-11-12
+
+### Dodane
+- Prop challenge: 9 szablonów (FTMO 2-Step/1-Step/Swing, FundedNext, FundingPips, Topstep, Apex, Breakout, własne), cel zysku, dzienny limit, obsunięcie static/trailing, dni, krzywa kapitału, alerty 75/90/100%, banner na pulpicie, archiwum i pełna edycja.
+- `public/js/prop.js` — czysty, testowalny silnik limitów; `public/js/propui.js` — widok, edytor, szablony i powiadomienia.
+- `prop.challenges` + `prop.selectedId` w JSON stanu; demo ma 3 przykładowe challenge'e.
+- Testy: `npm run test:prop` (27), API 21/21, UI 51/51; dokumentacja [docs/PROP.md](docs/PROP.md).
 
 ## 3.2.0 — 2026-11-12
 

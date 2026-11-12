@@ -147,7 +147,28 @@ Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłącze
 
 ---
 
-## 9. Akademia
+## 9. Prop challenge
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Szablony FTMO (2-Step/1-Step/Swing), FundedNext, FundingPips, Topstep, Apex, Breakout, własne | ✅ | limity, typ obsunięcia i min. dni; każde pole edytowalne |
+| Nowy challenge | ✅ | nazwa, firma, konto źródłowe, rozmiar, saldo startowe, cel, limity, daty |
+| Wybór challenge'u | ✅ | osobne metryki dla każdego challenge'u |
+| Cel zysku | ✅ | liczone z zamkniętych transakcji na koncie |
+| Dzienny limit straty | ✅ | podstawa: saldo startowe / początek dnia; alerty 75/90/100% |
+| Max obsunięcie | ✅ | statyczne od salda startowego lub trailing od szczytu |
+| Dni do końca i min. dni handlowych | ✅ | termin opcjonalny; firmy bez limitu czasu |
+| Krzywa kapitału i wynik dzienny | ✅ | SVG, linia celu i linia stopu |
+| Statusy | ✅ | aktywny / cel / zaliczony / limit / czas minął |
+| Alerty + banner na pulpicie | ✅ | toast, powiadomienie, deduplikacja raz dziennie |
+| Edycja, duplikat, archiwum, usuwanie | ✅ | widok archiwum w selektorze |
+| Zapis w MySQL | ✅ | `prop.challenges` + `selectedId` w JSON stanu |
+
+Limity liczone są z **zamkniętych** transakcji. Silnik nie zna ruchów śróddziennych ani equity z platformy. Szablony są punktem startowym — potwierdź aktualne zasady w regulaminie firmy. Szczegóły: [PROP.md](PROP.md).
+
+---
+
+## 10. Akademia
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -168,7 +189,7 @@ Szczegóły techniczne: [DOCUMENTATION.md §7](DOCUMENTATION.md#7-discord-schedu
 
 ---
 
-## 10. Podatki PIT-38
+## 11. Podatki PIT-38
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -183,7 +204,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 ---
 
-## 11. Kalendarz makro
+## 12. Kalendarz makro
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -197,7 +218,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 ---
 
-## 12. Ciało i głowa
+## 13. Ciało i głowa
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -214,7 +235,7 @@ Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca 
 
 ---
 
-## 13. Giełdy, MetaTrader i API
+## 14. Giełdy, MetaTrader i API
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -232,7 +253,7 @@ Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca 
 
 Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy nie wracają do przeglądarki. Panel pokazuje wyłącznie maskę klucza i status.
 
-## 14. Konto i zasady
+## 15. Konto i zasady
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -249,7 +270,7 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 
 ---
 
-## 15. Dokumenty prawne
+## 16. Dokumenty prawne
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -262,7 +283,7 @@ Treści prawne zawierają placeholdery `[data publikacji]` i wymagają weryfikac
 
 ---
 
-## 16. Tryb offline
+## 17. Tryb offline
 
 Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 
@@ -275,7 +296,7 @@ To celowy fallback, nie drugi równoległy backend.
 
 ---
 
-## 17. Aplikacja na telefonie (PWA)
+## 18. Aplikacja na telefonie (PWA)
 
 | Element | Stan | Opis |
 |---|---|---|

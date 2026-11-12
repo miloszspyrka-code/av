@@ -33,6 +33,8 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 
 `user_states.state` to jeden dokument JSON. Limit `MAX_STATE_BYTES` = 12 MiB. Zapis jest optymistyczny: `revision` + `baseRevision`; konflikt → 409. Przy setkach screenów należy przenieść obrazy do osobnego storage i trzymać w stanie URL.
 
+Dokument zawiera m.in. `prop.challenges` (konfiguracje challenge'ów) i `prop.selectedId`. Metryki prop (cel, dzienny limit, obsunięcie, dni) są liczone po stronie frontendu z `trades` — bez dodatkowych tabel i endpointów. Szczegóły: [PROP.md](PROP.md).
+
 ## Dane zdrowotne
 
 - `wearable_connections` ma unikalny klucz `(user_id, provider)` i klucz obcy do `users` z `ON DELETE CASCADE`.

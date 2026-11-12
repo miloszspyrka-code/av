@@ -51,6 +51,11 @@
       if (!Array.isArray(s[k]) && k !== 'plans') s[k] = demo[k];
     });
     if (!s.plans || typeof s.plans !== 'object') s.plans = {};
+    if (!s.prop || typeof s.prop !== 'object') s.prop = { challenges: [], selectedId: null };
+    if (!Array.isArray(s.prop.challenges)) s.prop.challenges = [];
+    s.prop.challenges = s.prop.challenges
+      .filter((c) => c && typeof c === 'object')
+      .map((c) => (AV.prop ? AV.prop.normalize(c) : c));
     s.version = 2;
     return s;
   };
@@ -84,6 +89,7 @@
       start: 0, date: AV.dateLabel(new Date()), lev: '10×', goal: '', balance: 0, include: true, primary: true
     }];
     s.setups = [];
+    s.prop = { challenges: [], selectedId: null };
     s.meta.consultation = null;
     s.meta.consultationUsed = 0;
     s.user.name = 'Trader';

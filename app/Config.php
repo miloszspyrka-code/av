@@ -205,7 +205,7 @@ final class Config
             integrationsConfigured: strlen($integrationsKey) >= 32,
             metaApiToken: $metaApiToken,
             integrationBases: $integrationBases,
-            version: '3.3.0',
+            version: '3.4.0',
         );
     }
 }
