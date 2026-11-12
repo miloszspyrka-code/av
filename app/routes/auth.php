@@ -17,12 +17,13 @@ function av_upsert_discord_user(Config $config, Db $db, array $profile, bool $ro
     }
     if ($existing !== null) {
         $db->execute(
-            'UPDATE users SET username = ?, global_name = ?, avatar_url = ?, email = ?, role_verified = 1, last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE users SET username = ?, global_name = ?, avatar_url = ?, email = ?, role_verified = ?, last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
             [
                 (string) ($profile['username'] ?? $existing['username']),
                 $profile['global_name'] ?? null,
                 $profile['avatar_url'] ?? $existing['avatar_url'],
                 $profile['email'] ?? $existing['email'],
+                $roleVerified ? 1 : (int) ($existing['role_verified'] ?? 0),
                 (int) $existing['id'],
             ]
         );
@@ -30,7 +31,7 @@ function av_upsert_discord_user(Config $config, Db $db, array $profile, bool $ro
     }
     $db->execute(
         'INSERT INTO users (discord_id, username, global_name, avatar_url, email, is_demo, plan, access_until, role_verified, last_login_at)
-         VALUES (?, ?, ?, ?, ?, 0, ?, ?, 1, CURRENT_TIMESTAMP)',
+         VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)',
         [
             (string) $profile['id'],
             (string) ($profile['username'] ?? 'Trader'),
@@ -39,6 +40,7 @@ function av_upsert_discord_user(Config $config, Db $db, array $profile, bool $ro
             $profile['email'] ?? null,
             $config->discord['defaultPlan'],
             $trialUntil,
+            $roleVerified ? 1 : 0,
         ]
     );
     return $db->queryOne('SELECT * FROM users WHERE id = ?', [$db->lastInsertId()]) ?? [];
@@ -112,20 +114,41 @@ function av_handle_auth(Config $config, Db $db, Auth $auth, Discord $discord, ?a
             $profile = $me['body'];
             $profile['avatar_url'] = $discord->avatarUrl($profile);
             $role = $discord->checkRole($accessToken);
-            if (!$role['ok']) {
+            $existing = $db->queryOne('SELECT * FROM users WHERE discord_id = ? LIMIT 1', [(string) $profile['id']]);
+            $guard = new RoleGuard($config, $db, $discord);
+            $decision = $guard->loginDecision($existing, $role);
+            if (!$decision['allow']) {
                 $auth->audit(null, 'login.denied', [
-                    'reason' => $role['reason'] ?? 'role_check_failed',
+                    'reason' => $decision['reason'],
+                    'status' => $decision['status'],
                     'discordId' => (string) $profile['id'],
                 ]);
-                av_auth_error(403, 'Brak dostępu do Alpha Vault', (string) ($role['reason'] ?? 'Brak wymaganej roli.'), (string) ($role['detail'] ?? ''));
+                if ($decision['http'] === 403) {
+                    av_auth_error(403, 'Brak dostępu do Alpha Vault', $decision['reason'], (string) ($role['detail'] ?? ''));
+                }
+                av_auth_error(503, 'Nie udało się sprawdzić roli', $decision['reason']);
             }
-            $dbUser = av_upsert_discord_user($config, $db, $profile, (bool) $role['checked']);
+            $dbUser = av_upsert_discord_user($config, $db, $profile, (bool) $role['ok']);
             if (empty($dbUser['id'])) {
                 av_auth_error(500, 'Błąd konta', 'Nie udało się utworzyć konta użytkownika.');
             }
+            try {
+                if ($role['ok']) {
+                    $guard->markVerified((int) $dbUser['id']);
+                } else {
+                    $guard->markTransient((int) $dbUser['id'], $decision['reason']);
+                }
+            } catch (\Throwable $err) {
+                // Starsza baza bez kolumn role_* nie może zablokować logowania.
+                error_log('[role] zapis stanu weryfikacji: ' . $err->getMessage());
+            }
             $session = $auth->createSession((int) $dbUser['id'], (bool) $row['remember']);
             $auth->setSessionCookie($session);
-            $auth->audit((int) $dbUser['id'], 'login.discord', ['roleVerified' => (bool) $role['checked']]);
+            $auth->audit((int) $dbUser['id'], 'login.discord', [
+                'roleVerified' => (bool) $role['ok'],
+                'roleStatus' => (string) ($role['status'] ?? ''),
+                'grace' => $decision['grace'],
+            ]);
             Http::redirect('/#/pulpit');
         }
 

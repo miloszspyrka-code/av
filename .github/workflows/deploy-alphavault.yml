@@ -149,6 +149,7 @@ jobs:
           DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
           DISCORD_REQUIRED_ROLE_ID: ${{ secrets.DISCORD_REQUIRED_ROLE_ID }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_ROLE_RECHECK_SECONDS: "300"
           INTEGRATIONS_KEY: ${{ secrets.INTEGRATIONS_KEY }}
           METAAPI_TOKEN: ${{ secrets.METAAPI_TOKEN }}
           ADMIN_DISCORD_IDS: ${{ vars.ADMIN_DISCORD_IDS }}

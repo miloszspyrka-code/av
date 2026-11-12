@@ -140,7 +140,47 @@
       ...opts,
       headers: { ...(opts.headers || {}) }
     });
+    if (AV.api.authenticated && path.startsWith('/api/') && res.status === 401) {
+      AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
+    }
     return res;
+  };
+
+  AV.showAccessGate = (message) => {
+    AV.api.authenticated = false;
+    const gate = document.getElementById('roleGate');
+    if (!gate) return;
+    if (message) AV.setText('#roleGateMsg', message);
+    document.getElementById('auth')?.classList.add('hide');
+    document.getElementById('expired')?.classList.remove('on');
+    gate.classList.add('on');
+  };
+
+  AV.checkAccess = async () => {
+    if (!AV.api.online || !AV.api.authenticated) return false;
+    try {
+      const res = await AV.apiFetch('/api/me');
+      if (res.status === 401) {
+        AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
+        return false;
+      }
+      if (!res.ok) return true;
+      const me = await res.json();
+      if (!me.authenticated) {
+        AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
+        return false;
+      }
+      if (me.roleCheckConfigured && !me.user?.isDemo && me.user?.subscription?.roleVerified === false) {
+        AV.showAccessGate('Brak aktywnej roli Alpha na serwerze Alpha Moves. Rola jest sprawdzana co 5 minut.');
+        return false;
+      }
+      AV.api.lastRoleCheckAt = Date.now();
+      AV.applyServerUser(me.user);
+      return true;
+    } catch {
+      // Błąd sieci nie odbiera dostępu osobie, która ma ważną sesję.
+      return true;
+    }
   };
 
   AV.applyServerUser = (user) => {
@@ -172,8 +212,17 @@
       AV.api.discordConfigured = !!me.discordConfigured;
       AV.api.demoAllowed = !!me.demoAllowed;
       AV.api.roleCheckConfigured = !!me.roleCheckConfigured;
+      AV.api.roleRecheckConfigured = !!me.roleRecheckConfigured;
+      AV.api.roleRecheckSeconds = Number(me.roleRecheckSeconds) || 300;
       AV.api.me = me.user || null;
       AV.api.isAdmin = !!me.isAdmin;
+      AV.api.lastRoleCheckAt = Date.now();
+      if (me.authenticated && me.roleCheckConfigured && !me.user?.isDemo && me.user?.subscription?.roleVerified === false) {
+        AV.showAccessGate('Brak aktywnej roli Alpha na serwerze Alpha Moves. Rola jest sprawdzana przy logowaniu i co 5 minut.');
+        AV.api.authenticated = false;
+        AV.api.ready = true;
+        return { authenticated: false, denied: true, me };
+      }
       if (!me.authenticated) {
         AV.api.events = null;
         AV.api.eventsSync = null;
@@ -188,7 +237,8 @@
       if (stRes.status === 401) {
         AV.api.authenticated = false;
         AV.api.ready = true;
-        return { authenticated: false, me };
+        AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
+        return { authenticated: false, denied: true, me };
       }
       if (!stRes.ok) throw new Error('state HTTP ' + stRes.status);
       const payload = await stRes.json();
@@ -370,8 +420,7 @@
         return false;
       }
       if (res.status === 401) {
-        AV.api.authenticated = false;
-        AV.toast('Sesja wygasła. Zaloguj się ponownie.', 4000);
+        AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
         return false;
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -578,6 +627,10 @@
   };
 
   /* ---------- sesja ---------- */
+  AV.hasLocalSession = () => {
+    if (AV.safeGet(AV.SESSION_KEY)) return true;
+    try { return !!sessionStorage.getItem(AV.SESSION_KEY); } catch { return false; }
+  };
   AV.isLoggedIn = () => {
     if (AV.api.online) return !!AV.api.authenticated;
     if (AV.safeGet(AV.SESSION_KEY)) return true;

@@ -14,7 +14,7 @@ Legenda:
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Logowanie Discord OAuth2 | ✅ | `GET /auth/discord` → callback → sesja w MySQL; wymaga danych aplikacji Discord |
-| Weryfikacja roli Alpha | ✅ (opcjonalna) | bot + `DISCORD_GUILD_ID` + `DISCORD_REQUIRED_ROLE_ID` |
+| Weryfikacja roli Alpha | ✅ | logowanie tokenem użytkownika; cron co 5 min botem, odebranie roli usuwa sesje i pokazuje bramkę |
 | Logowanie demo | ✅ | `POST /auth/demo`, konto `demo-local`, dane z `db/demo-state.json` |
 | Wylogowanie | ✅ | usuwa sesję z DB i cookie |
 | „Nie wylogowuj mnie” | ✅ | zapis w stanie; cookie 30 dni |
