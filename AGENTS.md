@@ -149,7 +149,7 @@ MySQL: serwer445119_alphavault
 
 `open_basedir` LH nie pozwala PHP czytać katalogu poza docrootem; dlatego kod i `config.json` są w `~/public_html/alphavault.pl/.app`, zablokowanym przez `.htaccess` (`Require all denied` + `^\.app`). Nie zmieniaj tej ścieżki bez testu health checku.
 
-**Baza na LH (stan 2026-11-12):** istnieje, logowanie działa, **brak tabel** — migracja wykona się przy deployu.
+**Baza na LH (stan 2026-11-12):** istnieje, logowanie działa, tabele utworzone przez deploy.
 
 **Sekrety GitHub:** wszystkie wymagane są ustawione (DB, Discord, SSH). Wartości są write-only — nie próbuj ich odczytać.
 
@@ -268,7 +268,7 @@ npm run test:docs
 | CRLF w skryptach | `.gitattributes` wymusza LF; po edycji sprawdź `bash -n` i shellcheck |
 | `node -e` z cudzysłowami w PowerShell | pisz skrypt `.cjs` zamiast jednolinijkowca |
 | PHP nie w PATH | `C:\Users\milos\.local\php83\php.exe` |
-| GitHub Actions billing | job nie startuje; użyj `local-deploy.sh` lub napraw billing |
+| GitHub Actions billing | job nie startuje; sprawdź Billing; alternatywnie `local-deploy.sh` |
 | DB na LH bez tabel | uruchom `php app/db/migrate.php` po deployu |
 | Discord 401/403 | token lub uprawnienia bota; nie retryuj w pętli |
 | Discord 429 | `Retry-After`, maks. 3 próby |
