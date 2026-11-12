@@ -246,7 +246,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | --- | --- | --- |
 | Ryzyko blokady billingu GitHub Actions | brak deployu i CI | monitoruj Billing; alternatywnie `local-deploy.sh` |
 | Brak danych Discord w środowisku lokalnym | nie da się testować OAuth lokalnie | sekrety w GitHub / `local.env` poza repo |
-| LH Cron nie skonfigurowany | brak automatycznej synchronizacji | wpis w panelu LH, test logów |
+| LH Cron zatrzymany | brak automatycznej synchronizacji | monitoring logów i `stale=true` |
 | Stage nie wystąpił w realnym API | brak potwierdzenia Stage | fixture + oznaczenie „niezweryfikowany” |
 | Zmiana odpowiedzi Discord | utrata pól | walidacja i `raw_payload` |
 | Współdzielony hosting | limity procesów/DB | brak długich procesów, sync krótki i blokowany |
