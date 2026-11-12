@@ -24,7 +24,10 @@
     events: null,
     eventsLoaded: false,
     eventsSync: null,
-    isAdmin: false
+    isAdmin: false,
+    wearables: null,
+    wearablesLoaded: false,
+    wearablesError: null
   };
 
   const deepMerge = (base, patch) => {
@@ -176,6 +179,7 @@
       }
       AV.applyServerUser(me.user);
       await AV.loadEvents();
+      await AV.loadWearables();
       AV.api.ready = true;
       if (!hadState || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
         await AV.pushStateImmediate();
@@ -212,6 +216,31 @@
       return true;
     } catch (err) {
       AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.loadWearables = async () => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.api.wearables = null;
+      AV.api.wearablesLoaded = false;
+      return false;
+    }
+    try {
+      const res = await AV.apiFetch('/api/wearables');
+      if (res.status === 401) {
+        AV.api.wearables = null;
+        AV.api.wearablesLoaded = false;
+        return false;
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      AV.api.wearables = await res.json();
+      AV.api.wearablesLoaded = true;
+      AV.api.wearablesError = null;
+      if (AV.renderBody) AV.renderBody();
+      return true;
+    } catch (err) {
+      AV.api.wearablesError = err.message;
       return false;
     }
   };
@@ -562,18 +591,47 @@
   };
 
   /* ---------- forma ---------- */
+  AV.sleepLabel = (minutes) => {
+    if (minutes == null || !Number.isFinite(Number(minutes))) return '';
+    const total = Math.max(0, Math.round(Number(minutes)));
+    return Math.floor(total / 60) + ' h ' + String(total % 60).padStart(2, '0') + ' min';
+  };
+
   AV.readiness = (state) => {
     const check = (state.checkins || []).filter((c) => c.date === AV.dateKey(new Date())).sort((a, b) => b.score - a.score)[0];
     const moodMod = { 'Spokój': 10, 'Skupienie': 7, 'Pewność': 5, 'Nuda': -3, 'Zmęczenie': -8, 'Strach': -10, 'FOMO': -12, 'Złość': -14, 'Chciwość': -6 }[check?.mood] || 0;
-    const checkScore = check ? AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100) : 55;
-    const score = Math.round(checkScore);
-    let title = 'Świetna forma', cls = 'win';
-    if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
-    if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
-    if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
-    // Brak integracji ze sprzętem: gotowość liczymy wyłącznie z check-inu.
-    const desc = 'Gotowość liczona z check-inu: nastrój, energia i notatka.';
-    return { score, title, cls, desc, garmin: false, checkScore, sleepScore: 0, hrvScore: 0, hrScore: 0, check };
+    const checkScore = check ? Math.round(AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100)) : null;
+    const w = AV.api.wearables;
+    const components = w?.readiness?.components || {};
+    const physiology = components.physiology != null ? Number(components.physiology) : null;
+    const today = w?.today || null;
+    let score = null;
+    let source = 'none';
+    if (physiology != null && checkScore != null) { score = Math.round(physiology * 0.7 + checkScore * 0.3); source = 'devices+checkin'; }
+    else if (physiology != null) { score = Math.round(physiology); source = 'devices'; }
+    else if (checkScore != null) { score = checkScore; source = 'checkin'; }
+
+    let title = '', cls = '';
+    if (score != null) {
+      title = 'Świetna forma'; cls = 'win';
+      if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
+      if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
+      if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
+    }
+
+    let desc = '';
+    if (physiology != null && today) {
+      const bits = [];
+      if (today.sleepMinutes != null) bits.push('Sen ' + AV.sleepLabel(today.sleepMinutes));
+      if (today.hrvMs != null) bits.push('HRV ' + Math.round(Number(today.hrvMs)) + ' ms');
+      if (today.restingHr != null) bits.push('tętno ' + today.restingHr);
+      if (bits.length) {
+        desc = bits.join(', ') + '. ' + (score != null && score < 60 ? 'Połowa normalnej pozycji albo odpuść.' : 'Możesz grać normalnie, ale trzymaj się planu.');
+      }
+    } else if (checkScore != null) {
+      desc = 'Gotowość liczona z check-inu: nastrój i energia. Podłącz urządzenie, żeby dodać sen, HRV i tętno.';
+    }
+    return { score, title, cls, desc, source, physiology, checkScore, check, today, components };
   };
 
   /* ---------- podatki ---------- */
@@ -651,7 +709,7 @@
       cWynik: AV.money(c.reduce((s, t) => s + t.result, 0), 2, ''), cN: c.length,
       aWr: a.length ? Math.round(a.filter((t) => t.result > 0).length / a.length * 100) : 0,
       planZgodne: planOK + ' z ' + todayPlanTrades.length,
-      gotowosc: r.score,
+      gotowosc: r.score == null ? '' : r.score,
       clFull: full.length ? Math.round(full.filter((t) => t.result > 0).length / full.length * 100) : 0,
       clNo: part.length ? Math.round(part.filter((t) => t.result > 0).length / part.length * 100) : 0,
       tr: today.count, event: next ? next.name : 'brak ważnych publikacji',
@@ -678,38 +736,169 @@
   };
 
   /* ---------- badge ---------- */
+  const badgeDay = (t) => AV.dateKey(new Date(t.date));
+  const badgeDayList = (values) => [...new Set(values.filter(Boolean))].sort();
+  const badgeRuns = (keys) => {
+    const runs = [];
+    let start = null, prev = null, length = 0;
+    badgeDayList(keys).forEach((k) => {
+      const d = new Date(k + 'T12:00:00');
+      if (prev && Math.round((d - prev) / 86400000) === 1) length++;
+      else { start = k; length = 1; }
+      runs.push({ start, end: k, length });
+      prev = d;
+    });
+    return runs;
+  };
+  const badgeBest = (keys) => badgeRuns(keys).reduce((best, run) => Math.max(best, run.length), 0);
+  const badgeFirst = (keys, target) => {
+    const run = badgeRuns(keys).find((r) => r.length >= target);
+    return run ? run.end : null;
+  };
+  const badgeBestFlagged = (keys, isGood) => {
+    let best = 0, run = 0;
+    badgeDayList(keys).forEach((k) => {
+      if (isGood(k)) { run++; best = Math.max(best, run); }
+      else run = 0;
+    });
+    return best;
+  };
+  const badgeFirstFlagged = (keys, isGood, target) => {
+    let run = 0;
+    for (const k of badgeDayList(keys)) {
+      if (isGood(k)) {
+        run++;
+        if (run >= target) return k;
+      } else run = 0;
+    }
+    return null;
+  };
+  const badgeHintDate = (key) => key ? AV.dateShort(new Date(key + 'T12:00:00')) : '';
+
+  AV.badgeSummary = (list) => {
+    const badges = Array.isArray(list) ? list : [];
+    const done = badges.filter((b) => b.done).length;
+    return { done, total: badges.length, level: Math.min(5, 1 + Math.floor(done / 2)) };
+  };
+
   AV.badges = (state) => {
-    const closed = AV.closedTrades(state);
-    const plans = Object.values(state.plans);
-    const approved = plans.filter((p) => p.approvedAt).length;
-    const days = new Set(AV.includedTrades(state).map((t) => AV.dateKey(new Date(t.date)))).size;
-    const sl = closed.filter((t) => t.sl && t.sl !== 'brak').length;
-    const aTrades = closed.filter((t) => t.grade === 'A').length;
-    const fomoFree = (() => {
-      let n = 0, d = AV.startOfDay(new Date());
-      for (let i = 0; i < 10; i++) {
-        const k = AV.dateKey(d);
-        const day = closed.filter((t) => AV.dateKey(new Date(t.date)) === k);
-        if (day.length && !day.some((t) => t.emotion === 'FOMO')) n++;
-        d = AV.addDays(d, -1);
-      }
-      return n;
-    })();
-    const cFree = (() => {
-      const now = new Date();
-      const month = closed.filter((t) => new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear());
-      const net = month.reduce((s, t) => s + t.result, 0);
-      return { net, hasC: month.some((t) => t.grade === 'C') };
-    })();
+    const s = state || {};
+    const trades = Array.isArray(s.trades) ? s.trades : [];
+    const checkins = Array.isArray(s.checkins) ? s.checkins : [];
+    const accounts = Array.isArray(s.accounts) ? s.accounts : [];
+    const closed = AV.closedTrades({ ...s, trades, accounts });
+    const plans = Object.values(s.plans || {}).filter((p) => p && typeof p === 'object');
+    const approvedPlans = plans
+      .filter((p) => p.approvedAt)
+      .sort((a, b) => new Date(a.approvedAt) - new Date(b.approvedAt));
+    const planDays = badgeDayList(approvedPlans.map((p) => p.date || badgeDay({ date: p.approvedAt })));
+    const tradeDays = badgeDayList(closed.map(badgeDay));
+    const journalDays = badgeDayList([
+      ...trades.map(badgeDay),
+      ...checkins.map((c) => c.date)
+    ]);
+    const slTrades = closed
+      .filter((t) => t.sl != null && String(t.sl).trim() !== '' && String(t.sl).toLowerCase() !== 'brak')
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const aTrades = closed
+      .filter((t) => t.grade === 'A')
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const bestJournal = badgeBest(journalDays);
+    const firstJournal7 = badgeFirst(journalDays, 7);
+
+    // Dni bez transakcji (np. weekend) nie przerywają serii; przerywa ją dzień
+    // handlowy z FOMO. Liczymy tylko dni z transakcjami, nie check-iny.
+    const fomoDays = new Set(closed.filter((t) => t.emotion === 'FOMO').map(badgeDay));
+    const fomoClean = (k) => !fomoDays.has(k);
+    const bestFomoFree = badgeBestFlagged(tradeDays, fomoClean);
+    const firstFomo10 = badgeFirstFlagged(tradeDays, fomoClean, 10);
+
+    // Analogicznie: 5 kolejnych dni z zatwierdzonym planem i czystym handlem.
+    // Dni bez planu ani transakcji nie przerywają serii.
+    const breakErrors = ['Bez SL', 'Przesunięty SL', 'Za duża pozycja', 'Handel przy danych', 'Wejście po stracie'];
+    const activeDays = badgeDayList([...planDays, ...tradeDays]);
+    const planDayClean = (k) => {
+      if (!planDays.includes(k)) return false;
+      return closed
+        .filter((t) => badgeDay(t) === k)
+        .every((t) => t.grade !== 'C' && t.plan !== false && !(t.errors || []).some((e) => breakErrors.includes(e)));
+    };
+    const bestCleanWeek = badgeBestFlagged(activeDays, planDayClean);
+    const firstCleanWeek = badgeFirstFlagged(activeDays, planDayClean, 5);
+
+    const monthKey = (value) => {
+      const d = new Date(value);
+      return d.getFullYear() + '-' + AV.pad(d.getMonth() + 1);
+    };
+    const nowMonth = monthKey(new Date());
+    const months = {};
+    closed.forEach((t) => {
+      const k = monthKey(t.date);
+      if (!k || k === 'NaN-NaN' || k === nowMonth) return;
+      if (!months[k]) months[k] = { net: 0, hasC: false, n: 0 };
+      months[k].net += Number(t.result) || 0;
+      months[k].n++;
+      if (t.grade === 'C') months[k].hasC = true;
+    });
+    const monthKeys = Object.keys(months).sort();
+    const lastMonth = monthKeys.length ? monthKeys[monthKeys.length - 1] : null;
+    const lastMonthData = lastMonth ? months[lastMonth] : null;
+    const monthDone = !!lastMonthData && lastMonthData.net > 0 && !lastMonthData.hasC;
+    const monthLabel = lastMonth ? new Date(lastMonth + '-01T12:00:00').toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }) : '';
+    const monthProgress = lastMonthData
+      ? (lastMonthData.net > 0 ? 50 : 0) + (lastMonthData.hasC ? 0 : 40) + 10
+      : 0;
+
     return [
-      { icon: 'plan', name: 'Pierwszy plan dnia', done: approved > 0, hint: approved > 0 ? AV.dateShort(new Date(plans.find((p) => p.approvedAt)?.approvedAt || Date.now())) : '0 / 1' },
-      { icon: 'book', name: '7 dni z dziennikiem', done: days >= 7, hint: 'teraz: ' + days + ' dni', progress: AV.clamp(days / 7 * 100, 0, 100) },
-      { icon: 'shield', name: '50 × ze stop lossem', done: sl >= 50, hint: sl + ' / 50', progress: AV.clamp(sl / 50 * 100, 0, 100) },
-      { icon: 'check', name: 'Tydzień bez złamania zasad', done: plans.filter((p) => p.approvedAt).length >= 4, hint: approved + ' planów' },
-      { icon: 'plan', name: '30 planów dnia', done: approved >= 30, hint: approved + ' / 30', progress: AV.clamp(approved / 30 * 100, 0, 100) },
-      { icon: 'star', name: '100 transakcji A', done: aTrades >= 100, hint: aTrades + ' / 100', progress: AV.clamp(aTrades / 100 * 100, 0, 100) },
-      { icon: 'pulse', name: '10 dni bez FOMO', done: fomoFree >= 10, hint: fomoFree + ' / 10', progress: fomoFree * 10 },
-      { icon: 'stats', name: 'Miesiąc na plusie bez C', done: cFree.net > 0 && !cFree.hasC, hint: cFree.net > 0 && !cFree.hasC ? 'zaliczone' : 'w trakcie', progress: cFree.hasC ? 15 : 60 }
+      {
+        icon: 'plan', name: 'Pierwszy plan dnia',
+        done: approvedPlans.length > 0,
+        hint: approvedPlans.length ? badgeHintDate(planDays[0]) : '0 / 1',
+        progress: approvedPlans.length ? 100 : 0
+      },
+      {
+        icon: 'book', name: '7 dni z dziennikiem',
+        done: bestJournal >= 7,
+        hint: bestJournal >= 7 ? badgeHintDate(firstJournal7) : 'najdłużej: ' + bestJournal + ' dni',
+        progress: AV.clamp(bestJournal / 7 * 100, 0, 100)
+      },
+      {
+        icon: 'shield', name: '50 × ze stop lossem',
+        done: slTrades.length >= 50,
+        hint: slTrades.length >= 50 ? badgeHintDate(badgeDay(slTrades[49])) : slTrades.length + ' / 50',
+        progress: AV.clamp(slTrades.length / 50 * 100, 0, 100)
+      },
+      {
+        icon: 'check', name: 'Tydzień bez złamania zasad',
+        done: bestCleanWeek >= 5,
+        hint: bestCleanWeek >= 5 ? badgeHintDate(firstCleanWeek) : bestCleanWeek + ' / 5 dni',
+        progress: AV.clamp(bestCleanWeek / 5 * 100, 0, 100)
+      },
+      {
+        icon: 'plan', name: '30 planów dnia',
+        done: approvedPlans.length >= 30,
+        hint: approvedPlans.length >= 30 ? badgeHintDate(planDays[29]) : approvedPlans.length + ' / 30',
+        progress: AV.clamp(approvedPlans.length / 30 * 100, 0, 100)
+      },
+      {
+        icon: 'star', name: '100 transakcji A',
+        done: aTrades.length >= 100,
+        hint: aTrades.length >= 100 ? badgeHintDate(badgeDay(aTrades[99])) : aTrades.length + ' / 100',
+        progress: AV.clamp(aTrades.length / 100 * 100, 0, 100)
+      },
+      {
+        icon: 'pulse', name: '10 dni bez FOMO',
+        done: bestFomoFree >= 10,
+        hint: bestFomoFree >= 10 ? badgeHintDate(firstFomo10) : bestFomoFree + ' / 10',
+        progress: AV.clamp(bestFomoFree / 10 * 100, 0, 100)
+      },
+      {
+        icon: 'stats', name: 'Miesiąc na plusie bez C',
+        done: monthDone,
+        hint: monthDone ? monthLabel : 'w trakcie',
+        progress: monthDone ? 100 : AV.clamp(monthProgress, 0, 100)
+      }
     ];
   };
 

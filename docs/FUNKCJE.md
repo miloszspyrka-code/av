@@ -19,7 +19,7 @@ Legenda:
 | Wylogowanie | ✅ | usuwa sesję z DB i cookie |
 | „Nie wylogowuj mnie” | ✅ | zapis w stanie; cookie 30 dni |
 | Profil (imię, e-mail, avatar) | ✅ | imię i avatar zapisują się w stanie; avatar Discord jest domyślny |
-| Subskrypcja (plan, data) | ✅ | z tabeli `users`; ekran wygasłej subskrypcji |
+| Subskrypcja (plan, data) | ✅ | z tabeli `users`; data pokazywana tylko, gdy jest ustawiona; ekran wygasłej subskrypcji |
 | Zmiana planu demo | ✅ | przyciski podglądu; nadpisanie serwerowe po odświeżeniu |
 | Usunięcie konta | ✅ | `DELETE /api/account` (kaskada) |
 | Eksport danych ZIP | ✅ | JSON, CSV transakcji, CSV podatków, plany, screeny, avatar |
@@ -33,7 +33,6 @@ Legenda:
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Powitanie z porą dnia | ✅ | ustawienie „Powitanie” |
 | Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie; bez sekcji gotowości i bez integracji ze sprzętem |
 | Wynik dnia | ✅ | z transakcji dzisiejszych, przeliczony na walutę wyników |
 | Limity strat/transakcji/ryzyka | ✅ | z planu dnia i ustawień |
@@ -136,7 +135,6 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Funkcja | Stan | Opis |
 |---|---|---|
 | 5 tematów rozmowy | ✅ | gotowe odpowiedzi (bez API LLM) |
-| Forma żeńska/męska | ✅ | |
 | Uwagi mentora | ✅ | generowane z danych (limit strat, odgrywanie, MFE, ocena A, sesja) |
 | Analiza rynku | ✅ | najbliższe ★★★, instrument, ryzyko tygodnia |
 | Raport tygodnia | ✅ | z ostatnich 7 dni |
@@ -173,14 +171,14 @@ Limity liczone są z **zamkniętych** transakcji. Silnik nie zna ruchów śródd
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Harmonogram live'ów | ✅ | synchronizacja Discord Scheduled Events → `/api/events`; grupowanie po `Europe/Warsaw`, `DZIŚ`, wiele wydarzeń dnia |
-| Najbliższy live + countdown | ✅ | wyłącznie z realnego wydarzenia `live`; brak wydarzenia = puste pola |
+| Najbliższy live (bez countdownu) | ✅ | wyłącznie z realnego wydarzenia `live`; karta ukryta, gdy brak wydarzenia |
 | Liczba zainteresowanych | ✅ | z `user_count`, jeśli Discord je zwróci; brak = pole puste |
 | Konsultacje 1:1 | ✅ | karta „Najbliższa” z wydarzenia `consultation`; prowadzący i czas trwania tylko z danych wydarzenia |
 | Ręczne przypisanie kategorii | ✅ | admin `live` / `consultation` / `unassigned`; pierwszeństwo nad regułami |
 | Puste pola | ✅ | brak tekstów zastępczych, brak domyślnego 20:00 |
 | Błąd synchronizacji | ✅ | ostatni dobry zestaw pozostaje; UI pokazuje stan „błąd synchronizacji” |
 | Rezerwacja konsultacji | ✅ | niezależna od synchronizacji, zapis w stanie |
-| Dołącz / przypomnienie | ✅ | modal, powiadomienie przeglądarki (jeśli pozwolono) |
+| Dołącz / przypomnienie | ✅ | link do `https://discord.com/events/{guild}/{event}`; przypomnienie przeglądarki bez zmian |
 | Nagrania | 🟡 | karta i modal demo; brak playera |
 | Materiały / postęp kursu | ✅ | postęp w stanie |
 | Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
@@ -222,8 +220,16 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na podpowiedzi mentora |
-| Gotowość i urządzenia | ⛔ | usunięte z UI; brak realnej integracji z API producentów zegarków |
+| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na gotowość oraz podpowiedzi mentora |
+| Garmin Connect | 🟡 | OAuth2 + backfill `dailies`/`sleeps`/`hrv`; wymaga zatwierdzenia Garmin Health API i konfiguracji `GARMIN_*` |
+| Apple Watch · Zdrowie | ✅ | kod parowania + `POST /api/wearables/apple/ingest` z tokenem urządzenia; aplikacja iPhone poza repo |
+| Oura Ring | ✅ | OAuth2, `daily_readiness` + `sleep`; wystarczy `OURA_CLIENT_ID`/`OURA_CLIENT_SECRET` |
+| Whoop | ✅ | OAuth2, `recovery` + `activity/sleep`; wystarczy `WHOOP_CLIENT_ID`/`WHOOP_CLIENT_SECRET` |
+| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
+| Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
+| Odłączenie urządzenia | ✅ | usuwa tokeny i metryki z bazy (wycofanie zgody) |
+
+Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych).
 
 ---
 
@@ -247,16 +253,16 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Profil (imię, waluta, cel, motto) | ✅ | |
-| Personalizacja (płeć mentora, styl, rynki, akcent, strefa, godziny) | ✅ | |
+| Profil (imię, waluta, cel) | ✅ | |
+| Personalizacja (rynki, akcent, strefa, godziny) | ✅ | |
 | Wyłącznik bezpieczeństwa | ✅ | limit strat, limit dzienny, czas blokady, wymóg powodu |
 | 3 zasady + punkty checklisty | ✅ | własny punkt checklisty |
 | Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
-| Odznaki | ✅ | postęp z danych |
+| Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
 | 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
-| Aplikacja na telefonie | ⚪ | instrukcja PWA; manifest nie jest jeszcze dodany |
+| Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
 
@@ -283,3 +289,18 @@ Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 - po powrocie serwera i zalogowaniu stan z MySQL zastępuje lokalny.
 
 To celowy fallback, nie drugi równoległy backend.
+
+---
+
+## 18. Aplikacja na telefonie (PWA)
+
+| Element | Stan | Opis |
+|---|---|---|
+| Manifest | ✅ | `/manifest.webmanifest`: `display: standalone`, ikony 192/512/maskable, skrót `/?qa=1` |
+| Instalacja bez App Store | ✅ | Chrome/Edge: `beforeinstallprompt`; iPhone: Safari → Udostępnij → Do ekranu początkowego |
+| Service worker | ✅ | `/sw.js`: cache powłoki, offline fallback, `notificationclick` → `/?qa=<id>` |
+| Powiadomienie po zamknięciu | ✅ | po zamknięciu pozycji w panelu i zapisie stanu; treść: para, kierunek, wynik; klik otwiera szybkie dodanie |
+| Szybkie dodanie | ✅ | emocja + ocena + zdjęcie wykresu (`capture="environment"`), zapis do stanu i MySQL; E2E 0,6–0,7 s |
+| Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
+
+Powiadomienie o zamknięciu powstaje po stronie klienta, więc działa, gdy panel jest otwarty albo gdy transakcję zamyka się w panelu. Powiadomienie „po zamknięciu na giełdzie” przy zamkniętej aplikacji wymaga workera giełdowego i Web Push z VAPID — to osobny zakres.

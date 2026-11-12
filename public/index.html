@@ -2,10 +2,18 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Alpha Vault · prywatna strefa tradera · Alpha Moves</title>
 <meta name="description" content="Alpha Vault — prywatna strefa tradera Alpha Moves: plan dnia, dziennik, statystyki, kalkulator, mentor i kalendarz makro.">
 <meta name="theme-color" content="#080707">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alpha Vault">
+<meta name="application-name" content="Alpha Vault">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
 :root{
@@ -151,6 +159,8 @@ textarea.input{resize:vertical;line-height:1.5}
 /* ===== PULPIT ===== */
 .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
 .ready{display:flex;gap:20px;align-items:center}
+.bodygrid{grid-template-columns:1fr 1.4fr;align-items:start}
+@media(max-width:900px){.bodygrid{grid-template-columns:1fr}}
 .lock{display:flex;align-items:center;gap:16px;border-radius:18px;padding:16px 20px;border:1px solid rgba(255,93,98,.3);background:linear-gradient(90deg,rgba(255,93,98,.12),rgba(255,93,98,.02));margin-bottom:16px}
 .lock .ic{width:42px;height:42px;border-radius:12px;background:var(--lossS);color:var(--loss);display:grid;place-items:center;flex-shrink:0}
 .lock b{font-size:15.5px}.lock p{font-size:13.5px;color:#ffc5c7;margin-top:2px}
@@ -272,6 +282,8 @@ textarea.input{resize:vertical;line-height:1.5}
 .dev .lg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:13px;flex-shrink:0}
 .dev b{display:block;font-size:14.5px}.dev span{font-size:12.5px;color:var(--dim)}
 .dev .btn{margin-left:auto}
+.dev .btn[data-sync]{margin-left:auto}
+.dev .btn[data-sync] + .btn{margin-left:0}
 .trend{font-size:12px;font-weight:700;margin-top:4px}
 .ex{display:grid;grid-template-columns:240px 1fr;gap:16px}
 .exl button{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid transparent;margin-bottom:6px;font-weight:700}
@@ -368,8 +380,11 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--cream);color:var(--ink);font-weight:700;border-radius:99px;padding:11px 20px;font-size:14px;opacity:0;transition:.25s var(--ease);z-index:200;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%)}
 
-@media(max-width:1100px){.hero{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr}.rules4{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){#auth{grid-template-columns:1fr}.auth-art{display:none}.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto;gap:4px;padding:10px}aside .logo,.me,.navg .gl{display:none}.navg{flex-direction:row}.navg button{white-space:nowrap}.navg button.on:before{display:none}.g3,.g4,.g2{grid-template-columns:1fr 1fr}.wrap{padding:26px 16px 110px}.top{padding:10px 16px}.ex{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero>:first-child{grid-column:auto}.lvl{grid-template-columns:1fr 1fr}}
+.qa-grid{grid-template-columns:auto 1fr;gap:34px}
+.qa-float{display:none}
+#qaSave:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){.modal{padding:18px 10px}#qa .mbox{padding:20px 16px 92px;border-radius:18px}.qa-grid{grid-template-columns:1fr;gap:20px}.qa-grid .phone{width:100%;height:auto;border-width:6px;border-radius:28px;margin:0;box-shadow:0 20px 40px -24px #000}.qa-grid .phone:before{display:none}.qa-grid .phone .scr{height:auto;padding:18px 14px 20px}.qa-float{display:block;position:fixed;left:14px;right:14px;bottom:14px;z-index:70;box-shadow:0 12px 30px rgba(0,0,0,.6)}.qa-float:disabled{opacity:.55}}
+@media(max-width:1100px){.hero{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr}.rules4{grid-template-columns:1fr 1fr}}@media(max-width:900px){#auth{grid-template-columns:1fr}.auth-art{display:none}.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto;gap:4px;padding:10px}aside .logo,.me,.navg .gl{display:none}.navg{flex-direction:row}.navg button{white-space:nowrap}.navg button.on:before{display:none}.g3,.g4,.g2{grid-template-columns:1fr 1fr}.wrap{padding:26px 16px 110px}.top{padding:10px 16px}.ex{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero>:first-child{grid-column:auto}.lvl{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.g3,.g4,.g2,.res,.rules4,.gradepick,.biasseg{grid-template-columns:1fr}.res .big{grid-column:auto}h1{font-size:30px}h1 .serif{font-size:36px}.ev{grid-template-columns:70px 1fr auto}.ev .flag{display:none}.chipst{display:none}.mw{right:12px;bottom:12px}.mw-panel{width:calc(100vw - 24px)}.lock{flex-wrap:wrap}.cd{margin-left:0}}
 </style>
 </head>
@@ -475,7 +490,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     <button data-v="gieldy"><svg class="i"><use href="#i-link"/></svg>Giełdy i API</button>
     <button data-v="ust"><svg class="i"><use href="#i-user"/></svg>Konto i zasady</button>
   </div>
-  <div class="me"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av">K</div></label><div><b id="sideName">Kasia</b><span id="sidePlan">Alpha · do 03.12.2026</span></div><span class="out" id="logout" title="Wyloguj"><svg class="i"><use href="#i-out"/></svg></span></div>
+  <div class="me"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av">K</div></label><div><b id="sideName">Kasia</b><span id="sidePlan">Alpha + Akademia</span></div><span class="out" id="logout" title="Wyloguj"><svg class="i"><use href="#i-out"/></svg></span></div>
 </aside>
 
 <main>
@@ -488,8 +503,8 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= PULPIT ================= -->
 <section class="view on" id="pulpit">
-  <div class="head"><div style="display:flex;gap:20px;align-items:center"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av" style="width:72px;height:72px;font-size:28px;box-shadow:0 0 0 4px rgba(var(--a),.15)">K</div><span class="ed"><svg class="i"><use href="#i-pen"/></svg></span></label><div><div class="eyebrow" id="today"></div><h1><span id="greet">Cześć</span>, <span class="serif">Kasia.</span></h1>
-<div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge">Day trader · <b>Krypto</b></span><span class="bdg">Trader Alpha · <b>poziom 3</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
+  <div class="head"><div style="display:flex;gap:20px;align-items:center"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av" style="width:72px;height:72px;font-size:28px;box-shadow:0 0 0 4px rgba(var(--a),.15)">K</div><span class="ed"><svg class="i"><use href="#i-pen"/></svg></span></label><div><div class="eyebrow" id="today"></div><h1><span class="serif">Kasia.</span></h1>
+<div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge"><b>Krypto</b></span><span class="bdg">Trader Alpha · <b id="levelBadge">poziom 1</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
 
   <div class="lock lkb" id="lockBar"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Tryb ochronny włączony</b><p id="lockTxt">Dwie straty dziś, limit osiągnięty. Nowe pozycje w dzienniku są zablokowane do północy.</p></div><div class="cd cdt">--:--:--</div></div>
 
@@ -517,7 +532,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     </div>
   </div>
 
-<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
+<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep" id="liveSep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
   <div class="grid sec" style="grid-template-columns:1.3fr 1fr">
     <div class="card ins alert" id="dashMentor"><div class="sech" style="margin:0"><span class="tag alert">Mentor · alarm</span><span class="link" data-go="mentor">Wszystkie uwagi <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div><h3>To wygląda na odgrywanie się</h3><p>12 min po stracie na ETH pojawiła się pozycja SOL 2,3× większa niż zwykle. Rynek nie wie o stracie.</p><div class="step"><b>Krok na dziś:</b> zamknij platformę i zapisz, co było w głowie przy ostatnim wejściu.</div></div>
     <div class="card" style="cursor:pointer" data-go="stat"><div class="sech" style="margin:0"><div class="lbl">Kapitał · 30 dni</div><span class="win mono" style="font-weight:700" id="dash30">+8,2%</span></div>
@@ -822,10 +837,9 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div id="akFull">
   <div class="head"><div><div class="eyebrow">Akademia Alpha Moves</div><h1>Twoja <span class="serif">Akademia.</span></h1><p>Live'y, konsultacje i materiały w jednym miejscu. Przypomnienia przychodzą same.</p></div><div style="display:flex;gap:10px"><span class="btn g" data-doc="ak">Czym jest Akademia?</span><a class="btn g" href="https://www.alphamoves.pl" target="_blank" rel="noopener">www.alphamoves.pl ↗</a></div></div>
   <div class="grid" style="grid-template-columns:1.3fr 1fr;align-items:start">
-<div class="card hl"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
+<div class="card hl" id="liveCard" style="display:none"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
 <h2 style="font-size:28px;margin-top:14px;letter-spacing:-.6px" id="liveTitle"></h2><div class="mut" style="margin-top:6px" id="liveWho"></div>
-<div style="display:flex;align-items:flex-end;gap:24px;margin-top:20px;flex-wrap:wrap"><div><div class="lbl">Start za</div><div class="mono" style="font-size:40px;font-weight:700;margin-top:6px" id="liveCd"></div></div>
-<div style="display:flex;gap:10px;margin-left:auto"><button class="btn p" id="liveJoin"><svg class="i"><use href="#i-play"/></svg>Dołącz</button><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div></div>
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><a class="btn p" id="liveJoin" target="_blank" rel="noopener"><svg class="i"><use href="#i-play"/></svg>Dołącz</a><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div>
     </div>
 <div class="card"><div class="sech" style="margin:0"><h2>Konsultacje 1:1</h2><span class="mono dim" style="font-size:12px" id="consultMonth"></span></div>
 <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-top:14px"><span class="mut">Wykorzystane</span><b id="consultUsed"></b></div><div class="bar"><i id="consultBar" style="width:0;background:var(--alpha)"></i></div>
@@ -891,20 +905,42 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= CIAŁO ================= -->
 <section class="view" id="cialo">
-  <div class="head"><div><div class="eyebrow">Ciało i głowa</div><h1>Check-in <span class="serif">przed rynkiem.</span></h1><p>30 sekund, zanim otworzysz wykres. Zapisz nastrój, energię i to, co siedzi w głowie — mentor bierze to pod uwagę.</p></div></div>
-  <div class="grid" style="grid-template-columns:1fr;max-width:640px;align-items:start">
-    <div class="card"><h2>Check-in przed rynkiem</h2><p class="mut" style="font-size:13.5px;margin-top:4px">30 sekund, zanim otworzysz wykres.</p>
-      <span class="label">Jak się teraz czujesz?</span><div class="chips sel" id="checkMood"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip on">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Złość</span></div>
-      <span class="label">Energia</span><div class="chips sel" id="checkEnergy"><span class="chip">1</span><span class="chip on">2</span><span class="chip">3</span><span class="chip">4</span><span class="chip">5</span></div>
-      <span class="label">Co dziś siedzi w głowie?</span><textarea class="input" rows="2" id="checkNote">Wczorajsza strata, chęć odrobienia…</textarea>
-      <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
+  <div class="head"><div><div class="eyebrow">Ciało i głowa</div><h1>Twoja forma <span class="serif">pod trading.</span></h1><p>Niewyspany trader to drogi trader. Połącz zegarek, a Alpha Vault policzy gotowość i pokaże, jak sen wpływa na wyniki.</p></div></div>
+  <div class="grid bodygrid">
+    <div class="grid">
+      <div class="card"><h2>Urządzenia</h2><p class="dim" style="font-size:12.5px;line-height:1.5;margin-top:6px">Łącząc urządzenie, wyrażasz zgodę na przetwarzanie danych o zdrowiu (sen, HRV, tętno) tylko do liczenia Twojej gotowości. Zgodę wycofasz w każdej chwili, odłączając urządzenie.</p>
+        <div class="grid" style="margin-top:14px;gap:10px" id="devList">
+          <div class="dev" data-provider="garmin"><div class="lg" style="background:#007cc3;color:#fff">G</div><div><b>Garmin Connect</b><span data-devstate>sen, HRV, Body Battery</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+          <div class="dev" data-provider="apple"><div class="lg" style="background:#f2f2f2;color:#111;font-size:19px">⌚</div><div><b>Apple Watch · Zdrowie</b><span data-devstate>przez aplikację Alpha Vault na iPhone</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev>Połącz</button></div>
+          <div class="dev" data-provider="oura"><div class="lg" style="background:#1c1c1c;color:#fff;border:1px solid #444">◯</div><div><b>Oura Ring</b><span data-devstate>sen, HRV, gotowość</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+          <div class="dev" data-provider="whoop"><div class="lg" style="background:#333;color:#fff">W</div><div><b>Whoop</b><span data-devstate>regeneracja, obciążenie</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+        </div>
+        <p class="dim" id="wearablesNotice" style="font-size:12px;line-height:1.5;margin-top:10px"></p>
+      </div>
+      <div class="card"><h2>Check-in przed rynkiem</h2><p class="mut" style="font-size:13.5px;margin-top:4px">30 sekund, zanim otworzysz wykres.</p>
+        <span class="label">Jak się teraz czujesz?</span><div class="chips sel" id="checkMood"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Złość</span></div>
+        <span class="label">Energia</span><div class="chips sel" id="checkEnergy"><span class="chip">1</span><span class="chip">2</span><span class="chip">3</span><span class="chip">4</span><span class="chip">5</span></div>
+        <span class="label">Co dziś siedzi w głowie?</span><textarea class="input" rows="2" id="checkNote" placeholder="Jedno zdanie, szczerze."></textarea>
+        <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
+    </div>
+    <div class="grid">
+      <div class="card hl"><div class="ready"><div class="ring" id="bodyRing" style="width:128px;height:128px"><div style="width:106px;height:106px"><b id="bodyReady"></b><small>GOTOWOŚĆ</small></div></div>
+        <div><div class="lbl" id="bodyReadyDay">Dziś</div><h2 style="margin-top:6px;font-size:22px" id="bodyReadyTitle"></h2><p class="mut" style="font-size:14px;line-height:1.55;margin-top:6px" id="bodyReadyDesc"></p></div></div></div>
+      <div class="grid g4">
+        <div class="card"><div class="lbl">Sen</div><div class="val" id="metricSleep"></div><div class="trend" id="metricSleepTrend"></div></div>
+        <div class="card"><div class="lbl">HRV</div><div class="val" id="metricHrv"></div><div class="trend" id="metricHrvTrend"></div></div>
+        <div class="card"><div class="lbl">Tętno</div><div class="val" id="metricHr"></div><div class="trend" id="metricHrTrend"></div></div>
+        <div class="card"><div class="lbl">Body Battery</div><div class="val" id="metricBattery"></div><div class="trend" id="metricBatteryTrend"></div></div>
+      </div>
+      <div class="card" id="sleepCard" hidden><h3 style="margin-bottom:10px">Średni wynik dnia a sen</h3>
+        <div id="sleepChart"></div></div>
+    </div>
   </div>
 </section>
 
 <!-- ================= GIEŁDY ================= -->
 <section class="view" id="gieldy">
   <div class="head"><div><div class="eyebrow">Giełdy, MetaTrader i API</div><h1>Podłącz giełdę <span class="serif">lub brokera.</span></h1><p>Po podłączeniu wszystkie Twoje transakcje kopiują się do dziennika same: wejście, wyjście, wielkość, wynik i opłaty.</p></div><button class="btn g" id="syncNow"><svg class="i"><use href="#i-sync"/></svg>Synchronizuj teraz</button></div>
-  <div class="note" style="margin-bottom:16px"><svg class="i" style="color:var(--win)"><use href="#i-shield"/></svg><div><b>Klucz tylko do odczytu.</b> Alpha Vault nie może otworzyć pozycji ani wypłacić środków. Widzi wyłącznie historię. Klucz jest zaszyfrowany i nikt z Alpha Moves go nie zobaczy.</div></div>
   <div class="ex">
     <div class="card exl" style="padding:10px">
       <button class="on" data-ex="weex"><span class="lg" style="background:#1f1f1f;color:#fff;border:1px solid #444">WX</span><span>WEEX<small class="win" data-exstate="weex">● połączona</small></span></button>
@@ -923,7 +959,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div class="grid g2" style="align-items:start">
     <div class="grid">
       <div class="card hl"><div class="sech" style="margin:0"><h2>Subskrypcja Alpha Moves</h2><span class="tag praise">aktywna</span></div>
-        <div class="kv" style="margin-top:8px"><span>Plan</span><b id="planName">Akademia Alpha + Vault · 168 $ / mies.</b></div><div class="kv"><span>Ważna do</span><b id="planUntil">03.12.2026</b></div>
+        <div class="kv" style="margin-top:8px"><span>Plan</span><b id="planName">Akademia Alpha + Vault · 168 $ / mies.</b></div><div class="kv" id="planUntilRow"><span>Ważna do</span><b id="planValidUntil">03.12.2026</b></div>
         <div class="kv"><span>Discord</span><b style="display:flex;align-items:center;gap:6px;color:#aab2ff"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg><span id="planRole">kasia.trades · rola Alpha ✓</span></b></div><div class="kv"><span>Ostatnie sprawdzenie roli</span><b id="roleCheck">dziś, 08:12</b></div>
         <p class="dim" style="font-size:12.5px;line-height:1.5;margin-top:10px">Gdy bot zdejmie rolę Alpha na Discordzie, Alpha Vault wstrzyma dostęp. Dane zostają zachowane przez 90 dni.</p>
         <div style="display:flex;gap:10px;margin-top:12px"><a class="btn g sm" href="https://alphamoves.vercel.app/" target="_blank" rel="noopener">Zarządzaj subskrypcją</a><button class="btn g sm" id="simExp">Podgląd: subskrypcja wygasła</button><button class="btn g sm" id="simSolo">Podgląd: plan Alpha Vault</button></div></div>
@@ -932,8 +968,6 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <div class="grid g2"><div><span class="label">Imię / nick</span><input class="input" id="nameIn" value="Kasia"></div><div><span class="label">Waluta wyników</span><select class="input" id="currencyIn"><option>USDT</option><option>USD</option><option>PLN</option></select></div></div></div>
       <div class="card"><h2>Personalizacja</h2><p class="mut" style="font-size:13.5px;margin-top:4px">Ustaw Alpha Vault pod siebie.</p>
         <span class="label">Cel na ten miesiąc (widać go na pulpicie)</span><input class="input" id="goalIn" value="+6% bez łamania zasad">
-        <span class="label">Twoje motto</span><input class="input" id="mottoIn" value="Plan. Cierpliwość. Bez odgrywania się.">
-        <span class="label">Styl tradingu</span><div class="chips sel" id="styleChips"><span class="chip">Scalper</span><span class="chip on">Day trader</span><span class="chip">Swing</span><span class="chip">Inwestor</span></div>
         <span class="label">Rynki</span><div class="chips multi" id="marketChips"><span class="chip on">Krypto</span><span class="chip">Forex</span><span class="chip">Indeksy</span><span class="chip">Surowce</span><span class="chip">Akcje</span></div>
         <span class="label">Kolor akcentu</span>
         <div style="display:flex;gap:14px" id="accents">
@@ -944,7 +978,6 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
           <div><div class="sw" data-a="200,200,205" data-b="#f2f2f4" style="background:linear-gradient(135deg,#f2f2f4,#8d8d94)"></div><div class="swl">Platyna</div></div>
         </div>
         <div class="grid g2"><div><span class="label">Strefa czasowa</span><select class="input" id="tzIn"><option>Polska (Warszawa)</option><option>Bali (Makassar)</option><option>Londyn</option><option>Dubaj</option></select></div><div><span class="label">Format godzin</span><select class="input" id="hoursIn"><option>24h · 14:30</option><option>12h · 2:30 PM</option></select></div></div>
-        <div class="row" style="margin-top:8px"><div><b>Powitanie z imieniem i porą dnia</b><span>„Dzień dobry, Kasia”</span></div><div class="toggle on" data-setting="greeting"></div></div>
       </div>
       <div class="card"><div class="sech" style="margin:0"><h2>Bezpieczeństwo i dane</h2><span class="tag praise"><svg class="i" style="width:11px;height:11px;stroke-width:2.4"><use href="#i-shield"/></svg>chronione</span></div>
         <div class="row"><div><b>Nie wylogowuj mnie</b><span>Sesja zostaje na tym urządzeniu do wylogowania.</span></div><div class="toggle on" data-setting="remember"></div></div>
@@ -959,26 +992,21 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <div class="row"><div><b class="loss">Usuń konto i wszystkie dane</b><span>Trwale usuwa dziennik, screeny, dane z zegarka i klucze API.</span></div><button class="btn g sm" id="deleteAcc">Usuń</button></div>
       <div class="card"><div class="sech" style="margin:0"><h2>Alpha Vault na telefonie</h2><span class="tag info">bez App Store</span></div>
         <p class="mut" style="font-size:13.5px;line-height:1.55;margin-top:6px">Zainstaluj panel jak aplikację. Po zamknięciu transakcji dostaniesz powiadomienie i dodasz emocję, ocenę i zdjęcie wykresu w 10 sekund.</p>
-        <button class="btn p sm" data-qa style="margin-top:12px">Zobacz, jak to działa</button></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn p sm" data-install>Jak zainstalować</button>
+          <button class="btn g sm" data-pwa-notify>Włącz powiadomienia</button>
+          <button class="btn g sm" data-qa>Zobacz, jak to działa</button>
+        </div>
+        <div class="dim" data-pwa-status style="font-size:12px;line-height:1.5;margin-top:10px"></div></div>
     </div>
     <div class="grid">
-      <div class="card"><div class="sech" style="margin:0"><h2>Odznaki</h2><span class="mono dim" style="font-size:12px">4 z 8 · poziom 3</span></div>
-        <div class="medals" id="medals" style="margin-top:14px">
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-plan"/></svg></div><b>Pierwszy plan dnia</b><span>08.03.2026</span></div>
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-book"/></svg></div><b>7 dni z dziennikiem</b><span>teraz: 12 dni</span></div>
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-shield"/></svg></div><b>50 × ze stop lossem</b><span>14.10.2026</span></div>
-          <div class="medal"><div class="mc"><svg class="i"><use href="#i-check"/></svg></div><b>Tydzień bez złamania zasad</b><span>01.11.2026</span></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-plan"/></svg></div><b>30 planów dnia</b><span>22 / 30</span><div class="bar"><i style="width:73%;background:var(--alpha)"></i></div></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-star"/></svg></div><b>100 transakcji A</b><span>21 / 100</span><div class="bar"><i style="width:21%;background:var(--alpha)"></i></div></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-pulse"/></svg></div><b>10 dni bez FOMO</b><span>4 / 10</span><div class="bar"><i style="width:40%;background:var(--alpha)"></i></div></div>
-          <div class="medal lk"><div class="mc"><svg class="i"><use href="#i-stats"/></svg></div><b>Miesiąc na plusie bez C</b><span>w trakcie</span><div class="bar"><i style="width:15%;background:var(--alpha)"></i></div></div>
-        </div></div>
+      <div class="card"><div class="sech" style="margin:0"><h2>Odznaki</h2><span class="mono dim" style="font-size:12px" id="badgeSummary">0 z 8 · poziom 1</span></div>
+        <div class="medals" id="medals" style="margin-top:14px"></div></div>
       <div class="card"><div class="sech" style="margin:0"><h2>Wyłącznik bezpieczeństwa</h2><div class="toggle on" data-setting="safetyEnabled"></div></div><p class="mut" style="font-size:13.5px;margin-top:6px;line-height:1.5">Po osiągnięciu limitu dziennik przechodzi w tryb ochronny.</p>
         <div class="grid g2"><div><span class="label">Włącz po stratach</span><input class="input mono" id="maxLosses" value="2"></div><div><span class="label">albo po stracie dziennej</span><input class="input mono" id="maxDailyLoss" value="3%"></div></div>
         <span class="label">Blokada trwa</span><div class="chips sel" id="blockChips"><span class="chip on" data-block="midnight">do północy</span><span class="chip" data-block="4h">4 godziny</span><span class="chip" data-block="1h">1 godzinę</span></div>
         <div class="row" style="margin-top:8px"><div><b>Obejście wymaga powodu</b><span>mentor widzi każde obejście</span></div><div class="toggle on" data-setting="requireReason"></div></div>
-        <div class="row"><div><b>Push na telefon</b><span>„Limit osiągnięty, zamknij platformę”</span></div><div class="toggle on" data-setting="pushLimit"></div></div>
-        <div class="note r" style="margin-top:10px"><svg class="i"><use href="#i-lock"/></svg><div>Klucz API jest tylko do odczytu, więc Alpha Vault nie zablokuje samej giełdy. Blokuje dziennik, wysyła powiadomienie i zapisuje każde obejście.</div></div></div>
+        <div class="row"><div><b>Push na telefon</b><span>„Limit osiągnięty, zamknij platformę”</span></div><div class="toggle on" data-setting="pushLimit"></div></div></div>
       <div class="card"><h2>Twoje zasady</h2>
         <div class="grid g2"><div><span class="label">Kapitał łączny (z kont)</span><input class="input mono" id="totalCapital" value="2 412,80 USDT" readonly></div><div><span class="label">Max ryzyko na trade</span><input class="input mono" id="maxRisk" value="1%"></div></div>
         <span class="label">3 zasady, których nie łamiesz</span>
@@ -1031,16 +1059,18 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 </div></div>
 <div class="modal" id="qa"><div class="mbox" style="max-width:860px"><span class="mclose" data-close="qa"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></span>
   <div class="eyebrow">Alpha Vault na telefonie</div><h1 style="font-size:30px">Szybkie dodanie w <span class="serif">10 sekund.</span></h1>
-  <div class="grid" style="grid-template-columns:auto 1fr;gap:34px;margin-top:22px;align-items:start">
+  <div class="grid qa-grid" style="margin-top:22px;align-items:start">
     <div class="phone"><div class="scr">
-      <div class="push"><span class="pi">α</span><div><b>Alpha Vault · teraz</b><br>Zamknięta: BTC/USDT long +65,00. Dodaj emocję i ocenę.</div></div>
-      <div style="margin-top:16px;font-weight:800;font-size:16px">BTC/USDT <span class="pill l" style="font-size:10px">LONG</span> <span class="win mono" style="float:right">+65,00</span></div>
-      <div class="dim" style="font-size:11.5px;margin-top:2px">WEEX · 15:30 · zaimportowana automatycznie</div>
-      <div class="lbl" style="margin-top:16px">Jak się czujesz?</div><div class="chips sel" style="margin-top:8px" id="qaEmotion"><span class="chip on">Spokój</span><span class="chip">Skupienie</span><span class="chip">FOMO</span><span class="chip">Złość</span><span class="chip">Zmęczenie</span></div>
-      <div class="lbl" style="margin-top:16px">Ocena</div><div class="gq" style="margin-top:8px" id="qaG"><div class="A on">A</div><div class="B">B</div><div class="C">C</div></div>
-      <div class="lbl" style="margin-top:16px">Błąd?</div><div class="chips sel" style="margin-top:8px" id="qaError"><span class="chip on">Brak</span><span class="chip">Za wcześnie</span><span class="chip">Za wczesne wyjście</span><span class="chip">Przesunięty SL</span></div>
+      <div class="push"><span class="pi">α</span><div><b>Alpha Vault · teraz</b><br><span id="qaPushText">Transakcja zamknięta. Dodaj emocję i ocenę.</span></div></div>
+      <div style="margin-top:16px;font-weight:800;font-size:16px"><span id="qaPair">BTC/USDT</span> <span class="pill l" id="qaDir" style="font-size:10px">LONG</span> <span class="win mono" id="qaResult" style="float:right">+65,00</span></div>
+      <div class="dim" id="qaMeta" style="font-size:11.5px;margin-top:2px">WEEX · 15:30 · zamknięta</div>
+      <div class="lbl" style="margin-top:16px">Jak się czujesz?</div><div class="chips sel" style="margin-top:8px" id="qaEmotion"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">FOMO</span><span class="chip">Złość</span><span class="chip">Zmęczenie</span></div>
+      <div class="lbl" style="margin-top:16px">Ocena</div><div class="gq" style="margin-top:8px" id="qaG"><div class="A">A</div><div class="B">B</div><div class="C">C</div></div>      <div class="lbl" style="margin-top:16px">Błąd?</div><div class="chips sel" style="margin-top:8px" id="qaError"><span class="chip on">Brak</span><span class="chip">Za wcześnie</span><span class="chip">Za wczesne wyjście</span><span class="chip">Przesunięty SL</span></div>
       <button class="btn g" style="width:100%;margin-top:16px" id="qaPhoto">📷 Zdjęcie wykresu</button>
-      <button class="btn p" style="width:100%;margin-top:10px" id="qaSave">Zapisz</button>
+      <input type="file" id="qaPhotoInput" accept="image/*" capture="environment" hidden>
+      <img id="qaPhotoPreview" alt="Zdjęcie wykresu" hidden style="width:100%;border-radius:12px;margin-top:10px;border:1px solid var(--line2)">
+      <div class="hint" id="qaHint" style="margin-top:12px">Wybierz emocję i ocenę.</div>
+      <button class="btn p" style="width:100%;margin-top:8px" id="qaSave" disabled>Wybierz emocję i ocenę</button>
     </div></div>
     <div>
       <h3>Jak zainstalować</h3>
@@ -1049,14 +1079,21 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <li><span><b>Android:</b> otwórz w Chrome, stuknij <b>⋮</b> i wybierz <b>Zainstaluj aplikację</b>.</span></li>
         <li><span>Zaloguj się przez Discord i <b>zezwól na powiadomienia</b>.</span></li>
       </ol>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn p sm" data-install>Jak zainstalować</button>
+        <button class="btn g sm" data-pwa-notify>Włącz powiadomienia</button>
+      </div>
+      <div class="dim" data-pwa-status style="font-size:12px;line-height:1.5;margin-top:10px"></div>
       <h3 style="margin-top:16px">Jak to działa na co dzień</h3>
       <ol class="howto" style="margin-top:6px">
-        <li><span>Zamykasz pozycję na giełdzie albo w MetaTraderze.</span></li>
-        <li><span>Po chwili przychodzi powiadomienie z wynikiem transakcji.</span></li>
+        <li><span>Zamykasz pozycję w Alpha Vault albo wgrywasz historię z giełdy.</span></li>
+        <li><span>Dostajesz powiadomienie z wynikiem transakcji.</span></li>
         <li><span>Stukasz w nie, zaznaczasz emocję, ocenę i ewentualny błąd. <b>Gotowe.</b> Resztę uzupełnisz wieczorem na komputerze, jeśli chcesz.</span></li>
       </ol>
     </div>
-  </div></div></div>
+  </div></div>
+  <button class="btn p qa-float" id="qaSaveFloat" type="button" disabled>Wybierz emocję i ocenę</button>
+</div>
 <div class="modal" id="buyM"><div class="mbox" style="max-width:560px"><span class="mclose" data-close="buyM"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></span>
   <div class="eyebrow">Zakup</div><h1 style="font-size:28px" id="buyT">Akademia Alpha + Vault</h1><div class="mono al" style="margin-top:6px;font-size:15px" id="buyP">168 $ / miesiąc</div>
   <p class="mut" style="font-size:13.5px;margin-top:10px;line-height:1.55">Subskrypcja odnawia się co miesiąc. Anulujesz w każdej chwili, dostęp trwa do końca opłaconego okresu.</p>
@@ -1143,6 +1180,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <div class="toast" id="toast"></div>
 
 <script src="js/core.js" defer></script>
+<script src="js/pwa.js" defer></script>
 <script src="js/data.js" defer></script>
 <script src="js/prop.js" defer></script>
 <script src="js/state.js" defer></script>

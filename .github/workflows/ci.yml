@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - "**"
+      - main
   pull_request:
     branches:
       - main
@@ -85,7 +85,7 @@ jobs:
             "DISCORD_CLIENT_ID": "",
             "DISCORD_CLIENT_SECRET": "",
             "DISCORD_REDIRECT_URI": "http://127.0.0.1:4173/auth/discord/callback",
-            "DISCORD_GUILD_ID": "test-guild",
+            "DISCORD_GUILD_ID": "123456789012345678",
             "DISCORD_REQUIRED_ROLE_ID": "test-role",
             "DISCORD_BOT_TOKEN": "test-bot-token",
             "ADMIN_DISCORD_IDS": "admin-test",
@@ -105,6 +105,12 @@ jobs:
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php tests/discord-events.test.php
+
+      - name: Wearables E2E
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/wearables.e2e.mjs
 
       - name: Start PHP server
         run: |
@@ -137,6 +143,12 @@ jobs:
           APP_URL: http://127.0.0.1:4173
           CHROME_PATH: /usr/bin/google-chrome
         run: node tests/ui.e2e.mjs
+
+      - name: PWA E2E (iPhone emulation)
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/pwa.e2e.mjs
 
       - name: Start empty-events PHP server
         run: |

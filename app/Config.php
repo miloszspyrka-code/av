@@ -25,6 +25,7 @@ final class Config
         public readonly bool $eventsConfigured,
         public readonly array $adminDiscordIds,
         public readonly array $discordEventRules,
+        public readonly array $wearables,
         public readonly string $version,
     ) {
     }
@@ -114,6 +115,44 @@ final class Config
             explode(',', (string) $env('ADMIN_DISCORD_IDS', ''))
         ), static fn (string $value): bool => $value !== ''));
 
+        $wearables = [
+            'encryptionKey' => (string) $env('WEARABLES_ENCRYPTION_KEY', ''),
+            'garmin' => [
+                'clientId' => (string) $env('GARMIN_CLIENT_ID', ''),
+                'clientSecret' => (string) $env('GARMIN_CLIENT_SECRET', ''),
+                'authorizeUrl' => (string) $env('GARMIN_AUTHORIZE_URL', ''),
+                'tokenUrl' => (string) $env('GARMIN_TOKEN_URL', ''),
+                'apiBase' => rtrim((string) $env('GARMIN_API_BASE', ''), '/'),
+                'revokeUrl' => (string) $env('GARMIN_REVOKE_URL', ''),
+                'scopes' => (string) $env('GARMIN_SCOPES', ''),
+                'redirectUri' => $appUrl . '/auth/wearables/garmin/callback',
+            ],
+            'oura' => [
+                'clientId' => (string) $env('OURA_CLIENT_ID', ''),
+                'clientSecret' => (string) $env('OURA_CLIENT_SECRET', ''),
+                'authorizeUrl' => (string) $env('OURA_AUTHORIZE_URL', 'https://cloud.ouraring.com/oauth/authorize'),
+                'tokenUrl' => (string) $env('OURA_TOKEN_URL', 'https://api.ouraring.com/oauth/token'),
+                'apiBase' => rtrim((string) $env('OURA_API_BASE', 'https://api.ouraring.com'), '/'),
+                'revokeUrl' => (string) $env('OURA_REVOKE_URL', 'https://api.ouraring.com/oauth/revoke'),
+                'scopes' => (string) $env('OURA_SCOPES', 'daily sleep heartrate personal'),
+                'redirectUri' => $appUrl . '/auth/wearables/oura/callback',
+            ],
+            'whoop' => [
+                'clientId' => (string) $env('WHOOP_CLIENT_ID', ''),
+                'clientSecret' => (string) $env('WHOOP_CLIENT_SECRET', ''),
+                'authorizeUrl' => (string) $env('WHOOP_AUTHORIZE_URL', 'https://api.prod.whoop.com/oauth/oauth2/auth'),
+                'tokenUrl' => (string) $env('WHOOP_TOKEN_URL', 'https://api.prod.whoop.com/oauth/oauth2/token'),
+                'apiBase' => rtrim((string) $env('WHOOP_API_BASE', 'https://api.prod.whoop.com'), '/'),
+                'revokeUrl' => (string) $env('WHOOP_REVOKE_URL', 'https://api.prod.whoop.com/oauth/oauth2/revoke'),
+                'scopes' => (string) $env('WHOOP_SCOPES', 'read:recovery read:sleep read:profile offline'),
+                'redirectUri' => $appUrl . '/auth/wearables/whoop/callback',
+            ],
+            'apple' => [
+                'redirectUri' => '',
+                'scopes' => '',
+            ],
+        ];
+
         $rules = [];
         $rulesFile = $root . '/config/discord_event_rules.json';
         if (is_file($rulesFile)) {
@@ -146,7 +185,8 @@ final class Config
             eventsConfigured: $eventsConfigured,
             adminDiscordIds: $adminDiscordIds,
             discordEventRules: $rules,
-            version: '3.2.0',
+            wearables: $wearables,
+            version: '3.3.0',
         );
     }
 }

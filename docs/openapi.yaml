@@ -224,6 +224,89 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /api/wearables:
+    get:
+      tags: [API]
+      summary: Urządzenia, metryki i gotowość
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Stan urządzeń i gotowości
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WearablesState'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/wearables/{provider}/sync:
+    post:
+      tags: [API]
+      summary: Ręczna synchronizacja urządzenia
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [garmin, apple, oura, whoop]
+      responses:
+        '200':
+          description: Synchronizacja zakończona
+        '403':
+          $ref: '#/components/responses/BadRequest'
+        '502':
+          description: Błąd dostawcy
+  /api/wearables/{provider}:
+    delete:
+      tags: [API]
+      summary: Odłączenie urządzenia i usunięcie danych zdrowotnych
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [garmin, apple, oura, whoop]
+      responses:
+        '200':
+          description: Odłączono
+        '404':
+          description: Brak połączenia
+  /api/wearables/apple/pair:
+    post:
+      tags: [API]
+      summary: Kod parowania Apple Watch
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Kod jednorazowy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+  /api/wearables/apple/ingest:
+    post:
+      tags: [API]
+      summary: Ingest danych Apple Health
+      description: Autoryzacja kodem parowania (pierwsze żądanie) albo Bearer deviceToken.
+      responses:
+        '200':
+          description: Zapisano dni
+        '401':
+          description: Zły kod lub token
+
 components:
   securitySchemes:
     cookieAuth:
@@ -321,3 +404,51 @@ components:
         revision: { type: integer }
         bytes: { type: integer }
         updatedAt: { type: string, format: date-time }
+    WearablesState:
+      type: object
+      properties:
+        devices:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              provider: { type: string }
+              label: { type: string }
+              configured: { type: boolean }
+              connected: { type: boolean }
+              lastSyncAt: { type: [string, 'null'], format: date-time }
+              lastSyncStatus: { type: [string, 'null'] }
+              lastError: { type: [string, 'null'] }
+        today:
+          type: object
+          nullable: true
+          properties:
+            date: { type: string, format: date }
+            sleepMinutes: { type: [integer, 'null'] }
+            hrvMs: { type: [number, 'null'] }
+            restingHr: { type: [integer, 'null'] }
+            bodyBattery: { type: [integer, 'null'] }
+            providerScore: { type: [integer, 'null'] }
+            readiness: { type: [integer, 'null'] }
+        baseline:
+          type: object
+          properties:
+            days: { type: integer }
+            sleepMinutes: { type: [number, 'null'] }
+            hrvMs: { type: [number, 'null'] }
+            restingHr: { type: [number, 'null'] }
+        series:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        readiness:
+          type: object
+          properties:
+            score: { type: [integer, 'null'] }
+            title: { type: string }
+            class: { type: string }
+            source: { type: string }
+            components:
+              type: object
+              additionalProperties: true

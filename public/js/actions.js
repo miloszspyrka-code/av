@@ -40,16 +40,8 @@
     AV.renderTicker();
   };
 
-  /* ---------- live / countdown ---------- */
+  /* ---------- countdown ---------- */
   AV.tickCountdowns = () => {
-    const info = AV.liveInfo();
-    if (!info.live) {
-      AV.setText('#liveCd', '');
-      $$('.liveIn').forEach((e) => e.textContent = '');
-    } else {
-      AV.setText('#liveCd', info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'));
-      $$('.liveIn').forEach((e) => e.textContent = info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'));
-    }
     const L = AV.lockInfo(AV.state);
     $$('.cdt').forEach((e) => {
       if (L.active && L.until) {
@@ -91,6 +83,93 @@
     } catch {}
   };
 
+  /* ---------- szybkie dodanie z telefonu ---------- */
+  AV.pickQuickTrade = (tradeId) => {
+    const trades = (AV.state.trades || []).slice()
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (tradeId) {
+      const exact = trades.find((t) => t.id === tradeId);
+      if (exact) return exact;
+    }
+    return trades.find((t) => t.result != null && (!t.emotion || !t.grade))
+      || trades.find((t) => t.result != null)
+      || trades[0]
+      || null;
+  };
+
+  AV.qaSyncSave = () => {
+    const emotion = $('#qaEmotion .chip.on');
+    const grade = $('#qaG .on');
+    const ready = !!(emotion && grade);
+    ['#qaSave', '#qaSaveFloat'].forEach((selector) => {
+      const button = $(selector);
+      if (button) {
+        button.disabled = !ready;
+        button.textContent = ready ? 'Zapisz' : 'Wybierz emocję i ocenę';
+      }
+    });
+    const hint = $('#qaHint');
+    if (hint) hint.textContent = ready ? 'Gotowe. Zapis zajmie chwilę.' : 'Wybierz emocję i ocenę.';
+  };
+
+  AV.openQuickAdd = (tradeId) => {
+    const trade = AV.pickQuickTrade(tradeId);
+    if (!trade) { AV.toast('Brak transakcji do uzupełnienia'); return false; }
+
+    AV.ui.qaTradeId = trade.id;
+    AV.ui.qaOpenedAt = performance.now();
+
+    AV.setText('#qaPair', trade.pair || '');
+    const direction = $('#qaDir');
+    if (direction) {
+      direction.textContent = trade.dir === 'l' ? 'LONG' : 'SHORT';
+      direction.className = 'pill ' + (trade.dir === 'l' ? 'l' : 's');
+    }
+    const result = $('#qaResult');
+    if (result) {
+      result.textContent = trade.result == null ? '' : AV.signed(trade.result, 2);
+      result.className = trade.result == null ? 'mut mono' : (trade.result > 0 ? 'win mono' : 'loss mono');
+    }
+    AV.setText('#qaMeta', [trade.source || '', AV.dateTimeShort(trade.date), trade.result == null ? 'pozycja otwarta' : 'zamknięta'].filter(Boolean).join(' · '));
+    AV.setText('#qaPushText', trade.result == null
+      ? 'Pozycja otwarta: ' + trade.pair + '. Uzupełnij po zamknięciu.'
+      : 'Zamknięta: ' + trade.pair + ' ' + (trade.dir === 'l' ? 'long' : 'short') + ' ' + AV.signed(trade.result, 2) + '. Dodaj emocję i ocenę.');
+
+    $$('#qaEmotion .chip').forEach((chip) => chip.classList.toggle('on', !!trade.emotion && chip.textContent === trade.emotion));
+    $$('#qaError .chip').forEach((chip) => chip.classList.toggle('on', chip.textContent === 'Brak'
+      ? !(trade.errors && trade.errors.length)
+      : (trade.errors || []).includes(chip.textContent)));
+    $$('#qaG div').forEach((grade) => grade.classList.toggle('on', !!trade.grade && grade.textContent.trim() === trade.grade));
+
+    const photo = $('#qaPhotoPreview');
+    const source = trade.screens && trade.screens.after;
+    if (photo) {
+      photo.hidden = !source;
+      if (source) photo.src = source;
+    }
+    AV.setText('#qaPhoto', source ? '📷 Zmień zdjęcie wykresu' : '📷 Zdjęcie wykresu');
+
+    AV.qaSyncSave();
+    const modal = $('#qa');
+    if (modal) modal.classList.add('on');
+    return true;
+  };
+
+  AV.quickAddFromUrl = () => {
+    let tradeId = null;
+    try {
+      const params = new URLSearchParams(location.search);
+      if (!params.has('qa')) return false;
+      const value = params.get('qa');
+      if (value && value !== '1') tradeId = value;
+    } catch {
+      return false;
+    }
+    const opened = AV.openQuickAdd(tradeId);
+    if (opened && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
+    return opened;
+  };
+
   /* ---------- auth ---------- */
   AV.localEnterApp = () => {
     if (AV._entering) return;
@@ -108,6 +187,7 @@
       AV._entering = false;
       AV.renderAll();
       AV.showView(AV.viewFromHash());
+      AV.quickAddFromUrl();
       AV.toast('Witaj z powrotem, ' + AV.state.user.name);
       setTimeout(() => AV.proactive(), 3200);
     }, 350 + steps.length * 450 + 250);
@@ -305,25 +385,28 @@
     const updateHint = () => {
       const exit = AV.pnum($('#ctExit', body).value), entry = AV.pnum(t.entry), size = AV.pnum(t.size);
       const calc = (exit - entry) * size * (t.dir === 'l' ? 1 : -1);
-      AV.setText('#ctHint', 'Szacowany wynik: ' + (Number.isFinite(calc) ? AV.signed(calc, 2, ' USDT') : 'â€”') + ' Â· SL ' + t.sl + ' Â· TP ' + t.tp);
+      AV.setText('#ctHint', 'Szacowany wynik: ' + (Number.isFinite(calc) ? AV.signed(calc, 2, ' USDT') : '—') + ' · SL ' + t.sl + ' · TP ' + t.tp);
     };
     $('#ctExit', body).addEventListener('input', updateHint);
     updateHint();
-    $('#ctSave', body).onclick = () => {
+    $('#ctSave', body).onclick = async () => {
       const exit = AV.pnum($('#ctExit', body).value);
       let result = $('#ctResult', body).value.trim() ? AV.pnum($('#ctResult', body).value) : null;
       const entry = AV.pnum(t.entry), size = AV.pnum(t.size);
       if (result == null) result = (exit - entry) * size * (t.dir === 'l' ? 1 : -1);
-      if (!Number.isFinite(result)) { AV.toast('Podaj cenÄ™ wyjĹ›cia albo wynik'); return; }
+      if (!Number.isFinite(result)) { AV.toast('Podaj cenę wyjścia albo wynik'); return; }
       const risk = t.sl !== 'brak' ? Math.abs(entry - AV.pnum(t.sl)) * size : Math.abs(entry * 0.01 * size);
       t.exit = AV.fmt(exit, AV.dec(exit));
       t.result = Math.round(result * 100) / 100;
       t.r = risk ? Math.round(t.result / risk * 100) / 100 : 0;
       t.mfe = Math.max(Number(t.mfe) || 0, Math.abs(t.r || 0));
       t.durationMin = Math.max(1, Math.round((Date.now() - new Date(t.date)) / 60000));
-      t.mentor = t.result >= 0 ? 'Pozycja zamkniÄ™ta z zyskiem. SprawdĹş, czy wyszedĹ‚eĹ› zgodnie z planem, a nie z emocji.' : 'Pozycja zamkniÄ™ta na minusie. SprawdĹş, czy SL byĹ‚ ustawiony przed wejĹ›ciem.';
+      t.mentor = t.result >= 0 ? 'Pozycja zamknięta z zyskiem. Sprawdź, czy wyszedłeś zgodnie z planem, a nie z emocji.' : 'Pozycja zamknięta na minusie. Sprawdź, czy SL był ustawiony przed wejściem.';
       AV.saveNow(); AV.closeModal(); $('#tm').classList.remove('on'); AV.renderAll();
-      AV.toast('Pozycja zamkniÄ™ta: ' + AV.signed(t.result, 2, ' USDT'));
+      clearTimeout(AV._pushTimer);
+      await AV.pushStateImmediate();
+      AV.toast('Pozycja zamknięta: ' + AV.signed(t.result, 2, ' USDT'));
+      if (AV.pwa && AV.pwa.notifyTradeClosed) AV.pwa.notifyTradeClosed(t);
     };
   };
 
@@ -688,13 +771,6 @@
       const b = e.target.closest('[data-ask]');
       if (b) AV.ask(+b.dataset.ask);
     });
-    $('#gender')?.addEventListener('click', (e) => {
-      const c = e.target.closest('.chip'); if (!c) return;
-      AV.state.user.gender = c.dataset.g;
-      $$('#gender .chip').forEach((x) => x.classList.toggle('on', x === c));
-      AV.saveNow(); AV.renderQ(); AV.renderMentor();
-      AV.toast(AV.state.user.gender === 'f' ? 'Mentor zwraca siÄ™ w formie ĹĽeĹ„skiej' : 'Mentor zwraca siÄ™ w formie mÄ™skiej');
-    });
     $('#mktInst')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
       AV.ui.mktInst = c.dataset.i;
@@ -711,18 +787,6 @@
 
   /* ---------- akademia ---------- */
   AV.bindAcademy = () => {
-    $('#liveJoin')?.addEventListener('click', () => {
-      const info = AV.liveInfo();
-      if (!info.live) return;
-      const title = info.live.name || '';
-      const who = info.live.host || '';
-      if (info.liveNow) {
-        AV.openModal('<div class="eyebrow">Akademia Alpha</div><h1 style="font-size:26px;margin-top:6px">Live juĹĽ trwa</h1><p class="mut" style="margin-top:10px">' + AV.esc(title) + (who ? ' Â· ' + AV.esc(who) : '') + '</p><div style="display:flex;gap:10px;margin-top:20px"><a class="btn p" href="https://discord.com/app" target="_blank" rel="noopener">OtwĂłrz Discorda</a><button class="btn g" data-gclose>Zamknij</button></div>', { maxWidth: '480px' });
-      } else {
-        const sec = info.sec;
-        AV.openModal('<div class="eyebrow">Akademia Alpha</div><h1 style="font-size:26px;margin-top:6px">NajbliĹĽszy live</h1><p class="mut" style="margin-top:10px">' + AV.esc(title) + (who ? ' Â· ' + AV.esc(who) : '') + ' Â· ' + AV.esc(info.live.startLabel || '') + '</p><p class="mut" style="margin-top:8px">Start za ' + [sec / 3600 | 0, (sec % 3600) / 60 | 0, sec % 60].map((x) => String(x).padStart(2, '0')).join(':') + '.</p><div style="display:flex;gap:10px;margin-top:20px"><button class="btn g" data-gclose>Rozumiem</button></div>', { maxWidth: '480px' });
-      }
-    });
     $('#liveRem')?.addEventListener('click', () => {
       AV.state.meta.liveReminder = !AV.state.meta.liveReminder;
       AV.saveNow();
@@ -787,14 +851,102 @@
   };
 
   /* ---------- ciaĹ‚o ---------- */
+  AV.connectWearable = async (provider) => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.toast('Połącz urządzenie po zalogowaniu do Alpha Vault.');
+      return;
+    }
+    if (provider === 'apple') {
+      await AV.openApplePair();
+      return;
+    }
+    location.href = '/auth/wearables/' + encodeURIComponent(provider) + '/start';
+  };
+
+  AV.disconnectWearable = (provider) => {
+    const label = AV.api.wearables?.devices?.[provider]?.label || provider;
+    AV.confirm({
+      eyebrow: 'Zgoda na dane zdrowotne',
+      title: 'Odłączyć ' + label + '?',
+      text: 'Odłączenie usuwa z Alpha Vault dane o zdrowiu z tego urządzenia i wycofuje zgodę na ich przetwarzanie. Możesz połączyć je ponownie w każdej chwili.',
+      confirmLabel: 'Odłącz i usuń dane',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          const res = await AV.apiFetch('/api/wearables/' + encodeURIComponent(provider), { method: 'DELETE' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          await AV.loadWearables();
+          AV.renderBody();
+          AV.toast('Urządzenie odłączone. Dane zostały usunięte.');
+        } catch (err) {
+          AV.toast('Nie udało się odłączyć urządzenia.');
+        }
+      }
+    });
+  };
+
+  AV.syncWearable = async (provider) => {
+    if (!AV.api.authenticated) return;
+    try {
+      const res = await AV.apiFetch('/api/wearables/' + encodeURIComponent(provider) + '/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+      await AV.loadWearables();
+      AV.renderBody();
+      AV.toast('Zsynchronizowano ' + (AV.api.wearables?.devices?.[provider]?.label || provider) + '.');
+    } catch (err) {
+      AV.toast('Synchronizacja nie powiodła się: ' + err.message);
+    }
+  };
+
+  AV.openApplePair = async () => {
+    try {
+      const res = await AV.apiFetch('/api/wearables/apple/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+      const expires = new Date(data.expiresAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' });
+      const body = AV.openModal(
+        '<div class="eyebrow">Apple Watch · Zdrowie</div><h1 style="font-size:26px;margin-top:6px">Kod parowania</h1>' +
+        '<p class="mut" style="margin-top:10px;line-height:1.6">Otwórz aplikację Alpha Vault na iPhone, wejdź w Ustawienia → Urządzenia i wpisz kod. Kod jest jednorazowy i wygasa o ' + AV.esc(expires) + '.</p>' +
+        '<div class="mono" style="font-size:30px;font-weight:700;letter-spacing:.12em;text-align:center;margin:22px 0;padding:18px;border:1px dashed rgba(var(--a),.45);border-radius:16px;background:rgba(var(--a),.06)">' + AV.esc(data.code) + '</div>' +
+        '<p class="dim" style="font-size:12.5px;line-height:1.5">Dane trafiają do Alpha Vault tylko z Twojego iPhone’a i tylko do liczenia gotowości. Po sparowaniu telefon zapisze token urządzenia; nie pokazujemy go w panelu.</p>' +
+        '<div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end"><button class="btn g" data-gclose>Zamknij</button><button class="btn p" id="applePairCheck">Sprawdź połączenie</button></div>',
+        { maxWidth: '520px' }
+      );
+      const check = async () => {
+        await AV.loadWearables();
+        AV.renderBody();
+        if (AV.api.wearables?.devices?.apple?.connected) {
+          AV.closeModal();
+          AV.toast('Apple Watch połączony.');
+          return true;
+        }
+        return false;
+      };
+      AV.$('#applePairCheck', body)?.addEventListener('click', check);
+      let tries = 0;
+      const timer = setInterval(async () => {
+        tries++;
+        if (tries > 60 || AV.api.wearables?.devices?.apple?.connected) { clearInterval(timer); return; }
+        await check();
+      }, 5000);
+    } catch (err) {
+      AV.toast('Nie udało się utworzyć kodu parowania: ' + err.message);
+    }
+  };
+
   AV.bindBody = () => {
     $('#devList')?.addEventListener('click', (e) => {
       const b = e.target.closest('[data-dev]'); if (!b) return;
-      const row = b.closest('[data-device]'), key = row.dataset.device;
-      const on = !AV.state.settings.devices[key];
-      AV.state.settings.devices[key] = on;
-      AV.saveNow(); AV.renderBody(); AV.renderDashboard(); AV.renderSettings();
-      AV.toast(on ? 'UrzÄ…dzenie poĹ‚Ä…czone' : 'UrzÄ…dzenie odĹ‚Ä…czone');
+      const row = b.closest('[data-provider]'), key = row?.dataset.provider;
+      if (!key) return;
+      if (b.dataset.mode === 'disconnect') AV.disconnectWearable(key);
+      else AV.connectWearable(key);
+    });
+    $('#devList')?.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-sync]'); if (!b) return;
+      const key = b.closest('[data-provider]')?.dataset.provider;
+      if (key) AV.syncWearable(key);
     });
     $('#checkMood')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
@@ -805,15 +957,22 @@
       $$('#checkEnergy .chip').forEach((x) => x.classList.toggle('on', x === c));
     });
     $('#saveCheck')?.addEventListener('click', () => {
-      const mood = $('#checkMood .chip.on')?.textContent || 'SpokĂłj';
-      const energy = Number($('#checkEnergy .chip.on')?.textContent || 3);
+      const moodEl = $('#checkMood .chip.on');
+      const energyEl = $('#checkEnergy .chip.on');
+      if (!moodEl || !energyEl) {
+        AV.toast('Wybierz nastrój i poziom energii.');
+        return;
+      }
+      const mood = moodEl.textContent;
+      const energy = Number(energyEl.textContent);
       const note = $('#checkNote').value.trim();
-      const score = AV.clamp(50 + (energy - 3) * 10 + ({ 'SpokĂłj': 10, 'Skupienie': 7, 'PewnoĹ›Ä‡': 5, 'Nuda': -3, 'ZmÄ™czenie': -8, 'Strach': -10, 'FOMO': -12, 'ZĹ‚oĹ›Ä‡': -14, 'ChciwoĹ›Ä‡': -6 }[mood] || 0), 0, 100);
+      const moodMod = { 'Spokój': 10, 'Skupienie': 7, 'Pewność': 5, 'Nuda': -3, 'Zmęczenie': -8, 'Strach': -10, 'FOMO': -12, 'Złość': -14, 'Chciwość': -6 }[mood] || 0;
+      const score = Math.round(AV.clamp(50 + (energy - 3) * 10 + moodMod, 0, 100));
       const key = AV.dateKey(new Date());
       AV.state.checkins = AV.state.checkins.filter((c) => c.date !== key);
       AV.state.checkins.push({ date: key, mood, energy, note, score });
       AV.saveNow(); AV.renderBody(); AV.renderDashboard(); AV.renderMentor();
-      AV.toast('Check-in zapisany. Mentor go uwzglÄ™dni.');
+      AV.toast('Check-in zapisany. Mentor go uwzględni.');
     });
   };
 
@@ -839,19 +998,12 @@
     $('#goalIn')?.addEventListener('input', AV.debounce((e) => {
       AV.state.user.goal = e.target.value; AV.save(); AV.setText('#goalTxt', e.target.value || 'â€”');
     }, 250));
-    $('#mottoIn')?.addEventListener('input', AV.debounce((e) => { AV.state.user.motto = e.target.value; AV.save(); }, 250));
     $('#currencyIn')?.addEventListener('change', (e) => {
       AV.state.user.currency = e.target.value; AV.saveNow(); AV.renderDashboard(); AV.renderStats(); AV.renderJournal(); AV.renderNewTradeForm();
       AV.toast('Waluta wynikĂłw: ' + e.target.value);
     });
     $('#tzIn')?.addEventListener('change', (e) => { AV.state.user.timezone = e.target.value; AV.saveNow(); AV.renderCalendar(); AV.renderAcademy(); AV.renderMentor(); AV.toast('Strefa czasowa: ' + e.target.value); });
     $('#hoursIn')?.addEventListener('change', (e) => { AV.state.user.hour12 = e.target.value.startsWith('12'); AV.saveNow(); AV.renderCalendar(); AV.renderAcademy(); AV.toast('Format godzin zapisany'); });
-    $('#styleChips')?.addEventListener('click', (e) => {
-      const c = e.target.closest('.chip'); if (!c) return;
-      AV.state.user.style = c.textContent;
-      $$('#styleChips .chip').forEach((x) => x.classList.toggle('on', x === c));
-      AV.saveNow(); AV.renderUser(); AV.toast('Styl: ' + c.textContent);
-    });
     $('#marketChips')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
       c.classList.toggle('on');
@@ -984,11 +1136,9 @@
     const k = el.dataset.setting;
     el.classList.toggle('on');
     const on = el.classList.contains('on');
-    if (k === 'greeting') AV.state.user.greeting = on;
-    else AV.state.settings[k] = on;
+    AV.state.settings[k] = on;
     if (k === 'macroBefore' || k === 'pushLimit') { if (on) AV.ensurePermission(); }
     AV.saveNow();
-    if (k === 'greeting') AV.renderUser();
     if (k === 'remember') AV.toast(on ? 'Zostaniesz zalogowana na tym urzÄ…dzeniu' : 'Sesja wygaĹ›nie po zamkniÄ™ciu karty');
     if (k === 'macroTwo') AV.renderCalendar();
     if (k === 'safetyEnabled') AV.renderLock();
@@ -1113,7 +1263,7 @@
       const ck = e.target.closest('#buyM [data-ck]');
       if (ck) { ck.classList.toggle('on'); $('#buyGo').disabled = $$('#buyM [data-ck]').some((x) => !x.classList.contains('on')); return; }
       const qaOpen = e.target.closest('[data-qa]');
-      if (qaOpen) { $('#qa').classList.add('on'); return; }
+      if (qaOpen) { AV.openQuickAdd(); return; }
       const close = e.target.closest('[data-close]');
       if (close) $('#' + close.dataset.close)?.classList.remove('on');
     });
@@ -1131,27 +1281,60 @@
         AV.toast('Plan demo aktywowany: ' + (plan === 'full' ? 'Akademia Alpha + Vault' : 'Alpha Vault'));
       };
     });
-    $$('#qaG div').forEach((d) => d.onclick = () => $$('#qaG div').forEach((x) => x.classList.toggle('on', x === d)));
-    $('#qaSave')?.addEventListener('click', () => {
-      const t = AV.includedTrades(AV.state).filter((x) => x.result == null).sort((a, b) => new Date(b.date) - new Date(a.date))[0]
-        || AV.includedTrades(AV.state).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      if (!t) { AV.toast('Brak transakcji do uzupeĹ‚nienia'); return; }
-      t.emotion = $('#qaEmotion .chip.on')?.textContent || t.emotion;
-      t.grade = $('#qaG .on')?.textContent.trim() || t.grade;
-      const err = $('#qaError .chip.on')?.textContent;
-      if (err && err !== 'Brak' && !t.errors.includes(err)) t.errors.push(err);
-      AV.saveNow(); $('#qa').classList.remove('on'); AV.renderAll(); AV.toast('Zapisane z telefonu âś“');
+    const qaRoot = $('#qa');
+    qaRoot?.addEventListener('click', (e) => {
+      const chip = e.target.closest('#qaEmotion .chip, #qaError .chip');
+      if (chip) {
+        const group = chip.parentElement;
+        group.querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', x === chip));
+        AV.qaSyncSave();
+        return;
+      }
+      const grade = e.target.closest('#qaG div');
+      if (grade) {
+        $$('#qaG div').forEach((x) => x.classList.toggle('on', x === grade));
+        AV.qaSyncSave();
+      }
     });
-    $('#qaPhoto')?.addEventListener('click', () => {
-      const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'image/*';
-      inp.onchange = () => AV.readImage(inp.files[0]).then((data) => {
-        const t = AV.includedTrades(AV.state).filter((x) => x.result == null).sort((a, b) => new Date(b.date) - new Date(a.date))[0]
-          || AV.includedTrades(AV.state).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    AV.qaSave = () => {
+      const t = AV.state.trades.find((x) => x.id === AV.ui.qaTradeId) || AV.pickQuickTrade();
+      if (!t) { AV.toast('Brak transakcji do uzupełnienia'); return; }
+      const emotion = $('#qaEmotion .chip.on')?.textContent;
+      const grade = $('#qaG .on')?.textContent.trim();
+      if (!emotion || !grade) { AV.toast('Wybierz emocję i ocenę'); return; }
+      t.emotion = emotion;
+      t.grade = grade;
+      const err = $('#qaError .chip.on')?.textContent;
+      t.errors = t.errors || [];
+      if (err && err !== 'Brak' && !t.errors.includes(err)) t.errors.push(err);
+      if (err === 'Brak') t.errors = t.errors.filter((x) => x !== 'Brak');
+      AV.saveNow();
+      $('#qa').classList.remove('on');
+      AV.renderAll();
+      AV.ui.qaLastSeconds = Math.round((performance.now() - (AV.ui.qaOpenedAt || performance.now())) / 100) / 10;
+      AV.toast('Zapisane w ' + String(AV.ui.qaLastSeconds).replace('.', ',') + ' s');
+    };
+    $('#qaSave')?.addEventListener('click', AV.qaSave);
+    $('#qaSaveFloat')?.addEventListener('click', AV.qaSave);
+    $('#qaPhoto')?.addEventListener('click', () => $('#qaPhotoInput')?.click());
+    $('#qaPhotoInput')?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const data = await AV.readImage(file);
+        const t = AV.state.trades.find((x) => x.id === AV.ui.qaTradeId) || AV.pickQuickTrade();
         if (!t) { AV.toast('Brak transakcji'); return; }
-        t.screens = t.screens || {}; t.screens.after = data; AV.saveNow(); AV.toast('ZdjÄ™cie przypisane do transakcji');
-      }).catch((e) => AV.toast(e.message));
-      inp.click();
+        t.screens = t.screens || {};
+        t.screens.after = data;
+        AV.saveNow();
+        const preview = $('#qaPhotoPreview');
+        if (preview) { preview.src = data; preview.hidden = false; }
+        AV.setText('#qaPhoto', '📷 Zmień zdjęcie wykresu');
+        AV.toast('Zdjęcie przypisane do transakcji');
+      } catch (error) {
+        AV.toast(error.message);
+      }
+      e.target.value = '';
     });
   };
 
@@ -1216,18 +1399,27 @@
     if (AV.bindProp) AV.bindProp();
     AV.renderTicker(); AV.tickCountdowns();
     AV.updateEnvBadge();
+    const params = new URLSearchParams(location.search);
+    const connected = params.get('connected');
+    if (connected && AV.api.authenticated) {
+      const label = AV.api.wearables?.devices?.[connected]?.label || connected;
+      AV.toast(params.get('sync') === 'error' ? label + ' połączony, ale pierwsza synchronizacja się nie udała.' : label + ' połączony.');
+      history.replaceState(null, '', location.pathname + '#cialo');
+    }
     setInterval(AV.tickCountdowns, 1000);
     setInterval(AV.tickTicker, 12000);
     setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); if (AV.propNotify) AV.propNotify(); } }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
+    setInterval(() => { if (AV.isLoggedIn()) AV.loadWearables(); }, 300000);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && AV.isLoggedIn()) AV.loadEvents();
+      if (document.visibilityState === 'visible' && AV.isLoggedIn()) { AV.loadEvents(); AV.loadWearables(); }
     });
     setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); if (AV.propNotify) AV.propNotify(); }, 4000);
     AV.showView(AV.viewFromHash());
     if (AV.state.subscription.expired) AV.renderExpired();
     AV.ready = true;
     window.AV = AV;
+    if (AV.isLoggedIn()) AV.quickAddFromUrl();
   };
 
   window.addEventListener('pagehide', () => AV.flushState());

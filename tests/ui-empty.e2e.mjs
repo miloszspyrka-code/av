@@ -53,11 +53,14 @@ try {
   const state = await page.evaluate(() => ({
     title: document.querySelector('#liveTitle')?.textContent.trim() || '',
     who: document.querySelector('#liveWho')?.textContent.trim() || '',
-    cd: document.querySelector('#liveCd')?.textContent.trim() || '',
+    countdown: !!document.querySelector('#liveCd'),
+    cardDisplay: document.querySelector('#liveCard') ? getComputedStyle(document.querySelector('#liveCard')).display : 'none',
     next: document.querySelector('#nextConsult')?.textContent.trim() || '',
     nextWho: document.querySelector('#nextConsultWho')?.textContent.trim() || '',
     top: document.querySelector('#liveTop')?.textContent.trim() || '',
+    sepDisplay: document.querySelector('#liveSep') ? getComputedStyle(document.querySelector('#liveSep')).display : 'none',
     consultTop: document.querySelector('#consultTopWrap')?.textContent.trim() || '',
+    joinHref: document.querySelector('#liveJoin')?.getAttribute('href') || '',
     joinDisplay: document.querySelector('#liveJoin') ? getComputedStyle(document.querySelector('#liveJoin')).display : 'none',
     acadEvents: document.querySelectorAll('#acad b').length,
     acadDays: document.querySelectorAll('#acad .aday').length,
@@ -67,11 +70,13 @@ try {
 
   log('live title empty', state.title === '', state.title);
   log('live host empty', state.who === '', state.who);
-  log('live countdown empty', state.cd === '', state.cd);
+  log('live countdown removed', state.countdown === false);
+  log('live card hidden', state.cardDisplay === 'none', state.cardDisplay);
   log('consultation empty', state.next === '' && state.nextWho === '', state.next + ' / ' + state.nextWho);
   log('strip live empty', state.top === '', state.top);
+  log('strip separator hidden', state.sepDisplay === 'none', state.sepDisplay);
   log('strip consultation empty', state.consultTop === '', state.consultTop);
-  log('join button hidden', state.joinDisplay === 'none', state.joinDisplay);
+  log('join link hidden', state.joinDisplay === 'none' && !state.joinHref, state.joinDisplay + ' / ' + state.joinHref);
   log('week has 7 empty days', state.acadDays === 7 && state.acadEvents === 0, `${state.acadDays}/${state.acadEvents}`);
   log('API returned zero events', state.events === 0, String(state.events));
   log('sync status available', !!state.sync, state.sync?.status || 'none');

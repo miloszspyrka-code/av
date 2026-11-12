@@ -172,6 +172,7 @@
     AV.renderWeekly();
     AV.setText('#analysisWhen', new Date().toLocaleDateString('pl-PL', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' · ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
     AV.renderQ();
+    if (AV.mentorExport) AV.setText('#mentorExport', AV.mentorExport(s));
     $$('#mChips .chip').forEach((c) => { c.style.pointerEvents = ''; });
   };
 
@@ -278,7 +279,6 @@
     const s = AV.state;
     const data = AV.api.events || { live: [], consultations: [], unassigned: [], nextConsultation: null, sync: null };
     const live = AV.nextLiveEvent();
-    const info = AV.liveInfo();
     const todayKey = AV.warsawDateKey(new Date());
     const set = (sel, text) => AV.setText(sel, text || '');
     const showEl = (sel, visible) => {
@@ -289,20 +289,24 @@
     set('#liveTitle', live ? live.name : '');
     set('#liveWho', live ? (live.host || '') : '');
     set('#liveWhen', live ? (live.startLabel || '') : '');
-    set('#liveCd', live
-      ? (info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'))
-      : '');
-    $$('.liveIn').forEach((e) => {
-      e.textContent = live
-        ? (info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'))
-        : '';
-    });
     const isToday = !!(live && live.localDate === todayKey);
     set('#liveBadge', live ? (isToday ? 'Live dziś' : 'Najbliższy live') : '');
     set('#liveTop', live ? (isToday ? 'Live dziś ' + live.localTime : live.startLabel) : '');
+    showEl('#liveCard', !!live);
     showEl('#liveBadge', !!live);
     showEl('#liveWhen', !!live);
-    showEl('#liveJoin', !!live);
+    showEl('#liveTop', !!live);
+    showEl('#liveSep', !!live);
+    const join = document.querySelector('#liveJoin');
+    if (join) {
+      if (live && live.url) {
+        join.href = live.url;
+        join.style.display = '';
+      } else {
+        join.removeAttribute('href');
+        join.style.display = 'none';
+      }
+    }
     showEl('#liveRem', !!live);
 
     const c = data.nextConsultation;
@@ -488,6 +492,164 @@
       $$('#checkEnergy .chip').forEach((ch) => ch.classList.toggle('on', ch.textContent === String(c.energy)));
       AV.setVal('#checkNote', c.note || '');
     }
+
+    const w = AV.api.wearables;
+    const devices = w?.devices || {};
+    const defaultDeviceText = {
+      garmin: 'sen, HRV, Body Battery',
+      apple: 'przez aplikację Alpha Vault na iPhone',
+      oura: 'sen, HRV, gotowość',
+      whoop: 'regeneracja, obciążenie'
+    };
+    $$('#devList .dev').forEach((row) => {
+      const key = row.dataset.provider;
+      const d = devices[key] || { configured: false, connected: false };
+      const btn = row.querySelector('[data-dev]');
+      const syncBtn = row.querySelector('[data-sync]');
+      const stateEl = row.querySelector('[data-devstate]');
+      if (syncBtn) syncBtn.hidden = !d.connected;
+      if (btn) {
+        btn.textContent = d.connected ? 'Odłącz' : 'Połącz';
+        btn.className = 'btn ' + (d.connected ? 'g' : 'p') + ' sm';
+        btn.disabled = !d.connected && !d.configured;
+        btn.title = !d.connected && !d.configured ? 'Integracja wymaga konfiguracji po stronie serwera' : '';
+        btn.dataset.mode = d.connected ? 'disconnect' : 'connect';
+      }
+      if (stateEl) {
+        if (d.connected) {
+          const when = d.lastSyncAt ? new Date(d.lastSyncAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }) : '';
+          stateEl.className = d.lastSyncStatus === 'error' ? 'warnc' : 'win';
+          stateEl.textContent = '● połączony' + (when ? ' · sync ' + when : '');
+          stateEl.title = d.lastError || '';
+        } else {
+          stateEl.className = '';
+          stateEl.textContent = d.configured ? (defaultDeviceText[key] || '') : 'integracja nieaktywna — brak konfiguracji serwera';
+          stateEl.title = '';
+        }
+      }
+    });
+
+    const notice = $('#wearablesNotice');
+    if (notice) {
+      const err = AV.api.wearablesError;
+      notice.textContent = err ? 'Nie udało się odczytać danych urządzeń. Spróbuj odświeżyć stronę.' : '';
+    }
+
+    const r = AV.readiness(s);
+    AV.setText('#bodyReady', r.score == null ? '' : String(r.score));
+    AV.setText('#bodyReadyTitle', r.title || '');
+    AV.setText('#bodyReadyDesc', r.desc || '');
+    AV.setText('#bodyReadyDay', 'Dziś, ' + new Date().toLocaleDateString('pl-PL', { weekday: 'long' }));
+    const ring = $('#bodyRing');
+    if (ring) {
+      ring.style.setProperty('--p', String(r.score == null ? 0 : r.score));
+      ring.style.setProperty('--c', r.cls === 'loss' ? 'var(--loss)' : r.cls === 'warnc' ? 'var(--warn)' : r.cls === 'win' ? 'var(--win)' : 'rgba(255,255,255,.18)');
+    }
+
+    const t = w?.today || null;
+    const b = w?.baseline || {};
+    const setTrend = (sel, text, cls) => {
+      const el = $(sel);
+      if (!el) return;
+      el.textContent = text || '';
+      el.className = 'trend' + (cls ? ' ' + cls : '');
+    };
+
+    if (!t || t.sleepMinutes == null) {
+      AV.setText('#metricSleep', '');
+      setTrend('#metricSleepTrend', '', '');
+    } else {
+      AV.setText('#metricSleep', AV.sleepLabel(t.sleepMinutes));
+      if (b.sleepMinutes != null) {
+        const diff = Math.round(t.sleepMinutes - b.sleepMinutes);
+        if (Math.abs(diff) < 10) setTrend('#metricSleepTrend', 'w normie', 'win');
+        else setTrend('#metricSleepTrend', (diff < 0 ? '↓ ' : '↑ ') + AV.sleepLabel(Math.abs(diff)) + ' vs norma', diff < 0 ? 'loss' : 'win');
+      } else setTrend('#metricSleepTrend', '', '');
+    }
+
+    if (!t || t.hrvMs == null) {
+      AV.setText('#metricHrv', '');
+      setTrend('#metricHrvTrend', '', '');
+    } else {
+      AV.setText('#metricHrv', String(Math.round(Number(t.hrvMs))) + ' ms');
+      if (b.hrvMs != null && Number(b.hrvMs) > 0) {
+        const pct = Math.round((Number(t.hrvMs) - Number(b.hrvMs)) / Number(b.hrvMs) * 100);
+        if (Math.abs(pct) < 3) setTrend('#metricHrvTrend', 'w normie', 'win');
+        else setTrend('#metricHrvTrend', (pct < 0 ? '↓ ' : '↑ ') + Math.abs(pct) + '%', pct < 0 ? 'loss' : 'win');
+      } else setTrend('#metricHrvTrend', '', '');
+    }
+
+    if (!t || t.restingHr == null) {
+      AV.setText('#metricHr', '');
+      setTrend('#metricHrTrend', '', '');
+    } else {
+      AV.setText('#metricHr', String(t.restingHr));
+      if (b.restingHr != null) {
+        const diff = Math.round(t.restingHr - b.restingHr);
+        if (Math.abs(diff) <= 1) setTrend('#metricHrTrend', 'w normie', 'win');
+        else setTrend('#metricHrTrend', (diff > 0 ? '↑ ' : '↓ ') + Math.abs(diff) + ' bpm', diff > 0 ? 'warnc' : 'win');
+      } else setTrend('#metricHrTrend', '', '');
+    }
+
+    if (!t || t.bodyBattery == null) {
+      AV.setText('#metricBattery', '');
+      setTrend('#metricBatteryTrend', '', '');
+    } else {
+      AV.setText('#metricBattery', String(t.bodyBattery));
+      setTrend('#metricBatteryTrend', t.bodyBattery >= 67 ? 'wysoka' : t.bodyBattery >= 34 ? 'średnia' : 'niska', t.bodyBattery >= 67 ? 'win' : t.bodyBattery >= 34 ? 'warnc' : 'loss');
+    }
+
+    AV.renderSleepChart();
+  };
+
+  AV.renderSleepChart = () => {
+    const card = $('#sleepCard');
+    const box = $('#sleepChart');
+    if (!card || !box) return;
+    const series = AV.api.wearables?.series || [];
+    if (!series.length) { card.hidden = true; box.innerHTML = ''; return; }
+    const sleepByDate = {};
+    series.forEach((day) => { if (day.sleepMinutes != null) sleepByDate[day.date] = Number(day.sleepMinutes); });
+    const pnlByDate = {};
+    AV.closedTrades(AV.state).forEach((t) => {
+      const key = AV.dateKey(new Date(t.date));
+      if (sleepByDate[key] == null) return;
+      pnlByDate[key] = (pnlByDate[key] || 0) + (Number(t.result) || 0);
+    });
+    const buckets = [
+      { label: '<6 h', min: 0, max: 359, net: 0, days: 0 },
+      { label: '6–7 h', min: 360, max: 419, net: 0, days: 0 },
+      { label: '7–8 h', min: 420, max: 479, net: 0, days: 0 },
+      { label: '>8 h', min: 480, max: 1441, net: 0, days: 0 }
+    ];
+    Object.keys(pnlByDate).forEach((key) => {
+      const sleep = sleepByDate[key];
+      const bucket = buckets.find((x) => sleep >= x.min && sleep <= x.max);
+      if (!bucket) return;
+      bucket.net += pnlByDate[key];
+      bucket.days += 1;
+    });
+    const active = buckets.filter((x) => x.days > 0);
+    if (active.length < 2) { card.hidden = true; box.innerHTML = ''; return; }
+    card.hidden = false;
+    const values = buckets.map((x) => x.days ? x.net / x.days : 0);
+    const maxAbs = Math.max(20, ...values.map((v) => Math.abs(v)));
+    const x = [40, 165, 290, 415];
+    const baseY = 95;
+    const maxH = 62;
+    const bars = buckets.map((bucket, i) => {
+      const value = values[i];
+      if (!bucket.days) return '';
+      const h = Math.max(3, Math.round(Math.abs(value) / maxAbs * maxH));
+      const y = value >= 0 ? baseY - h : baseY;
+      const color = value < 0 ? '#ff5d62' : '#4fcf8a';
+      const labelY = value >= 0 ? y - 7 : y + h + 14;
+      const val = (value > 0 ? '+' : value < 0 ? '−' : '') + Math.abs(Math.round(value));
+      return '<rect x="' + x[i] + '" y="' + y + '" width="70" height="' + h + '" rx="8" fill="' + color + '"/>' +
+        '<text x="' + (x[i] + 35) + '" y="' + labelY + '" fill="#f5f1eb" font-size="13" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">' + val + '</text>' +
+        '<text x="' + (x[i] + 35) + '" y="14" fill="#7f786f" font-size="12" text-anchor="middle" font-family="Archivo">' + bucket.label + '</text>';
+    }).join('');
+    AV.setHTML(box, '<svg viewBox="0 0 520 170" width="100%" height="170"><line x1="0" y1="' + baseY + '" x2="520" y2="' + baseY + '" stroke="rgba(255,255,255,.08)"/>' + bars + '</svg>');
   };
 
   /* ---------- giełdy ---------- */
@@ -685,16 +847,13 @@
     AV.setVal('#nameIn', u.name);
     AV.setVal('#currencyIn', u.currency);
     AV.setVal('#goalIn', u.goal);
-    AV.setVal('#mottoIn', u.motto);
     AV.setVal('#tzIn', u.timezone);
     AV.setVal('#hoursIn', u.hour12 ? '12h · 2:30 PM' : '24h · 14:30');
-    $$('#styleChips .chip').forEach((c) => c.classList.toggle('on', c.textContent === u.style));
     $$('#marketChips .chip').forEach((c) => c.classList.toggle('on', (u.markets || []).includes(c.textContent)));
     $$('#accents .sw').forEach((w) => w.classList.toggle('on', w.dataset.a === u.accent.a));
     $$('[data-setting]').forEach((el) => {
       const k = el.dataset.setting;
       let v = s.settings[k];
-      if (k === 'greeting') v = u.greeting;
       if (k === 'remember') v = s.settings.remember;
       el.classList.toggle('on', !!v);
     });
@@ -728,9 +887,13 @@
     AV.setHTML('#flowBody', s.flows.length ? s.flows.map((f) => '<tr><td class="mono dim">' + new Date(f.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(f.account) + '</td><td>' + AV.esc(f.type) + ' · ' + AV.esc(f.op) + '</td><td class="mono" style="text-align:right">' + (f.type === 'Wpłata' ? '+' : '−') + AV.fmt(f.amount, 2) + ' USDT</td><td class="mono" style="text-align:right">' + AV.fmt(f.fiat, 2) + ' ' + (f.currency === 'PLN' ? 'zł' : f.currency) + '</td><td><span class="pill ' + (f.tax === 'cost' ? 'k' : 'p') + '">' + (f.tax === 'cost' ? 'koszt' : 'przychód') + '</span> <span class="link" data-flow-del="' + f.id + '" style="font-size:11px">✕</span></td></tr>').join('') : '<tr><td colspan="6" class="dim" style="text-align:center;padding:20px">Brak wpłat i wypłat.</td></tr>');
   };
 
-  AV.renderBadges = () => {
-    const b = AV.badges(AV.state);
-    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span>' + (x.progress != null ? '<div class="bar"><i style="width:' + x.progress + '%;background:var(--alpha)"></i></div>' : '') + '</div>').join(''));
+  AV.renderBadges = (state) => {
+    const s = state || AV.state;
+    const b = AV.badges(s);
+    const summary = AV.badgeSummary(b);
+    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span><div class="bar"><i style="width:' + AV.clamp(x.progress || 0, 0, 100) + '%;background:var(--alpha)"></i></div></div>').join(''));
+    AV.setText('#badgeSummary', summary.done + ' z ' + summary.total + ' · poziom ' + summary.level);
+    AV.setText('#levelBadge', 'poziom ' + summary.level);
   };
 
   AV.renderExpired = () => {

@@ -103,7 +103,10 @@ async function main() {
   assert.equal(events.res.status, 200, events.text);
   assert.ok(Array.isArray(events.json.events));
   assert.ok(events.json.sync && typeof events.json.sync.status === 'string');
-  log('events z sesją', true, events.json.events.length + ' wydarzeń');
+  for (const event of events.json.events) {
+    assert.match(event.url || '', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/);
+  }
+  log('events z sesją', true, events.json.events.length + ' wydarzeń · ' + events.json.events.filter((e) => e.url).length + ' z linkiem');
 
   const adminEvents = await req('/api/admin/events');
   assert.equal(adminEvents.res.status, 403);

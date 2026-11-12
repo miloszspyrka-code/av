@@ -178,13 +178,15 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 ```powershell
 npm test                 # API 21/21
 npm run test:prop        # silnik prop challenge 27/27 (bez serwera)
-npm run test:ui          # UI 32/32 (Chrome/Edge)
+npm run test:ui          # UI 51/51 (Chrome/Edge)
+npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
+npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
 npm run test:docs        # linki i spójność dokumentacji
 ```
 
-UI wymaga uruchomionego serwera PHP i `APP_URL`. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
+UI wymaga uruchomionego serwera PHP i `APP_URL`. PWA używa tego samego serwera i Chrome/Edge. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
 
 ### Deploy
 
@@ -222,6 +224,7 @@ Przed PR uruchom **wszystkie** suites, które dotyczą zmiany. Przy zmianie back
 ```powershell
 php -l <zmienione pliki>
 npm run test:events
+npm run test:wearables
 npm test
 npm run test:ui
 npm run test:ui:empty
@@ -285,27 +288,35 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 21/21, UI 32/32, empty 10/10, events 24/24 |
+| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, wearables 33/33, PWA 20/20 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
-| Baza LH | tabele utworzone (10), login OK |
+| Baza LH | tabele utworzone (14), w tym 4 tabele `wearable_*`, login OK |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
 | CI gate | `PHP + API + UI` wymagany; PR + branch protection na `main` |
-| Auto-deploy | merge/push do `main` przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
+| Auto-deploy | po zielonym CI na `main` (`workflow_run` CI → `deploy-alphavault.yml`) przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
 | Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
+| PWA produkcja | manifest 200 `application/manifest+json`, SW 200 `no-cache`, ikony `/assets/pwa/*` 200; `Page.getInstallabilityErrors` bez błędów |
+| PWA na fizycznym telefonie | **niezweryfikowane** — wymaga instalacji i zgody na powiadomienia |
+| Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; Oura/Whoop/Garmin czekają na sekrety OAuth |
+| Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
+| Cron urządzeń | `cron/sync-wearables.sh` wdrożony i uruchomiony ręcznie (0 połączeń); wpis w panelu LH do dodania |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
-| OAuth w przeglądarce | **nieprzetestowany interaktywnie** |
+| OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
 
 **Pozostałe czynności:**
 
-1. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
+1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
-3. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
+3. Dodaj sekrety `OURA_*` i `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*`.
+4. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
+5. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego
 

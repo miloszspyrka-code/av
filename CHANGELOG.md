@@ -1,12 +1,35 @@
 # Changelog
 
-## 3.2.0 — 2026-11-12
+## 3.3.0 — 2026-11-12
 
 ### Dodane
 - Prop challenge: 9 szablonów (FTMO 2-Step/1-Step/Swing, FundedNext, FundingPips, Topstep, Apex, Breakout, własne), cel zysku, dzienny limit, obsunięcie static/trailing, dni, krzywa kapitału, alerty 75/90/100%, banner na pulpicie, archiwum i pełna edycja.
 - `public/js/prop.js` — czysty, testowalny silnik limitów; `public/js/propui.js` — widok, edytor, szablony i powiadomienia.
 - `prop.challenges` + `prop.selectedId` w JSON stanu; demo ma 3 przykładowe challenge'e.
-- Testy: `npm run test:prop` (27), API 21/21, UI 32/32; dokumentacja [docs/PROP.md](docs/PROP.md).
+- Testy: `npm run test:prop` (27), API 21/21, UI 51/51; dokumentacja [docs/PROP.md](docs/PROP.md).
+
+## 3.2.0 — 2026-11-12
+
+### Dodane
+- Integracje Garmin Connect, Oura Ring i Whoop (OAuth2, szyfrowane tokeny, ręczny i cronowy sync).
+- Apple Watch · Zdrowie: kod parowania i ingest z tokenem urządzenia.
+- Gotowość łącząca sen, HRV, tętno, Body Battery, regenerację i check-in.
+- UI „Ciało”: urządzenia, metryki, wykres sen → wynik dnia, odłączenie z usunięciem danych.
+- `npm run test:wearables` — 33 scenariusze API + UI na lokalnym dostawcy OAuth.
+
+### Naprawione
+- `Db::migrate()` nie rozcina komentarzy SQL na bajcie `0x85` (litera ą/ń w UTF-8).
+
+## 3.1.2 — 2026-11-12
+
+### Zmienione
+- Akademia: usunięty countdown „Start za”; karta live ukrywa się bez wydarzenia.
+- „Dołącz” to link do `https://discord.com/events/{guild}/{event}`; usunięty modal z `discord.com/app`.
+- Usunięte noty techniczne o kluczu API tylko do odczytu (Giełdy, Konto).
+
+### Dodane
+- Pole `url` w `/api/events` — kanoniczny link wydarzenia Discord.
+- Testy API/UI/empty: format linku, brak countdownu, ukryta karta live.
 
 ## 3.1.1 — 2026-11-12
 

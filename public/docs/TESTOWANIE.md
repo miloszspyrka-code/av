@@ -20,6 +20,7 @@ npm ci
 $env:APP_URL = "http://127.0.0.1:4173"
 npm test
 npm run test:ui
+npm run test:pwa
 ```
 
 Test pustych pól wymaga drugiego serwera z gildią bez wydarzeń:
@@ -34,6 +35,24 @@ php -S 127.0.0.1:4174 -t public public/router.php
 $env:APP_URL = "http://127.0.0.1:4174"
 npm run test:ui:empty
 ```
+
+## Urządzenia zdrowotne — 33 scenariusze
+
+`npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
+
+Zakres:
+
+- `GET /api/wearables` bez sesji = 401,
+- OAuth2 Garmin/Oura/Whoop: start → authorize → callback → token → dane → gotowość,
+- poprawność snu (312 min), HRV (38 ms), tętna (61), Body Battery (34) i baseline (HRV 52),
+- ręczna synchronizacja zwraca 14 dni,
+- odłączenie usuwa połączenie, metryki i baseline,
+- Apple: jednorazowy kod parowania, ingest dwóch dni, token urządzenia, odrzucenie powtórzonego kodu i złego tokenu,
+- gotowość łączy urządzenie i check-in (73/100),
+- UI: puste pola bez urządzenia, check-in 80/100, połączenie i metryki dla Garmin/Oura/Whoop, odłączenie czyści pola, Apple przez kod parowania, brak błędów JS,
+- brak tokenów dostawców w odpowiedziach API.
+
+Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przechodzi, a część UI jest jawnie pominięta.
 
 ## Discord DB/sync — 24 scenariusze
 
@@ -92,7 +111,7 @@ npm run test:ui:empty
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 32 scenariusze
+## UI — 51 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -110,21 +129,41 @@ npm run test:ui:empty
 - prop: archiwum, empty state i przywrócenie,
 - prop: zapis w MySQL, reload i usunięcie,
 - kalendarz, check-in, profil,
+- 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,
 - przywrócenie stanu demo,
 - wylogowanie.
 
-## UI empty-state — 10 scenariuszy
+## UI empty-state — 12 scenariuszy
 
 `tests/ui-empty.e2e.mjs` przy poprawnym sync zwracającym `[]` sprawdza:
 
-- pusty tytuł, prowadzący i countdown,
+- pusty tytuł, prowadzący i ukryta karta live,
 - pustą kartę konsultacji,
 - puste pola w strip,
-- ukryty przycisk „Dołącz”,
+- ukryty link „Dołącz”,
 - 7 dni tygodnia bez wydarzeń,
 - `events.length === 0`,
 - dostępny stan synchronizacji.
+
+## PWA mobile — 20 scenariuszy
+
+`tests/pwa.e2e.mjs` używa Playwright + systemowego Chrome w emulacji iPhone 14 (390×844, touch, iOS UA). Sprawdza:
+
+- manifest: `display=standalone`, `start_url`, ikony 192/512/maskable,
+- meta iOS i `apple-touch-icon`,
+- rejestrację service workera i przejęcie kontroli nad stroną,
+- `Page.getAppManifest` i `Page.getInstallabilityErrors` bez błędów,
+- brak poziomego przewijania na pulpicie,
+- przycisk instalacji i stan powiadomień,
+- zamknięcie transakcji → powiadomienie systemowe z deep linkiem `?qa=<id>`,
+- deep link otwiera modal z prawdziwą transakcją,
+- emocja + ocena + zdjęcie zapisane w ≤ 10 s (mierzone `AV.ui.qaLastSeconds`),
+- stały przycisk zapisu na telefonie,
+- push przez CDP `ServiceWorker.deliverPushMessage`,
+- offline: powłoka aplikacji z cache service workera.
+
+To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu początkowego) i powiadomienia iOS wymagają testu ręcznego; patrz „Czego testy nie obejmują”.
 
 ## Dokumentacja — 16 scenariuszy
 
@@ -162,6 +201,7 @@ npm run test:ui:empty
 - Discord DB/sync,
 - API e2e,
 - UI e2e (systemowy Chrome),
+- PWA e2e (emulacja iPhone 14, Chrome),
 - empty-state na osobnym porcie.
 
 ## Produkcja — 2026-11-12
@@ -181,12 +221,15 @@ Wykonane na `https://alphavault.pl`:
 | LH Cron | logi `18:05:05` i `18:10:02` — uruchomienie co 5 min |
 | Monitoring | `monitor-production.yml` — health + `sync.status`/`stale`, co 15 min |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
+| PWA manifest/SW/ikony | 200, `application/manifest+json`, ikony `/assets/pwa/*`, installability bez błędów |
+| PWA mobile E2E | 20/20 lokalnie i w CI; fizyczny telefon — do potwierdzenia |
 
 Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
 
 ## Czego testy nie obejmują
 
 - prawdziwego logowania Discord (wymaga interakcji użytkownika),
+- instalacji PWA na fizycznym telefonie i powiadomień iOS (wymaga urządzenia),
 - realnego Stage (brak wydarzenia w API — tylko fixture),
 - produkcyjnego SSH/rsync (sprawdzane przez dry run deployu),
 - LH Cron (wymaga panelu LH),

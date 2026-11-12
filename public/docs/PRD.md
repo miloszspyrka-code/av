@@ -82,7 +82,7 @@ W wersji 3.0 backend został zmigrowany z Express/Node.js na PHP 8.3, a harmonog
 - płatności Stripe (modal zakupu jest demonstracyjny),
 - wysyłka e-mail/SMS przypomnień poza aplikacją,
 - generowanie kolejnych wystąpień wydarzeń cyklicznych (przechowujemy `recurrence_rule`, ale nie tworzymy fikcyjnych wystąpień),
-- aplikacja mobilna.
+- natywna aplikacja mobilna w App Store/Google Play; PWA jest w zakresie (FR-17).
 
 ## 5. Model dostępu i konta
 
@@ -146,7 +146,7 @@ Wydarzenia `unassigned` są widoczne na liście administracyjnej; nie są ukrywa
 
 Po udanej synchronizacji z zerem wydarzeń:
 
-- tytuł, prowadzący, godzina i countdown pozostają puste,
+- karta live jest ukryta; tytuł, prowadzący i godzina pozostają puste,
 - karta konsultacji pozostaje pusta,
 - brak tekstów „Brak wydarzeń”, „Niedostępne”, „--”, „Wkrótce”,
 - brak starych danych demo.
@@ -198,6 +198,14 @@ Panel administratora i `/api/events` pokazują: ostatnią próbę, ostatni sukce
 
 Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują na siebie i są weryfikowane automatycznie (`npm run test:docs`).
 
+### FR-17 — Aplikacja na telefonie (PWA)
+
+Panel jest instalowalny z przeglądarki bez App Store i Google Play (`manifest.webmanifest`, service worker, ikony 192/512/maskable). Po zamknięciu transakcji w panelu użytkownik dostaje powiadomienie z deep linkiem do szybkiego dodania, gdzie w ≤ 10 s zapisuje emocję, ocenę i zdjęcie wykresu. Powłoka aplikacji działa offline; `/api/` i `/auth/` nie są cache'owane. Powiadomienia o transakcjach zamkniętych na giełdzie przy zamkniętej aplikacji wymagają serwerowego workera giełdowego i Web Push — poza zakresem do czasu auto-importu.
+
+### FR-18 — Integracje urządzeń i gotowość
+
+Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Watch przez jednorazowy kod parowania i ingest z iPhone. Alpha Vault pobiera sen, HRV, tętno spoczynkowe, Body Battery i wynik regeneracji, liczy gotowość oraz pokazuje, jak sen wpływa na wynik dnia. Tokeny są szyfrowane, dane o zdrowiu przetwarzane tylko za zgodą, a odłączenie urządzenia usuwa je z bazy. Check-in przed rynkiem wnosi 30% gotowości.
+
 ### FR-19 — Prop challenge
 
 Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów na podstawie dziennika.
@@ -242,6 +250,11 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 | AC-11 | Token bota pozostaje bezpieczny | audyt sekretów i logów |
 | AC-12 | Produkcyjne E2E przechodzi | health + events + login + sync na `alphavault.pl` |
 | AC-13 | Dokumentacja spójna i aktualna | `npm run test:docs` |
+| AC-14 | PWA jest instalowalna, a szybkie dodanie z powiadomienia zajmuje ≤ 10 s | `tests/pwa.e2e.mjs` 20/20 |
+| AC-15 | OAuth2 Garmin/Oura/Whoop kończy się zapisem metryk | `npm run test:wearables` 33/33 |
+| AC-16 | Apple Health przyjmuje dane po kodzie parowania i tokenie urządzenia | `npm run test:wearables` |
+| AC-17 | Gotowość łączy urządzenie z check-inem i czyści się po odłączeniu | test API + UI E2E |
+| AC-18 | Tokeny dostawców nie są widoczne w API ani logach | test odpowiedzi API + audyt |
 
 ## 9. Metryki sukcesu
 
@@ -272,7 +285,7 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 | Synchronizacja Discord | gotowa, test realny 3/3 VOICE |
 | Testy DB/sync | PASS |
 | API / UI / empty-state | PASS |
-| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 21/21`, `UI 32/32`; deploy po merge |
+| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 21/21`, `UI 51/51`; deploy po merge |
 | Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
 | Deploy na `alphavault.pl` | **200** — wdrożony |
 | App path | `~/public_html/alphavault.pl/.app` (open_basedir, deny) |

@@ -67,7 +67,11 @@ try {
   const nextConsult = (await page.locator('#nextConsult').innerText()).trim();
   const acadText = (await page.locator('#acad').innerText()).trim();
   const liveTop = (await page.locator('#liveTop').innerText()).trim();
+  const liveHref = await page.locator('#liveJoin').getAttribute('href');
+  const liveCardText = await page.locator('#liveCard').innerText();
   log('Discord live z API', liveTitle.includes('AT - Marcin') && liveWho.includes('Marcin'), liveTitle + ' / ' + liveWho);
+  log('Discord live link', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/.test(liveHref || ''), liveHref || 'brak');
+  log('brak countdownu Start za', !liveCardText.includes('Start za'), liveCardText.replace(/\s+/g, ' ').slice(0, 80));
   log('Discord konsultacja z API', nextConsult.length > 0, nextConsult);
   log('Discord harmonogram tygodnia', acadText.includes('AT - Marcin'), acadText.slice(0, 120));
   log('Discord strip live', liveTop.length > 0, liveTop);
@@ -291,10 +295,9 @@ try {
 
   // akademia
   await page.click('.navg button[data-v="akad"]');
-  await page.click('#liveJoin');
-  await page.waitForSelector('#gModal.on');
-  log('akademia: modal live', true);
-  await page.evaluate(() => AV.closeModal());
+  const liveHrefAgain = await page.locator('#liveJoin').getAttribute('href');
+  assert.match(liveHrefAgain || '', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/);
+  log('akademia: link wydarzenia Discord', true, liveHrefAgain);
 
   // kalendarz
   await page.click('.navg button[data-v="kal"]');
@@ -322,6 +325,34 @@ try {
   await page.waitForTimeout(400);
   const sideName = await page.locator('#sideName').innerText();
   log('profil: zapis imienia', sideName === 'E2E Tester', sideName);
+  const planDates = await page.evaluate(() => {
+    const prev = AV.state.subscription.until;
+    const expected = new Date(prev).toLocaleDateString('pl-PL');
+    const read = () => ({
+      side: document.querySelector('#sidePlan').textContent.trim(),
+      row: document.querySelector('#planUntilRow').style.display,
+      until: document.querySelector('#planValidUntil').textContent.trim()
+    });
+    AV.state.subscription.until = null;
+    AV.renderUser();
+    const none = read();
+    AV.state.subscription.until = prev;
+    AV.renderUser();
+    return { none, restored: read(), expected };
+  });
+  log('profil: bez daty bez adnotacji', planDates.none.side === 'Alpha + Akademia' && planDates.none.row === 'none', JSON.stringify(planDates.none));
+  log('profil: data z API w miejscu daty', planDates.restored.until === planDates.expected && planDates.restored.side.endsWith(planDates.expected), planDates.restored.until + ' = ' + planDates.expected);
+  const removedFields = await page.evaluate(() => ({
+    motto: !!document.querySelector('#mottoIn'),
+    style: !!document.querySelector('#styleChips'),
+    greeting: !!document.querySelector('[data-setting="greeting"]'),
+    gender: !!document.querySelector('#gender'),
+    greet: !!document.querySelector('#greet'),
+    badge: document.querySelector('#profileBadge').textContent.trim()
+  }));
+  log('personalizacja: usunięte pola', !removedFields.motto && !removedFields.style && !removedFields.greeting && !removedFields.gender && !removedFields.greet && removedFields.badge === 'Krypto', JSON.stringify(removedFields));
+  const h1 = await page.locator('#pulpit .head h1').innerText();
+  log('pulpit: nazwa bez powitania', h1.trim() === 'E2E Tester.', h1);
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');
@@ -344,6 +375,63 @@ try {
     const closed = await page.evaluate((id) => AV.state.trades.find((t) => t.id === id)?.result, addedId);
     log('zamknięcie pozycji', closed === 5, String(closed));
   }
+
+  // odznaki: każda z 8 reguł niezależnie + dynamiczny licznik i poziom
+  const badges = await page.evaluate(() => {
+    const base = () => ({ accounts: [{ name: 'A', include: true }], trades: [], plans: {}, checkins: [] });
+    const iso = (offset) => new Date(AV.addDays(new Date(), offset)).toISOString();
+    const key = (offset) => AV.dateKey(AV.addDays(new Date(), offset));
+    const trade = (offset, extra = {}) => ({ date: iso(offset), result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
+    const plan = (state, offset, approved = true) => {
+      const k = key(offset);
+      state.plans[k] = { date: k, approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
+    };
+    const badge = (state, index) => AV.badges(state)[index];
+    const out = {};
+    const empty = base();
+    out.count = AV.badges(empty).length;
+    out.empty = AV.badges(empty).every((b) => !b.done && b.progress === 0);
+    out.emptySummary = AV.badgeSummary(AV.badges(empty));
+
+    let s = base(); plan(s, 0); out.plan = badge(s, 0);
+    s = base(); for (let i = 0; i < 7; i++) s.trades.push(trade(-i)); out.seven = badge(s, 1);
+    s = base(); for (let i = 0; i < 50; i++) s.trades.push(trade(0)); out.sl50 = badge(s, 2);
+    s = base(); for (let i = 0; i < 49; i++) s.trades.push(trade(0)); out.sl49 = badge(s, 2);
+    s = base(); for (let i = 0; i < 5; i++) { plan(s, -i); s.trades.push(trade(-i)); } out.week = badge(s, 3);
+    s = base(); for (let i = 0; i < 30; i++) plan(s, -i); out.plans30 = badge(s, 4);
+    s = base(); for (let i = 0; i < 100; i++) s.trades.push(trade(0)); out.a100 = badge(s, 5);
+    s = base(); for (let i = 0; i < 10; i++) s.trades.push(trade(-i)); out.fomo10 = badge(s, 6);
+    s = base(); for (let i = 0; i < 10; i++) s.trades.push(trade(-i, { emotion: i === 5 ? 'FOMO' : 'Spokój' })); out.fomoBreak = badge(s, 6);
+    s = base(); for (let i = 0; i < 10; i++) s.trades.push(trade(-i * 2)); out.fomoGaps = badge(s, 6);
+    s = base(); for (let i = 0; i < 5; i++) { plan(s, -i * 2); s.trades.push(trade(-i * 2)); } out.weekGaps = badge(s, 3);
+
+    const prev = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 12, 12, 0, 0).toISOString();
+    s = base(); s.trades.push({ ...trade(0), date: prev, result: 100 }); out.month = badge(s, 7);
+    s = base(); s.trades.push({ ...trade(0), date: prev, result: 100, grade: 'C' }); out.monthC = badge(s, 7);
+
+    s = base();
+    plan(s, 0);
+    for (let i = 0; i < 10; i++) s.trades.push(trade(-i, { grade: 'B', result: 0 }));
+    for (let i = 0; i < 50; i++) s.trades.push(trade(0, { grade: 'B', result: 0 }));
+    out.summary4 = AV.badgeSummary(AV.badges(s));
+    out.live = AV.badgeSummary(AV.badges(AV.state));
+    return out;
+  });
+  log('odznaka 1: pierwszy plan dnia', badges.plan.done && badges.plan.progress === 100, badges.plan.hint);
+  log('odznaka 2: 7 dni z dziennikiem', badges.seven.done && badges.seven.progress === 100, badges.seven.hint);
+  log('odznaka 3: 50 × ze stop lossem', badges.sl50.done && !badges.sl49.done && badges.sl49.hint === '49 / 50', badges.sl49.hint);
+  log('odznaka 4: tydzień bez złamania zasad', badges.week.done && badges.week.progress === 100, badges.week.hint);
+  log('odznaka 4: przerwy w kalendarzu nie przerywają serii', badges.weekGaps.done && badges.weekGaps.progress === 100, badges.weekGaps.hint);
+  log('odznaka 5: 30 planów dnia', badges.plans30.done && badges.plans30.progress === 100, badges.plans30.hint);
+  log('odznaka 6: 100 transakcji A', badges.a100.done && badges.a100.progress === 100, badges.a100.hint);
+  log('odznaka 7: 10 dni bez FOMO', badges.fomo10.done && !badges.fomoBreak.done && badges.fomoBreak.hint === '5 / 10', badges.fomoBreak.hint);
+  log('odznaka 7: przerwy w kalendarzu nie przerywają serii', badges.fomoGaps.done && badges.fomoGaps.progress === 100, badges.fomoGaps.hint);
+  log('odznaka 8: miesiąc na plusie bez C', badges.month.done && !badges.monthC.done, badges.month.hint);
+  log('odznaki: puste dane bez fałszywych postępów', badges.count === 8 && badges.empty && badges.emptySummary.done === 0 && badges.emptySummary.level === 1, JSON.stringify(badges.emptySummary));
+  log('odznaki: 4 z 8 daje poziom 3', badges.summary4.done === 4 && badges.summary4.level === 3, JSON.stringify(badges.summary4));
+  const summaryText = await page.locator('#badgeSummary').innerText();
+  const levelText = await page.locator('#levelBadge').innerText();
+  log('odznaki: dynamiczny licznik i poziom', summaryText === `${badges.live.done} z ${badges.live.total} · poziom ${badges.live.level}` && levelText === 'poziom ' + badges.live.level, summaryText + ' / ' + levelText);
 
   // przywróć stan demo i poczekaj na zapis do MySQL
   await page.evaluate((raw) => {

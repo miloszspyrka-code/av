@@ -17,7 +17,7 @@ function check(bool $condition, string $label): void
 
 $GLOBALS['failed'] = false;
 $events = new DiscordEvents($config, $db);
-$guild = 'test-guild';
+$guild = (string) ($config->discord['guildId'] ?? '');
 
 $db->execute('DELETE FROM discord_scheduled_events WHERE guild_id = ?', [$guild]);
 
