@@ -42,5 +42,11 @@ jobs:
         run: |
           set -euo pipefail
           page="$(curl -fsS --max-time 25 https://alphavault.pl/)"
-          printf '%s' "$page" | grep -q 'Alpha Vault'
+          case "$page" in
+            *"Alpha Vault"*) ;;
+            *)
+              echo "UI does not contain Alpha Vault."
+              exit 1
+              ;;
+          esac
           echo "UI responds with Alpha Vault."
