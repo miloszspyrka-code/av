@@ -204,5 +204,9 @@ jobs:
           test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/docs/)" = "200"
           test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/.app/config.json)" = "403"
           test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/api/events)" = "401"
-          curl -fsS --max-time 25 https://alphavault.pl/ | grep -qi "Alpha Vault"
+          page="$(curl -fsS --max-time 25 https://alphavault.pl/)"
+          case "$page" in
+            *"Alpha Vault"*) ;;
+            *) echo "UI does not contain Alpha Vault."; exit 1 ;;
+          esac
           echo "Production E2E verification passed."
