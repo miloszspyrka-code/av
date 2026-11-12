@@ -1,0 +1,323 @@
+name: Discord events preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-events-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Read Discord scheduled events (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate required secrets
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in DISCORD_BOT_TOKEN DISCORD_GUILD_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing repository secret: ${name}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            {
+              echo "### Discord preflight blocked"
+              echo ""
+              echo "Required repository secrets are missing. No Discord API request was made."
+              echo ""
+              echo "Add them in **Settings -> Secrets and variables -> Actions**, then re-run this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Required secrets are present (values are not printed)."
+
+      - name: Query Discord scheduled events
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import time
+          from urllib.error import HTTPError, URLError
+          from urllib.request import Request, urlopen
+
+          API = "https://discord.com/api/v10"
+          TOKEN = os.environ["DISCORD_BOT_TOKEN"].strip()
+          GUILD_ID = os.environ["DISCORD_GUILD_ID"].strip()
+          USER_AGENT = "AlphaVault-DiscordPreflight/1.0"
+          SUMMARY_PATH = os.environ.get("GITHUB_STEP_SUMMARY")
+
+          ENTITY_TYPES = {1: "STAGE_INSTANCE", 2: "VOICE", 3: "EXTERNAL"}
+          STATUSES = {1: "SCHEDULED", 2: "ACTIVE", 3: "COMPLETED", 4: "CANCELED"}
+
+          TEST_STARTED = time.monotonic()
+
+
+          def redact(text):
+              return str(text).replace(TOKEN, "<redacted>")
+
+
+          def summary(lines):
+              if not SUMMARY_PATH:
+                  return
+              with open(SUMMARY_PATH, "a", encoding="utf-8") as handle:
+                  handle.write("\n".join(lines) + "\n")
+
+
+          def retry_delay(headers, attempt):
+              for key in ("Retry-After", "X-RateLimit-Reset-After"):
+                  value = headers.get(key)
+                  if value is None:
+                      continue
+                  try:
+                      return min(max(float(value), 1.0), 30.0)
+                  except (TypeError, ValueError):
+                      pass
+              return min(float(2 ** attempt), 30.0)
+
+
+          def error_detail(raw):
+              try:
+                  data = json.loads(raw)
+              except (ValueError, TypeError):
+                  return None, "Non-JSON error response (body not logged)."
+              if not isinstance(data, dict):
+                  return None, "Unexpected error payload (body not logged)."
+              code = data.get("code")
+              message = data.get("message") or "No message provided by Discord."
+              return code, redact(message)[:500]
+
+
+          def get_json(path, retries=3):
+              url = API + path
+              request_started = time.monotonic()
+              for attempt in range(1, retries + 1):
+                  request = Request(
+                      url,
+                      method="GET",
+                      headers={
+                          "Authorization": "Bot " + TOKEN,
+                          "User-Agent": USER_AGENT,
+                          "Accept": "application/json",
+                      },
+                  )
+                  try:
+                      with urlopen(request, timeout=30) as response:
+                          raw = response.read()
+                          elapsed = time.monotonic() - request_started
+                          try:
+                              payload = json.loads(raw)
+                              parse_error = None
+                          except ValueError as exc:
+                              payload = None
+                              parse_error = redact(exc)
+                          return {
+                              "status": response.status,
+                              "headers": dict(response.headers),
+                              "payload": payload,
+                              "parse_error": parse_error,
+                              "attempts": attempt,
+                              "elapsed": elapsed,
+                          }
+                  except HTTPError as exc:
+                      raw = exc.read()
+                      elapsed = time.monotonic() - request_started
+                      if exc.code == 429 and attempt < retries:
+                          delay = retry_delay(exc.headers, attempt)
+                          print(
+                              "HTTP 429 rate limited; retrying in "
+                              f"{delay:.1f}s (attempt {attempt}/{retries})."
+                          )
+                          time.sleep(delay)
+                          continue
+                      code, message = error_detail(raw)
+                      return {
+                          "status": exc.code,
+                          "headers": dict(exc.headers),
+                          "payload": None,
+                          "parse_error": None,
+                          "discord_code": code,
+                          "discord_message": message,
+                          "attempts": attempt,
+                          "elapsed": elapsed,
+                      }
+                  except URLError as exc:
+                      return {
+                          "status": None,
+                          "headers": {},
+                          "payload": None,
+                          "parse_error": None,
+                          "network_error": redact(exc.reason),
+                          "attempts": attempt,
+                          "elapsed": time.monotonic() - request_started,
+                      }
+              raise RuntimeError("request loop exhausted without a result")
+
+
+          print("DISCORD_PREFLIGHT=START")
+          print("MODE=READ_ONLY (no event is created, modified or deleted)")
+
+          events = get_json(
+              f"/guilds/{GUILD_ID}/scheduled-events?with_user_count=true",
+              retries=3,
+          )
+          status = events["status"]
+
+          if status is None:
+              print(f"DISCORD_PREFLIGHT=FAIL NETWORK_ERROR={events.get('network_error')}")
+              summary([
+                  "### Discord preflight failed",
+                  "",
+                  f"- Network error: `{events.get('network_error')}`",
+                  "- No Discord API data was returned.",
+              ])
+              sys.exit(1)
+
+          if status != 200:
+              explanations = {
+                  401: "Invalid or revoked bot token. Regenerate it in the Discord Developer Portal.",
+                  403: "The bot lacks access to this guild or resource. Check the bot invitation and its permissions.",
+                  404: "Guild not found or the bot is not a member of it. Verify DISCORD_GUILD_ID and membership.",
+                  429: "Rate limited by Discord. Re-run the workflow later.",
+              }
+              reason = explanations.get(
+                  status, "Unexpected HTTP status. Review the Discord API response."
+              )
+              print(f"DISCORD_PREFLIGHT=FAIL HTTP_STATUS={status}")
+              print(f"DISCORD_ERROR_CODE={events.get('discord_code')}")
+              print(f"DISCORD_ERROR_MESSAGE={events.get('discord_message')}")
+              print(f"EXPLANATION={reason}")
+              print(f"ATTEMPTS={events['attempts']} REQUEST_SECONDS={events['elapsed']:.2f}")
+              summary([
+                  "### Discord preflight failed",
+                  "",
+                  f"- HTTP status: `{status}`",
+                  f"- Discord error code: `{events.get('discord_code')}`",
+                  f"- Discord message: `{events.get('discord_message')}`",
+                  f"- Meaning: {reason}",
+                  "",
+                  "No events were read and no data was changed.",
+              ])
+              sys.exit(1)
+
+          payload = events["payload"]
+          if isinstance(payload, dict):
+              print("DISCORD_PREFLIGHT=FAIL")
+              print("JSON_SCHEMA=unexpected object")
+              print(f"DISCORD_ERROR_CODE={payload.get('code')}")
+              print(f"DISCORD_ERROR_MESSAGE={redact(payload.get('message', 'Unexpected JSON shape'))}")
+              summary([
+                  "### Discord preflight failed",
+                  "",
+                  "- HTTP 200 but the JSON payload is not an array.",
+                  f"- Discord code: `{payload.get('code')}`",
+                  f"- Discord message: `{redact(payload.get('message', 'Unexpected JSON shape'))}`",
+              ])
+              sys.exit(1)
+
+          if not isinstance(payload, list):
+              print("DISCORD_PREFLIGHT=FAIL")
+              print(f"JSON_PARSE_ERROR={events['parse_error']}")
+              summary([
+                  "### Discord preflight failed",
+                  "",
+                  "- HTTP 200 but the body is not valid JSON.",
+                  f"- Parse error: `{events['parse_error']}`",
+              ])
+              sys.exit(1)
+
+          print("DISCORD_PREFLIGHT=OK")
+          print(f"HTTP_STATUS={status}")
+          print("AUTH=OK (bot token accepted by Discord)")
+
+          identity = get_json("/users/@me", retries=1)
+          if identity["status"] == 200 and isinstance(identity["payload"], dict):
+              me = identity["payload"]
+              username = redact(me.get("username", "unknown"))
+              discriminator = me.get("discriminator")
+              handle = username if discriminator in (None, "0") else f"{username}#{discriminator}"
+              print(f"BOT_IDENTITY={handle} (id={me.get('id')}, bot={me.get('bot')})")
+          else:
+              print("BOT_IDENTITY=unavailable (guild request already proved authorization)")
+
+          print(f"GUILD_EVENTS_STATUS={status}")
+          print(f"EVENTS_COUNT={len(payload)}")
+          print(f"EVENTS_REQUEST_SECONDS={events['elapsed']:.2f}")
+
+          rows = []
+          for index, event in enumerate(payload, start=1):
+              if not isinstance(event, dict):
+                  continue
+              name = redact(event.get("name") or "<unnamed>")
+              entity_type = ENTITY_TYPES.get(event.get("entity_type"), f"UNKNOWN({event.get('entity_type')})")
+              event_status = STATUSES.get(event.get("status"), f"UNKNOWN({event.get('status')})")
+              channel_id = event.get("channel_id") or "n/a"
+              user_count = event.get("user_count")
+              user_count = "n/a" if user_count is None else str(user_count)
+              start = event.get("scheduled_start_time") or "n/a"
+              rows.append((index, name, entity_type, event_status, channel_id, user_count, start))
+              print(
+                  f"EVENT[{index}] name={name} type={entity_type} status={event_status} "
+                  f"channel_id={channel_id} user_count={user_count} starts={start}"
+              )
+
+          types_present = {row[2] for row in rows}
+          verification_note = ""
+          if not rows:
+              verification_note = (
+                  "Empty event list: authorization and guild access are confirmed, but this does NOT "
+                  "prove that Voice and Stage events are returned. Verify with a real event of each type."
+              )
+          elif not ({"VOICE", "STAGE_INSTANCE"} & types_present):
+              verification_note = (
+                  "No Voice or Stage events in this response. Verify those entity types with a real "
+                  "event of each type before enabling production sync."
+              )
+
+          if verification_note:
+              print(f"VERIFICATION_NOTE={verification_note}")
+
+          total_elapsed = time.monotonic() - TEST_STARTED
+          print(f"TOTAL_SECONDS={total_elapsed:.2f}")
+          print("RESULT=PASS")
+
+          table = [
+              "### Discord scheduled events preflight",
+              "",
+              "- Result: **PASS**",
+              f"- HTTP status: `{status}`",
+              "- Authorization: bot token accepted",
+              f"- Events returned: `{len(payload)}`",
+              f"- Execution time: `{total_elapsed:.2f}s`",
+              "",
+          ]
+          if rows:
+              table += [
+                  "| # | Name | Entity type | Status | Channel ID | User count | Starts |",
+                  "|---|------|-------------|--------|------------|------------|--------|",
+              ]
+              for row in rows:
+                  safe_name = str(row[1]).replace("|", "\\|")
+                  table.append(
+                      f"| {row[0]} | {safe_name} | {row[2]} | {row[3]} | `{row[4]}` | {row[5]} | {row[6]} |"
+                  )
+          else:
+              table.append("_No scheduled events were returned._")
+          if verification_note:
+              table += ["", f"> {verification_note}"]
+          summary(table)
+          PY
