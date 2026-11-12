@@ -280,12 +280,12 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Polityka prywatności | ✅ | modal z treścią |
-| Regulamin | ✅ | modal z treścią |
+| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; linki w stopce, logowaniu i zakupie |
+| Regulamin | ✅ | osobna strona `/regulamin`; linki w stopce, logowaniu i zakupie |
 | „Czym jest Akademia?” | ✅ | modal |
 | Zakup + zgody | 🟡 | modal, checkboxy, aktywacja planu demo; brak Stripe |
 
-Treści prawne zawierają placeholdery `[data publikacji]` i wymagają weryfikacji prawnika przed produkcją.
+Dokumenty prawne: wersja 1.0 z 12.11.2026, bez placeholderów. Wymagają okresowej weryfikacji prawnej. Pliki: `public/regulamin.html` i `public/polityka-prywatnosci.html`.
 
 ---
 

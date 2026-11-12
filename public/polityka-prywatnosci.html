@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polityka prywatności i plików cookies · Alpha Moves</title>
+<meta name="description" content="Zasady przetwarzania danych osobowych i wykorzystywania plików cookies w serwisach Alpha Moves: alphamoves.pl, alphanews.pl i Alpha Vault.">
+<link rel="canonical" href="https://alphavault.pl/polityka-prywatnosci">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080707;--card:#121110;--card2:#171513;--cream:#f5f1eb;--mut:#b7b0a6;--dim:#7f786f;
+  --gold:#d9b25f;--gold2:#f1d48e;--line:rgba(255,255,255,.10);--line2:rgba(217,178,95,.24);
+  --serif:'Instrument Serif',Georgia,serif;--sans:'Geist',system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(900px 500px at 80% -10%,rgba(217,178,95,.09),transparent 60%),var(--bg);color:var(--cream);font-family:var(--sans);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+a{color:var(--gold2);text-decoration:none;border-bottom:1px solid rgba(217,178,95,.35)}
+a:hover{color:#fff;border-bottom-color:var(--gold2)}
+.top{position:sticky;top:0;z-index:20;background:rgba(8,7,7,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.topin{max-width:1180px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{font-family:var(--mono);font-size:13px;letter-spacing:.22em;font-weight:700;color:var(--cream);border:0;white-space:nowrap}
+.brand b{color:var(--gold)}
+nav{display:flex;gap:18px;flex-wrap:wrap}
+nav a{font-size:12.5px;color:var(--mut);border:0;letter-spacing:.02em}
+nav a:hover{color:var(--cream)}
+.wrap{max-width:1180px;margin:0 auto;padding:44px 24px 80px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:44px;align-items:start}
+.toc{position:sticky;top:86px;max-height:calc(100vh - 110px);overflow:auto;padding-right:10px}
+.toc-title{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc li{margin:0 0 8px}
+.toc li a{display:block;font-size:12.5px;line-height:1.45;color:var(--mut);border:0;padding-left:16px;position:relative}
+.toc li a:before{content:'—';position:absolute;left:0;top:0;font-size:10px;color:var(--gold)}
+.toc li a:hover{color:var(--cream)}
+.doc{background:linear-gradient(180deg,var(--card),rgba(18,17,16,.72));border:1px solid var(--line);border-radius:26px;padding:clamp(26px,4vw,58px);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.doc > h1:first-child{font-family:var(--sans);font-weight:600;font-size:clamp(34px,5vw,54px);line-height:1.04;letter-spacing:-.035em;margin:0 0 12px;text-wrap:balance}
+.doc h1 em,.doc h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400}
+.doc h2{font-family:var(--sans);font-weight:600;font-size:clamp(22px,2.4vw,30px);line-height:1.2;letter-spacing:-.02em;margin:52px 0 14px;padding-top:22px;border-top:1px solid var(--line)}
+.doc h2:first-of-type{margin-top:34px}
+.doc h3{font-family:var(--sans);font-weight:600;font-size:18px;line-height:1.35;margin:30px 0 8px;color:var(--cream)}
+.doc p{margin:0 0 14px;color:#ddd6ca}
+.doc strong{color:var(--cream);font-weight:600}
+.doc em{color:var(--gold2)}
+.doc ul,.doc ol{margin:0 0 16px;padding-left:24px;color:#ddd6ca}
+.doc li{margin:5px 0}
+.doc li::marker{color:var(--gold)}
+.doc blockquote{margin:22px 0;padding:18px 20px;border-left:2px solid var(--gold);background:rgba(217,178,95,.06);border-radius:0 14px 14px 0;color:var(--mut)}
+.doc blockquote p:last-child{margin-bottom:0}
+.doc hr{border:0;border-top:1px solid var(--line);margin:42px 0}
+.doc table{width:100%;border-collapse:collapse;margin:18px 0 24px;font-size:13.5px;line-height:1.55;display:block;overflow-x:auto;white-space:normal;word-break:break-word}
+.doc thead th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);background:rgba(217,178,95,.07);padding:11px 12px;border-bottom:1px solid var(--line2)}
+.doc td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:#d7d0c4}
+.doc tr:last-child td{border-bottom:0}
+.doc code{font-family:var(--mono);font-size:.88em;color:var(--gold2);background:rgba(217,178,95,.10);padding:2px 6px;border-radius:5px;border:1px solid rgba(217,178,95,.14)}
+.doc a{overflow-wrap:anywhere}
+.doc > p:first-of-type{color:var(--mut);font-size:14px}
+.ft{border-top:1px solid var(--line);background:#060505}
+.ftin{max-width:1180px;margin:0 auto;padding:30px 24px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;color:var(--dim);font-size:11.5px;line-height:1.6}
+.ftin b{color:var(--mut);font-weight:500}
+.ftin .risk{max-width:560px}
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr;padding-top:28px;gap:22px}
+  .toc{position:static;max-height:40vh;overflow:auto;order:1;border:1px solid var(--line);border-radius:18px;padding:18px;background:var(--card);-webkit-overflow-scrolling:touch}
+  .doc{order:2;border-radius:20px}
+  .toc ol{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
+  .topin{padding:14px 18px}
+  nav{gap:12px}
+}
+@media(max-width:560px){
+  .toc ol{grid-template-columns:1fr}
+  .doc{padding:22px 18px}
+  .doc table{white-space:normal}
+  .ftin{display:block}
+}
+@media print{
+  body{background:#fff;color:#111}
+  .top,.toc,.ft{display:none}
+  .wrap{display:block;max-width:none;padding:0}
+  .doc{border:0;box-shadow:none;background:#fff;color:#111;padding:0}
+  .doc h2{border-top-color:#ddd;color:#111}
+  .doc p,.doc li,.doc td{color:#222}
+  .doc a{color:#111;border-bottom:0}
+  .doc thead th{background:#f2f2f2;color:#111}
+  .doc table{white-space:normal}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin">
+  <a class="brand" href="https://www.alphamoves.pl">₿ ALPHA<b>MOVES</b></a>
+  <nav>
+    <a href="https://www.alphamoves.pl">Strona główna</a>
+    <a href="/regulamin">Regulamin</a>
+    <a href="/polityka-prywatnosci">Polityka prywatności</a>
+    <a href="mailto:kontakt@alphamoves.pl">Kontakt</a>
+  </nav>
+</div></header>
+<main class="wrap">
+  <aside class="toc" aria-label="Spis treści">
+    <div class="toc-title">Na tej stronie</div>
+    <ol><li><a href="#1-administrator-danych-osobowych">1. Administrator danych osobowych</a></li>
+<li><a href="#2-zakres-tej-polityki">2. Zakres tej Polityki</a></li>
+<li><a href="#3-jakie-dane-przetwarzamy-i-skad-je-otrzymujemy">3. Jakie dane przetwarzamy i skąd je otrzymujemy</a></li>
+<li><a href="#4-cele-i-podstawy-prawne-przetwarzania">4. Cele i podstawy prawne przetwarzania</a></li>
+<li><a href="#5-poufnosc-dziennika-i-dostep-zespolu">5. Poufność dziennika i dostęp zespołu</a></li>
+<li><a href="#6-odbiorcy-danych">6. Odbiorcy danych</a></li>
+<li><a href="#7-przekazywanie-danych-poza-eog">7. Przekazywanie danych poza EOG</a></li>
+<li><a href="#8-okres-przechowywania-danych">8. Okres przechowywania danych</a></li>
+<li><a href="#9-twoje-prawa">9. Twoje prawa</a></li>
+<li><a href="#10-pliki-cookies-i-pamiec-przegladarki">10. Pliki cookies i pamięć przeglądarki</a></li>
+<li><a href="#11-analityka-marketing-i-media-spolecznosciowe">11. Analityka, marketing i media społecznościowe</a></li>
+<li><a href="#12-bezpieczenstwo-danych">12. Bezpieczeństwo danych</a></li>
+<li><a href="#13-automatyczne-analizy-mentor-i-ai">13. Automatyczne analizy, mentor i AI</a></li>
+<li><a href="#14-dzieci">14. Dzieci</a></li>
+<li><a href="#15-zmiany-polityki">15. Zmiany Polityki</a></li>
+<li><a href="#16-kontakt-i-skarga">16. Kontakt i skarga</a></li></ol>
+  </aside>
+  <article class="doc">
+<h1>Polityka prywatności i plików cookies</h1>
+<p><strong>Alpha Moves</strong> · <a href="http://alphamoves.pl">alphamoves.pl</a> · <a href="http://alphanews.pl">alphanews.pl</a> · Alpha Vault</p>
+<p><strong>Obowiązuje od:</strong> 12 listopada 2026 r.<br>
+<strong>Wersja:</strong> 1.0</p>
+<h2 id="1-administrator-danych-osobowych">1. Administrator danych osobowych</h2>
+<p>Administratorem Twoich danych osobowych jest <strong>Hubert Rzekieć</strong>, prowadzący jednoosobową działalność gospodarczą pod firmą <strong>Hubert Rzekieć Business Corporation</strong>, z siedzibą pod adresem: <strong>ul. Kazimierza Jagiellończyka 13 lok. 19, 39-300 Mielec</strong>, NIP: <strong>8652572005</strong>, REGON: <strong>384033683</strong>, e-mail: <strong><a href="mailto:kontakt@alphamoves.pl">kontakt@alphamoves.pl</a></strong> (dalej: „Administrator”, „my”).</p>
+<p>W sprawach dotyczących ochrony danych osobowych napisz na <strong><a href="mailto:kontakt@alphamoves.pl">kontakt@alphamoves.pl</a></strong> z tematem „RODO” albo wyślij pismo na adres siedziby. Korespondencję w sprawach danych osobowych prowadzi bezpośrednio Administrator.</p>
+<h2 id="2-zakres-tej-polityki">2. Zakres tej Polityki</h2>
+<p>Ta Polityka opisuje przetwarzanie danych w:</p>
+<ul>
+<li><strong><a href="http://alphamoves.pl">alphamoves.pl</a></strong> – strona oferty Alpha Moves Academy, materiały informacyjne, formularze kontaktowe i linki do zakupu;</li>
+<li><strong><a href="http://alphanews.pl">alphanews.pl</a></strong> – blog, strona kursu „Kurs od zera” i materiały edukacyjne;</li>
+<li><strong><a href="http://alphavault.pl">alphavault.pl</a></strong> – panel <strong>Alpha Vault</strong> (dziennik tradingowy, statystyki, plan dnia, playbook, kalkulator, prop challenge, zestawienie PIT-38, mentor, kalendarz makro, ciało i głowa, integracje);</li>
+<li><strong>koszyku i płatnościach EasyCart</strong> – checkout dostępny pod adresami <strong>cart.easy.tools</strong> i <strong>easl.ink</strong>, obsługiwany przez Easytools sp. z o.o.;</li>
+<li><strong>serwerze Discord Alpha Moves</strong> – społeczność Akademii, kanały wsparcia, konsultacje i wydarzenia;</li>
+<li><strong>platformie kursowej EasyCart</strong> – dostęp do kursu i materiałów wideo.</li>
+</ul>
+<p>Ta Polityka nie obejmuje zasad przetwarzania danych przez Discord, EasyCart, banki, operatorów płatności, giełdy, brokerów ani producentów urządzeń. Korzystając z tych usług, akceptujesz również ich własne polityki prywatności.</p>
+<h2 id="3-jakie-dane-przetwarzamy-i-skad-je-otrzymujemy">3. Jakie dane przetwarzamy i skąd je otrzymujemy</h2>
+<h3 id="3-1-konto-logowanie-i-dostep">3.1. Konto, logowanie i dostęp</h3>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dane z Discorda</td>
+<td>identyfikator użytkownika, nazwa użytkownika, nazwa wyświetlana, adres URL avatara, informacja o członkostwie i rolach na serwerze Alpha Moves</td>
+<td>Discord OAuth2, zakresy <code>identify</code> i <code>guilds.members.read</code></td>
+</tr>
+<tr>
+<td>Dane konta w panelu</td>
+<td>imię lub nazwa, adres e-mail (jeżeli go podasz), avatar, plan, data dostępu, ustawienia profilu</td>
+<td>Ty, panel Alpha Vault</td>
+</tr>
+<tr>
+<td>Dane subskrypcji</td>
+<td>plan, początek i koniec dostępu, status weryfikacji roli</td>
+<td>panel, Discord, EasyCart</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ważne:</strong> logowanie przez Discord nie przekazuje nam Twojego adresu e-mail, numeru telefonu ani dostępu do wiadomości prywatnych. Otrzymujemy wyłącznie dane profilu publicznego oraz informację o członkostwie i rolach na serwerze Alpha Moves. Adres e-mail przetwarzamy, jeżeli podasz go w panelu, w zamówieniu lub w korespondencji.</p>
+<h3 id="3-2-zamowienia-platnosci-i-faktury">3.2. Zamówienia, płatności i faktury</h3>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dane identyfikacyjne</td>
+<td>imię i nazwisko, nazwa firmy, adres rozliczeniowy, kraj</td>
+<td>Ty, formularz EasyCart</td>
+</tr>
+<tr>
+<td>Dane kontaktowe</td>
+<td>adres e-mail, numer telefonu (jeżeli podasz)</td>
+<td>Ty, formularz EasyCart</td>
+</tr>
+<tr>
+<td>Dane podatkowe</td>
+<td>NIP, dane do faktury VAT</td>
+<td>Ty, formularz EasyCart</td>
+</tr>
+<tr>
+<td>Dane zamówienia</td>
+<td>produkt, wariant, kwota, waluta, data, status, kod rabatowy, identyfikator transakcji</td>
+<td>EasyCart, operator płatności</td>
+</tr>
+<tr>
+<td>Dane płatności</td>
+<td>metoda płatności, status autoryzacji, identyfikator transakcji</td>
+<td>operator płatności</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nie przechowujemy pełnego numeru karty, kodu CVV ani danych logowania do bankowości.</strong> Dane karty przetwarza wyłącznie operator płatności.</p>
+<h3 id="3-3-akademia-kurs-i-spolecznosc">3.3. Akademia, kurs i społeczność</h3>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dane członkostwa</td>
+<td>plan, data rozpoczęcia i końca dostępu, status członkostwa</td>
+<td>EasyCart, panel, Discord</td>
+</tr>
+<tr>
+<td>Postępy w kursie</td>
+<td>ukończone moduły, materiały, postęp</td>
+<td>platforma kursowa EasyCart</td>
+</tr>
+<tr>
+<td>Konsultacje</td>
+<td>termin, temat, osoba prowadząca, notatki ze spotkania</td>
+<td>Ty, panel, Discord</td>
+</tr>
+<tr>
+<td>Komunikacja</td>
+<td>zgłoszenia, tickety, wiadomości na Discordzie, e-maile</td>
+<td>Ty, Discord, e-mail</td>
+</tr>
+<tr>
+<td>Treści społeczności</td>
+<td>posty, komentarze, nagrania lub zrzuty udostępnione na kanałach</td>
+<td>Ty, Discord</td>
+</tr>
+</tbody>
+</table>
+<p>Wiadomości, które sam(a) opublikujesz na serwerze Alpha Moves, są widoczne dla zespołu i członków społeczności zgodnie z ustawieniami kanału. Nie otrzymujemy dostępu do Twoich prywatnych wiadomości ani do serwerów, na których nie jesteśmy.</p>
+<h3 id="3-4-alpha-vault-dziennik-i-dane-tradingowe">3.4. Alpha Vault – dziennik i dane tradingowe</h3>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Profil</td>
+<td>imię lub nazwa, e-mail, avatar, waluta, cel, motto</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Transakcje</td>
+<td>instrument, kierunek, data wejścia i wyjścia, cena, wielkość, dźwignia, wynik, opłaty, czas trwania</td>
+<td>Ty, import CSV, ręczne wpisy</td>
+</tr>
+<tr>
+<td>Plan dnia</td>
+<td>rynek, bias, poziomy, scenariusze, limity, godziny, „czego dziś nie robię”</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Dziennik jakości</td>
+<td>ocena A/B/C, checklisty, błędy, emocje, notatki, screeny wykresów</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Playbook</td>
+<td>setupy, zasady, statystyki, przykłady</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Konta i kapitał</td>
+<td>nazwy kont, salda, wpłaty, wypłaty, waluty</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Prop challenge</td>
+<td>firma, regulamin, cel, limity, daty, status</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Podatki PIT-38</td>
+<td>przychody, koszty, nadwyżka, wpłaty i wypłaty</td>
+<td>Ty, panel, import</td>
+</tr>
+<tr>
+<td>Mentor</td>
+<td>wiadomości, analizy, rekomendacje edukacyjne</td>
+<td>panel, reguły aplikacji</td>
+</tr>
+<tr>
+<td>Ustawienia</td>
+<td>strefa czasowa, godziny, wygląd, preferencje, zasady</td>
+<td>Ty, panel</td>
+</tr>
+</tbody>
+</table>
+<p>Screeny wykresów mogą zawierać Twój nick, numer konta, nazwę brokera lub inne dane. Zamaż wrażliwe elementy przed dodaniem obrazu do dziennika.</p>
+<h3 id="3-5-dane-o-zdrowiu-i-samopoczuciu">3.5. Dane o zdrowiu i samopoczuciu</h3>
+<p>Jeżeli korzystasz z sekcji <strong>„Ciało i głowa”</strong> albo podłączysz urządzenie, przetwarzamy: sen, HRV, tętno spoczynkowe, Body Battery, wskaźniki regeneracji, energię, nastrój, notatki z check-inu oraz daty synchronizacji. Dane pochodzą z Twoich wpisów albo z podłączonych urządzeń: <strong>Oura</strong>, <strong>Whoop</strong>, <strong>Apple Watch / Apple Health</strong> i <strong>Garmin</strong> (po zatwierdzeniu dostępu po stronie producenta). Dane o zdrowiu są danymi szczególnej kategorii i przetwarzamy je wyłącznie na podstawie Twojej <strong>wyraźnej zgody</strong> (art. 9 ust. 2 lit. a RODO), wyrażanej przez połączenie urządzenia lub zapis check-inu.</p>
+<p>Podanie tych danych jest dobrowolne. Tokeny dostępu do urządzeń przechowujemy w postaci zaszyfrowanej. Możesz odłączyć urządzenie w panelu – usuwamy wtedy tokeny i metryki zdrowotne zapisane dla tego producenta. Możesz też usunąć wpisy check-inu lub całe konto. Wycofanie zgody nie wpływa na zgodność z prawem przetwarzania, które odbyło się przed jej wycofaniem. Dane o zdrowiu nie są udostępniane trenerom, mentorom ani społeczności. Nie diagnozujemy i nie leczymy; Alpha Vault nie jest wyrobem medycznym.</p>
+<h3 id="3-6-integracje-z-gieldami-brokerami-i-urzadzeniami">3.6. Integracje z giełdami, brokerami i urządzeniami</h3>
+<h4>Giełdy i MetaTrader</h4>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Połączenie z giełdą</td>
+<td>nazwa giełdy, etykieta konta, identyfikator konta, zamaskowany klucz API (np. <code>okx_••••3456</code>), uprawnienia, status, data ostatniej synchronizacji, liczba zaimportowanych transakcji</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>Poświadczenia giełdy</td>
+<td>klucz API, secret, passphrase – w formie zaszyfrowanej AES-256-GCM po stronie serwera</td>
+<td>Ty, panel</td>
+</tr>
+<tr>
+<td>MetaTrader przez MetaApi</td>
+<td>platforma (MT4/MT5), serwer, login, identyfikator konta w MetaApi, region, status, data synchronizacji</td>
+<td>Ty, panel, MetaApi</td>
+</tr>
+<tr>
+<td>MetaTrader przez EA</td>
+<td>kod parowania (hash), platforma, identyfikator konta, data połączenia</td>
+<td>Ty, EA</td>
+</tr>
+<tr>
+<td>Transakcje z importu</td>
+<td>instrument, kierunek, wejście, wyjście, wielkość, wynik, opłaty, czas trwania, identyfikator zewnętrzny</td>
+<td>giełda, MetaApi, EA, CSV</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Poświadczenia giełd i MetaApi są szyfrowane po stronie serwera kluczem <code>INTEGRATIONS_KEY</code> (AES-256-GCM) i nigdy nie wracają do przeglądarki.</strong> Panel pokazuje wyłącznie zamaskowany klucz i status. Hasło inwestora MetaTrader jest przekazywane wyłącznie do MetaApi w celu utworzenia połączenia; Alpha Vault go nie przechowuje. Automatyczna synchronizacja jest uruchamiana przez LH Cron co 5 minut z blokadą 25 minut; ręcznie przez <code>bin/sync-exchange-trades.php</code>.</p>
+<h4>Urządzenia zdrowotne</h4>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Połączenie z urządzeniem</td>
+<td>producent (Oura, Whoop, Apple, Garmin), identyfikator użytkownika u producenta, zakresy OAuth, status, data zgody, data ostatniej synchronizacji</td>
+<td>Ty, panel, producent</td>
+</tr>
+<tr>
+<td>Tokeny urządzenia</td>
+<td>access token, refresh token, daty wygaśnięcia – w formie zaszyfrowanej</td>
+<td>producent</td>
+</tr>
+<tr>
+<td>Metryki dzienne</td>
+<td>sen, HRV, tętno spoczynkowe, Body Battery, wskaźnik producenta, surowa odpowiedź API</td>
+<td>producent, panel</td>
+</tr>
+<tr>
+<td>Apple Watch</td>
+<td>token urządzenia (hash), nazwa urządzenia, metryki przesyłane przez aplikację iPhone</td>
+<td>Ty, aplikacja Alpha Vault na iPhone</td>
+</tr>
+</tbody>
+</table>
+<p>Odłączenie urządzenia usuwa tokeny, metryki i kody parowania dla tego producenta. Szczegóły dotyczące zgody i usuwania danych opisuje sekcja 3.5.</p>
+<h3 id="3-7-dane-techniczne-i-bezpieczenstwa">3.7. Dane techniczne i bezpieczeństwa</h3>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Przykłady</th>
+<th>Źródło</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dane urządzenia</td>
+<td>adres IP, typ urządzenia, system operacyjny, przeglądarka, język</td>
+<td>automatycznie</td>
+</tr>
+<tr>
+<td>Dane sesji</td>
+<td>identyfikator sesji (hash), data logowania, ostatnia aktywność, wygaśnięcie</td>
+<td>automatycznie</td>
+</tr>
+<tr>
+<td>Logi bezpieczeństwa</td>
+<td>zdarzenia logowania, nieudane próby, zapisy stanu, usunięcie konta, adres IP, user agent</td>
+<td>automatycznie</td>
+</tr>
+<tr>
+<td>Cookies i pamięć</td>
+<td><code>av_session</code>, <code>av_oauth</code>, wpisy <code>localStorage</code></td>
+<td>automatycznie</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-8-korespondencja-i-reklamacje">3.8. Korespondencja i reklamacje</h3>
+<p>Przetwarzamy imię i nazwisko, adres e-mail, treść wiadomości, załączniki, numer zamówienia oraz historię korespondencji, jeżeli kontaktujesz się z nami w sprawie wsparcia, reklamacji, zwrotu lub pytań o ofertę.</p>
+<h2 id="4-cele-i-podstawy-prawne-przetwarzania">4. Cele i podstawy prawne przetwarzania</h2>
+<table>
+<thead>
+<tr>
+<th>Cel</th>
+<th>Podstawa prawna</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Utworzenie i obsługa konta, logowanie przez Discord, dostęp do Alpha Vault</td>
+<td>art. 6 ust. 1 lit. b RODO – wykonanie umowy</td>
+</tr>
+<tr>
+<td>Świadczenie Akademii, kursu, konsultacji i wsparcia</td>
+<td>art. 6 ust. 1 lit. b RODO – wykonanie umowy</td>
+</tr>
+<tr>
+<td>Przyjęcie i realizacja zamówienia, obsługa płatności, dostęp do treści</td>
+<td>art. 6 ust. 1 lit. b RODO – wykonanie umowy</td>
+</tr>
+<tr>
+<td>Synchronizacja transakcji z giełd i MetaTradera oraz metryk z urządzeń</td>
+<td>art. 6 ust. 1 lit. b RODO – wykonanie umowy; dane zdrowotne – art. 9 ust. 2 lit. a RODO</td>
+</tr>
+<tr>
+<td>Wystawianie faktur, rozliczenia podatkowe i rachunkowe</td>
+<td>art. 6 ust. 1 lit. c RODO – obowiązek prawny</td>
+</tr>
+<tr>
+<td>Obsługa reklamacji, zwrotów, dochodzenie i obrona roszczeń</td>
+<td>art. 6 ust. 1 lit. f RODO – prawnie uzasadniony interes</td>
+</tr>
+<tr>
+<td>Bezpieczeństwo usług, zapobieganie nadużyciom, logi, kopie zapasowe</td>
+<td>art. 6 ust. 1 lit. f RODO – prawnie uzasadniony interes</td>
+</tr>
+<tr>
+<td>Kontakt w sprawach oferty i wsparcia</td>
+<td>art. 6 ust. 1 lit. b lub f RODO</td>
+</tr>
+<tr>
+<td>Dane o zdrowiu i samopoczuciu</td>
+<td>art. 9 ust. 2 lit. a RODO – wyraźna zgoda</td>
+</tr>
+<tr>
+<td>Marketing bezpośredni, jeżeli zostanie uruchomiony</td>
+<td>art. 6 ust. 1 lit. a RODO – zgoda</td>
+</tr>
+<tr>
+<td>Statystyki i analityka, jeżeli zostaną uruchomione</td>
+<td>art. 6 ust. 1 lit. f RODO lub zgoda, jeżeli jest wymagana</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nie sprzedajemy danych osobowych.</strong> Nie wykorzystujemy danych z dziennika, transakcji, emocji ani zdrowia do reklam. Nie podejmujemy wobec Ciebie decyzji wywołujących skutki prawne wyłącznie w sposób automatyczny.</p>
+<h2 id="5-poufnosc-dziennika-i-dostep-zespolu">5. Poufność dziennika i dostęp zespołu</h2>
+<p>Twoje transakcje, notatki, emocje, screeny i dane o zdrowiu są prywatne. Zespół Alpha Moves, w tym trenerzy i mentorzy Akademii, nie ma do nich wglądu. Dostęp techniczny jest ograniczony do niezbędnego minimum i możliwy wyłącznie:</p>
+<ul>
+<li>na Twoje zgłoszenie (np. przy reklamacji lub problemie technicznym),</li>
+<li>gdy wymaga tego prawo,</li>
+<li>w ramach bezpieczeństwa i utrzymania systemu, z zachowaniem poufności.</li>
+</ul>
+<p>Jeżeli sam(a) udostępnisz transakcję do omówienia na konsultacji lub na Discordzie, zobaczy ją osoba wskazana albo społeczność – zgodnie z miejscem publikacji. Nie umieszczaj na kanałach publicznych danych, których nie chcesz ujawnić.</p>
+<h2 id="6-odbiorcy-danych">6. Odbiorcy danych</h2>
+<p>Dane przekazujemy wyłącznie podmiotom, które są niezbędne do świadczenia usług, oraz organom publicznym, gdy wymaga tego prawo.</p>
+<table>
+<thead>
+<tr>
+<th>Odbiorca</th>
+<th>Rola</th>
+<th>Zakres</th>
+<th>Lokalizacja</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><a href="http://LH.pl">LH.pl</a></strong></td>
+<td>hosting stron, poczta e-mail</td>
+<td>dane techniczne, korespondencja, zawartość stron</td>
+<td>Polska / EOG</td>
+</tr>
+<tr>
+<td><strong>Easytools sp. z o.o.</strong> (EasyCart), al. Rzeczypospolitej 10/46, 02-972 Warszawa, KRS 0001002028, NIP 9512554309</td>
+<td>koszyk, płatności, platforma kursowa, e-maile transakcyjne, obsługa danych do faktur</td>
+<td>dane zamówienia, kontakt, płatności, postęp kursu</td>
+<td>Polska / EOG</td>
+</tr>
+<tr>
+<td><strong>Operatorzy płatności</strong>: Stripe, Przelewy24, Tpay, operatorzy BLIK</td>
+<td>autoryzacja i rozliczenie płatności</td>
+<td>dane transakcji, metoda płatności</td>
+<td>EOG / USA</td>
+</tr>
+<tr>
+<td><strong>Discord Inc.</strong></td>
+<td>logowanie OAuth2, społeczność Akademii</td>
+<td>identyfikator, nazwa, avatar, członkostwo i rola, treści publikowane</td>
+<td>USA</td>
+</tr>
+<tr>
+<td><strong>MetaApi (Agilium Trade)</strong></td>
+<td>chmura MetaTrader 4/5</td>
+<td>platforma, serwer, login, hasło inwestora przekazywane do MetaApi, identyfikator konta, transakcje</td>
+<td>USA / EOG</td>
+</tr>
+<tr>
+<td><strong>Oura Health Oy</strong></td>
+<td>Oura Ring</td>
+<td>identyfikator użytkownika, tokeny OAuth, sen, HRV, gotowość</td>
+<td>Finlandia / EOG</td>
+</tr>
+<tr>
+<td><strong>Whoop, Inc.</strong></td>
+<td>Whoop</td>
+<td>identyfikator użytkownika, tokeny OAuth, regeneracja, sen</td>
+<td>USA</td>
+</tr>
+<tr>
+<td><strong>Garmin Ltd. / Garmin International</strong></td>
+<td>Garmin Connect</td>
+<td>identyfikator użytkownika, tokeny OAuth, sen, HRV, Body Battery</td>
+<td>Szwajcaria / USA</td>
+</tr>
+<tr>
+<td><strong>Apple Inc.</strong></td>
+<td>Apple Watch / Apple Health</td>
+<td>token urządzenia, metryki zdrowotne przesłane z aplikacji iPhone</td>
+<td>USA</td>
+</tr>
+<tr>
+<td><strong>Google Ireland Limited / Google LLC</strong></td>
+<td>Google Fonts, Google Pay</td>
+<td>adres IP, dane przeglądarki, dane płatności (przy Google Pay)</td>
+<td>EOG / USA</td>
+</tr>
+<tr>
+<td><strong>Cloudflare, Inc.</strong></td>
+<td>CDN (cdnjs), ochrona Turnstile w koszyku</td>
+<td>adres IP, dane przeglądarki, dane techniczne</td>
+<td>EOG / USA</td>
+</tr>
+<tr>
+<td><strong>Biuro rachunkowe</strong></td>
+<td>księgowość, faktury, podatki</td>
+<td>dane rozliczeniowe</td>
+<td>EOG</td>
+</tr>
+<tr>
+<td><strong>Obsługa IT i doradcy prawni</strong></td>
+<td>utrzymanie systemu, obsługa prawna</td>
+<td>dane w zakresie niezbędnym</td>
+<td>EOG</td>
+</tr>
+<tr>
+<td><strong>Organy publiczne</strong></td>
+<td>obowiązki prawne, postępowania</td>
+<td>dane w zakresie wymaganym przepisami</td>
+<td>EOG</td>
+</tr>
+</tbody>
+</table>
+<p>Wszystkie podmioty przetwarzające dane na nasze zlecenie działają na podstawie umów powierzenia lub innych podstaw wymaganych przez RODO. EasyCart w zakresie własnych usług (konto, bezpieczeństwo, analityka, obsługa płatności) może być odrębnym administratorem – zapoznaj się z polityką prywatności Easytools.</p>
+<h2 id="7-przekazywanie-danych-poza-eog">7. Przekazywanie danych poza EOG</h2>
+<p>Część dostawców ma siedzibę w USA lub przetwarza dane poza Europejskim Obszarem Gospodarczym, w szczególności Discord, MetaApi, Whoop, Garmin, Apple, Google, Cloudflare i operatorzy płatności. W takich przypadkach stosujemy odpowiednie zabezpieczenia wymagane przez RODO:</p>
+<ul>
+<li>decyzję Komisji Europejskiej stwierdzającą odpowiedni poziom ochrony (EU-US Data Privacy Framework), jeżeli dostawca jest certyfikowany;</li>
+<li>standardowe klauzule umowne zatwierdzone przez Komisję Europejską;</li>
+<li>dodatkowe środki techniczne i organizacyjne, jeżeli są potrzebne.</li>
+</ul>
+<p>Kopię stosowanych zabezpieczeń udostępniamy na żądanie. W zakresie, w którym EasyCart działa jako odrębny administrator, przekazywanie danych opisuje polityka Easytools.</p>
+<h2 id="8-okres-przechowywania-danych">8. Okres przechowywania danych</h2>
+<table>
+<thead>
+<tr>
+<th>Kategoria</th>
+<th>Okres przechowywania</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Konto, profil i dziennik Alpha Vault</td>
+<td>do usunięcia konta. Po usunięciu konta usuwamy sesje i stan dziennika. Wpisy audytowe pozostają bez powiązania z kontem (<code>user_id = NULL</code>) przez okres do 12 miesięcy</td>
+</tr>
+<tr>
+<td>Połączenia z giełdami i MetaTraderem</td>
+<td>do odłączenia połączenia lub usunięcia konta. Po odłączeniu usuwamy poświadczenia i wpisy synchronizacji; transakcje pozostają w dzienniku</td>
+</tr>
+<tr>
+<td>Połączenia z urządzeniami zdrowotnymi</td>
+<td>do odłączenia urządzenia lub usunięcia konta. Po odłączeniu usuwamy tokeny, metryki i kody parowania</td>
+</tr>
+<tr>
+<td>Zamówienia, płatności i faktury</td>
+<td>5 lat od końca roku podatkowego, w którym wystawiono fakturę, zgodnie z przepisami podatkowymi i rachunkowymi</td>
+</tr>
+<tr>
+<td>Kurs i dostęp do materiałów</td>
+<td>przez okres dostępu oraz okres przedawnienia roszczeń. Dane zakupu i faktury – 5 lat</td>
+</tr>
+<tr>
+<td>Reklamacje i roszczenia</td>
+<td>do zakończenia sprawy, a następnie przez okres przedawnienia roszczeń (co do zasady 3 lub 6 lat)</td>
+</tr>
+<tr>
+<td>Dane o zdrowiu</td>
+<td>do wycofania zgody, odłączenia urządzenia, usunięcia wpisów lub usunięcia konta</td>
+</tr>
+<tr>
+<td>Korespondencja e-mail i zgłoszenia</td>
+<td>do zakończenia korespondencji, a następnie do 12 miesięcy na wypadek roszczeń</td>
+</tr>
+<tr>
+<td>Wiadomości i treści na Discordzie</td>
+<td>do ich usunięcia przez Ciebie lub moderatora albo do opuszczenia serwera. Discord przechowuje dane zgodnie z własną polityką</td>
+</tr>
+<tr>
+<td>Logi bezpieczeństwa i sesje</td>
+<td>do 12 miesięcy; sesje wygasają najpóźniej po 30 dniach</td>
+</tr>
+<tr>
+<td>Cookies</td>
+<td>zgodnie z tabelą w sekcji 10</td>
+</tr>
+<tr>
+<td>Kopie zapasowe</td>
+<td>przez okres rotacji kopii, nie dłużej niż 30 dni, chyba że przepisy wymagają dłuższego okresu</td>
+</tr>
+</tbody>
+</table>
+<p>Po upływie okresu przechowywania dane usuwamy lub anonimizujemy w sposób uniemożliwiający identyfikację. Dane mogą pozostać w kopiach zapasowych do czasu zastąpienia ich kolejną kopią.</p>
+<h2 id="9-twoje-prawa">9. Twoje prawa</h2>
+<p>Masz prawo do:</p>
+<ul>
+<li><strong>dostępu</strong> do swoich danych i informacji o ich przetwarzaniu;</li>
+<li><strong>sprostowania</strong> danych nieprawidłowych lub uzupełnienia niekompletnych;</li>
+<li><strong>usunięcia</strong> danych („prawo do bycia zapomnianym”), gdy nie są już niezbędne;</li>
+<li><strong>ograniczenia</strong> przetwarzania w przypadkach z art. 18 RODO;</li>
+<li><strong>przenoszenia</strong> danych w ustrukturyzowanym, powszechnie używanym formacie;</li>
+<li><strong>sprzeciwu</strong> wobec przetwarzania opartego na prawnie uzasadnionym interesie;</li>
+<li><strong>wycofania zgody</strong> w dowolnym momencie, bez wpływu na zgodność z prawem wcześniejszego przetwarzania;</li>
+<li><strong>skargi</strong> do Prezesa Urzędu Ochrony Danych Osobowych, ul. Stawki 2, 00-193 Warszawa, <a href="http://www.uodo.gov.pl">www.uodo.gov.pl</a>.</li>
+</ul>
+<p>Aby skorzystać z praw, napisz na <strong><a href="mailto:kontakt@alphamoves.pl">kontakt@alphamoves.pl</a></strong> z tematem „RODO” albo wyślij pismo na adres siedziby. Odpowiadamy bez zbędnej zwłoki, nie później niż w ciągu miesiąca od otrzymania żądania. W razie potrzeby termin przedłużamy o dwa miesiące, informując Cię o przyczynie.</p>
+<p><strong>Eksport danych:</strong> w panelu Alpha Vault przejdź do <strong>Konto → Bezpieczeństwo i dane → Pobierz</strong>. Otrzymasz plik JSON z pełnym stanem oraz archiwum ZIP z danymi, transakcjami CSV, zestawieniem podatkowym, planami, screenami i avatarem. Eksport JSON jest dostępny również przez <code>GET /api/me/export</code>.</p>
+<p><strong>Usunięcie konta:</strong> w panelu wybierz <strong>Konto → Bezpieczeństwo i dane → Usuń konto</strong>. Usuwamy konto, sesje i stan dziennika. Faktury, dokumenty księgowe i logi bezpieczeństwa pozostają przez okresy wskazane w sekcji 8. Niektóre prawa mogą być ograniczone, jeżeli obowiązek przechowywania danych wynika z przepisów prawa.</p>
+<h2 id="10-pliki-cookies-i-pamiec-przegladarki">10. Pliki cookies i pamięć przeglądarki</h2>
+<p>Pliki cookies to niewielkie pliki tekstowe zapisywane na Twoim urządzeniu. Używamy ich do utrzymania logowania, bezpieczeństwa sesji i zapamiętania ustawień. Nie stosujemy cookies reklamowych ani pikseli śledzących na <a href="http://alphamoves.pl">alphamoves.pl</a>, <a href="http://alphanews.pl">alphanews.pl</a> ani w Alpha Vault.</p>
+<table>
+<thead>
+<tr>
+<th>Nazwa</th>
+<th>Dostawca</th>
+<th>Cel</th>
+<th>Czas</th>
+<th>Rodzaj</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>av_session</code></td>
+<td>Alpha Vault</td>
+<td>utrzymanie zalogowania</td>
+<td>do 30 dni</td>
+<td>niezbędne</td>
+</tr>
+<tr>
+<td><code>av_oauth</code></td>
+<td>Alpha Vault</td>
+<td>zabezpieczenie logowania OAuth2 (stan)</td>
+<td>10 minut</td>
+<td>niezbędne</td>
+</tr>
+<tr>
+<td>cookies sesji EasyCart</td>
+<td>EasyCart</td>
+<td>koszyk, checkout, bezpieczeństwo</td>
+<td>sesja lub okres wskazany przez EasyCart</td>
+<td>niezbędne</td>
+</tr>
+<tr>
+<td><code>cf_clearance</code>, <code>__cf_bm</code></td>
+<td>Cloudflare / EasyCart</td>
+<td>ochrona przed botami i nadużyciami</td>
+<td>okres wskazany przez Cloudflare</td>
+<td>niezbędne</td>
+</tr>
+<tr>
+<td><code>wp-comment-author</code>, <code>wp-postpass</code></td>
+<td>WordPress / <a href="http://alphanews.pl">alphanews.pl</a></td>
+<td>zapamiętanie danych komentującego</td>
+<td>do 1 roku</td>
+<td>funkcjonalne, tylko przy komentowaniu</td>
+</tr>
+<tr>
+<td><code>wordpress_logged_in</code>, <code>wp-settings</code></td>
+<td>WordPress / <a href="http://alphanews.pl">alphanews.pl</a></td>
+<td>logowanie do panelu administracyjnego</td>
+<td>2 dni, 2 tygodnie lub 1 rok</td>
+<td>niezbędne, tylko dla administratora</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pamięć przeglądarki (localStorage):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Klucz</th>
+<th>Cel</th>
+<th>Czas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>alphavault.state.v2</code></td>
+<td>stan dziennika, ustawienia, transakcje, screeny</td>
+<td>do wyczyszczenia danych przeglądarki</td>
+</tr>
+<tr>
+<td><code>alphavault.session.v2</code></td>
+<td>informacje o sesji lokalnej</td>
+<td>do wyczyszczenia danych przeglądarki</td>
+</tr>
+<tr>
+<td><code>alphavault.wiped.v2</code></td>
+<td>znacznik wyczyszczenia danych</td>
+<td>do wyczyszczenia danych przeglądarki</td>
+</tr>
+<tr>
+<td><code>alphavault.draft.v2</code></td>
+<td>roboczy szkic formularza</td>
+<td>do wyczyszczenia danych przeglądarki</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Google Fonts:</strong> strony ładują czcionki z serwerów Google (<code>fonts.googleapis.com</code>, <code>fonts.gstatic.com</code>). Przeglądarka przekazuje wtedy adres IP, informacje o przeglądarce i adres strony, z której następuje połączenie. Google Ireland Limited / Google LLC przetwarza te dane zgodnie z własną polityką. Google Fonts nie zapisuje cookies na Twoim urządzeniu.</p>
+<p><strong>Zarządzanie cookies:</strong> możesz zmienić ustawienia przeglądarki i usunąć cookies. Zablokowanie <code>av_session</code> i <code>av_oauth</code> uniemożliwi logowanie do Alpha Vault. Cookies niezbędne nie wymagają zgody, ponieważ są konieczne do świadczenia usługi.</p>
+<p><strong>EasyCart:</strong> koszyk i płatności są obsługiwane przez Easytools sp. z o.o. EasyCart może stosować własne cookies niezbędne, analityczne i bezpieczeństwa oraz narzędzia takie jak Cloudflare Turnstile. Zasady EasyCart opisuje polityka prywatności Easytools. Jeżeli EasyCart stosuje narzędzia wymagające zgody, zgoda jest zbierana w koszyku.</p>
+<h2 id="11-analityka-marketing-i-media-spolecznosciowe">11. Analityka, marketing i media społecznościowe</h2>
+<p>Na <a href="http://alphamoves.pl">alphamoves.pl</a>, <a href="http://alphanews.pl">alphanews.pl</a> i w Alpha Vault <strong>nie stosujemy</strong> Google Analytics, Meta Pixel, Hotjar, Plausible ani innych narzędzi analitycznych lub reklamowych. <strong>Nie prowadzimy newslettera</strong> i nie wysyłamy masowych wiadomości marketingowych. Wiadomości e-mail związane z zamówieniem, dostępem, fakturą lub wsparciem mają charakter transakcyjny.</p>
+<p>Jeżeli w przyszłości uruchomimy newsletter, analitykę lub reklamy, zaktualizujemy tę Politykę i poprosimy Cię o zgodę przed uruchomieniem narzędzi, które jej wymagają. Nie wykorzystamy do marketingu danych z dziennika, transakcji, emocji ani zdrowia.</p>
+<p>Strony zawierają linki do Discorda, EasyCart, Google Fonts, MetaApi, Oura, Whoop, Garmin, Apple i materiałów zewnętrznych. Po przejściu do tych serwisów obowiązują ich własne zasady prywatności.</p>
+<h2 id="12-bezpieczenstwo-danych">12. Bezpieczeństwo danych</h2>
+<p>Stosujemy środki techniczne i organizacyjne odpowiednie do ryzyka, w szczególności:</p>
+<ul>
+<li>szyfrowanie transmisji TLS i nagłówek HSTS;</li>
+<li>cookies sesyjne <code>HttpOnly</code>, <code>SameSite=Lax</code> i <code>Secure</code> w połączeniu HTTPS;</li>
+<li>przechowywanie wyłącznie skrótu SHA-256 tokena sesji;</li>
+<li>weryfikację roli Alpha na serwerze Discord;</li>
+<li>ograniczenie liczby prób logowania i zapisów stanu (rate limiting);</li>
+<li>kontrolę dostępu do bazy i panelu;</li>
+<li>logi audytowe zdarzeń bezpieczeństwa;</li>
+<li>szyfrowanie poświadczeń giełd i tokenów urządzeń algorytmem AES-256-GCM z kluczem <code>INTEGRATIONS_KEY</code>, który nie opuszcza serwera;</li>
+<li>przekazywanie hasła inwestora MetaTrader wyłącznie do MetaApi; Alpha Vault nie przechowuje tego hasła;</li>
+<li>weryfikację uprawnień kluczy tam, gdzie API to udostępnia (OKX i BingX); WEEX wymaga klucza z działającym odczytem konta;</li>
+<li>minimalizację danych i brak zwracania pełnych poświadczeń do przeglądarki;</li>
+<li>kopie zapasowe bazy danych i okresową weryfikację odtworzenia.</li>
+</ul>
+<p>Nie przechowujemy pełnych danych karty ani haseł do bankowości. Mimo zabezpieczeń żaden system nie jest w 100% odporny na incydenty. Jeżeli zauważysz podejrzaną aktywność, natychmiast zmień hasło do Discorda, włącz weryfikację dwuetapową i napisz na <strong><a href="mailto:kontakt@alphamoves.pl">kontakt@alphamoves.pl</a></strong>.</p>
+<h2 id="13-automatyczne-analizy-mentor-i-ai">13. Automatyczne analizy, mentor i AI</h2>
+<p>Mentor w Alpha Vault działa na <strong>regułach aplikacji</strong> i danych zapisanych w panelu. Nie wysyłamy Twoich danych do zewnętrznego modelu językowego (OpenAI, Anthropic ani innego dostawcy AI). Mentor nie podejmuje decyzji wywołujących skutki prawne, nie zawiera umów i nie wykonuje transakcji.</p>
+<p>Gotowość do tradingu, ocena jakości, koszt błędów, statystyki i wiadomości mentora są obliczane automatycznie na podstawie Twoich danych. Służą wyłącznie Tobie i nie są udostępniane innym członkom społeczności. Możesz edytować lub usunąć dane, na których opierają się te analizy.</p>
+<p>Jeżeli w przyszłości podłączymy zewnętrzny model AI, zaktualizujemy tę Politykę, wskażemy dostawcę i zakres danych oraz poprosimy o zgodę, jeżeli będzie wymagana.</p>
+<h2 id="14-dzieci">14. Dzieci</h2>
+<p>Usługi Alpha Moves są przeznaczone dla osób, które ukończyły <strong>18 lat</strong>. Nie kierujemy oferty do dzieci i nie zbieramy świadomie danych osób poniżej 18 roku życia. Jeżeli dowiemy się, że takie dane trafiły do nas, usuniemy je. Rodzic lub opiekun może zgłosić taką sytuację na <strong><a href="mailto:kontakt@alphamoves.pl">kontakt@alphamoves.pl</a></strong>.</p>
+<h2 id="15-zmiany-polityki">15. Zmiany Polityki</h2>
+<p>Aktualna wersja jest publikowana na <strong><a href="http://alphamoves.pl/polityka-prywatnosci">alphamoves.pl/polityka-prywatnosci</a></strong>, <strong><a href="http://alphavault.pl/polityka-prywatnosci">alphavault.pl/polityka-prywatnosci</a></strong> oraz <strong><a href="http://alphanews.pl/polityka-prywatnosci-2">alphanews.pl/polityka-prywatnosci-2</a></strong>. O istotnych zmianach informujemy w panelu, e-mailem lub na Discordzie z wyprzedzeniem co najmniej 14 dni, jeżeli zmiana tego wymaga. Poprzednie wersje udostępniamy na żądanie.</p>
+<p>Zmiany nie wpływają na zgodność z prawem przetwarzania dokonanego przed ich wejściem w życie. Jeżeli nie akceptujesz nowej wersji, możesz usunąć konto przed jej wejściem w życie.</p>
+<h2 id="16-kontakt-i-skarga">16. Kontakt i skarga</h2>
+<p><strong>Administrator:</strong> Hubert Rzekieć Business Corporation<br>
+<strong>Adres:</strong> ul. Kazimierza Jagiellończyka 13 lok. 19, 39-300 Mielec<br>
+<strong>NIP:</strong> 8652572005 · <strong>REGON:</strong> 384033683<br>
+<strong>E-mail:</strong> <a href="mailto:kontakt@alphamoves.pl">kontakt@alphamoves.pl</a></p>
+<p>Masz prawo złożyć skargę do <strong>Prezesa Urzędu Ochrony Danych Osobowych</strong>, ul. Stawki 2, 00-193 Warszawa, <a href="http://www.uodo.gov.pl">www.uodo.gov.pl</a>. Możesz też skontaktować się z nami – staramy się rozwiązać sprawę bezpośrednio.</p>
+<hr>
+<p><strong>Alpha Moves</strong> · Inwestowanie i trading wiążą się z ryzykiem utraty kapitału. Materiały mają charakter edukacyjny i nie stanowią porady inwestycyjnej ani rekomendacji.</p>
+
+  </article>
+</main>
+<footer class="ft"><div class="ftin">
+  <div><b>Hubert Rzekieć Business Corporation</b><br>ul. Kazimierza Jagiellończyka 13 lok. 19, 39-300 Mielec<br>NIP 8652572005 · REGON 384033683<br>kontakt@alphamoves.pl</div>
+  <div class="risk">Inwestowanie i trading wiążą się z ryzykiem utraty kapitału. Materiały Alpha Moves mają charakter edukacyjny i nie stanowią porady inwestycyjnej ani rekomendacji. © 2026 Alpha Moves.</div>
+</div></footer>
+</body>
+</html>
