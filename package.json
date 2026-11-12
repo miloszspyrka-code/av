@@ -1,0 +1,14 @@
+{
+  "name": "alpha-vault",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Alpha Vault — PHP 8.3 backend, MySQL, Discord OAuth2",
+  "scripts": {
+    "test": "node tests/api.e2e.mjs",
+    "test:ui": "node tests/ui.e2e.mjs",
+    "test:all": "node tests/api.e2e.mjs && node tests/ui.e2e.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.57.0"
+  }
+}

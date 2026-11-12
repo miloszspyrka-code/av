@@ -1,0 +1,261 @@
+# Funkcje aplikacji
+
+Aplikacja zachowuje dotychczasowy UI (ciemny motyw Alpha, wszystkie widoki i modale). Poniżej stan faktyczny: co działa end-to-end, co jest symulacją, a co wymaga przyszłej integracji.
+
+Legenda:
+- ✅ **E2E** — działa w UI, zapisuje się przez API do MySQL, odtwarza po odświeżeniu.
+- 🟡 **Lokalnie** — działa w przeglądarce, ale bez zewnętrznego dostawcy (np. Stripe).
+- ⚪ **Demo** — symulacja wizualna, do podłączenia w przyszłości.
+
+---
+
+## 1. Logowanie i konto
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Logowanie Discord OAuth2 | ✅ | `GET /auth/discord` → callback → sesja w MySQL; wymaga danych aplikacji Discord |
+| Weryfikacja roli Alpha | ✅ (opcjonalna) | bot + `DISCORD_GUILD_ID` + `DISCORD_REQUIRED_ROLE_ID` |
+| Logowanie demo | ✅ | `POST /auth/demo`, konto `demo-local`, dane z `db/demo-state.json` |
+| Wylogowanie | ✅ | usuwa sesję z DB i cookie |
+| „Nie wylogowuj mnie” | ✅ | zapis w stanie; cookie 30 dni |
+| Profil (imię, e-mail, avatar) | ✅ | imię i avatar zapisują się w stanie; avatar Discord jest domyślny |
+| Subskrypcja (plan, data) | ✅ | z tabeli `users`; ekran wygasłej subskrypcji |
+| Zmiana planu demo | ✅ | przyciski podglądu; nadpisanie serwerowe po odświeżeniu |
+| Usunięcie konta | ✅ | `DELETE /api/account` (kaskada) |
+| Eksport danych ZIP | ✅ | JSON, CSV transakcji, CSV podatków, plany, screeny, avatar |
+| Eksport JSON przez API | ✅ | `GET /api/me/export` |
+
+> Płatności Stripe nie są podłączone. Modal zakupu jest demonstracyjny i nie pobiera pieniędzy.
+
+---
+
+## 2. Pulpit
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Powitanie z porą dnia | ✅ | ustawienie „Powitanie” |
+| Gotowość do tradingu | ✅ | sen/HRV/tętno + check-in; zmienia się po check-inie |
+| Wynik dnia | ✅ | z transakcji dzisiejszych, przeliczony na walutę wyników |
+| Limity strat/transakcji/ryzyka | ✅ | z planu dnia i ustawień |
+| Plan dnia na pulpicie | ✅ | z zatwierdzonego planu |
+| Makro-widget | ✅ | najbliższe wydarzenia ★★★, odświeżanie |
+| Alarm mentora | ✅ | na podstawie ostatnich transakcji |
+| Krzywa kapitału 30 dni | ✅ | liczona z transakcji |
+| Szybkie przejście do statystyk | ✅ | |
+
+---
+
+## 3. Plan dnia
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Rynek, bias, uzasadnienie | ✅ | zapis do `plans[data]` |
+| Kluczowe poziomy | ✅ | dodawanie/usuwanie, walidacja ceny |
+| Scenariusze główny/awaryjny | ✅ | |
+| Limity (ryzyko, max transakcji, godzina) | ✅ | wpływają na pulpit |
+| „Czego dziś nie robię” | ✅ | |
+| Zatwierdzenie planu | ✅ | timestamp, widoczny na pulpicie |
+| Kopiuj z wczoraj | ✅ | |
+| Dziś/Wczoraj/Historia | ✅ | historia planów, podgląd |
+| Trzymanie się planu | ✅ | 5 dni wstecz |
+
+---
+
+## 4. Dziennik transakcji
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Lista 47 transakcji demo | ✅ | z MySQL |
+| Filtry: wszystkie/zyskowne/stratne/otwarte | ✅ | |
+| Filtr oceny A/B/C | ✅ | |
+| Szukanie po parze/emocji/setupie | ✅ | |
+| Szczegóły transakcji | ✅ | wykres, MAE/MFE, checklist, notatka, mentor |
+| Screeny przed/po | ✅ | upload, drag&drop, Ctrl+V; JPEG w stanie |
+| Dodanie transakcji | ✅ | ręcznie, walidacja kierunku SL/TP, screenshoty |
+| Edycja transakcji | ✅ | formularz wypełniony danymi |
+| Usunięcie transakcji | ✅ | potwierdzenie |
+| Zamknięcie otwartej pozycji | ✅ | cena wyjścia lub wynik ręczny, R, czas trwania |
+| Eksport CSV | ✅ | średnik + BOM (Excel PL) |
+| Import CSV z giełdy | ✅ | parser WEEX/OKX/BingX/Bybit/MT, podgląd, deduplikacja |
+| Tryb ochronny (limit strat) | ✅ | blokada, countdown, obejście z powodem |
+| „Wpisuję wcześniejszą transakcję” | ✅ | zapis obejścia w `overrides` |
+
+Import XLS/XLSX nie jest czytany — zapisz jako CSV (komunikat w UI).
+
+---
+
+## 5. Playbook
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Lista setupów | ✅ | 5 setupów demo |
+| Statystyki setupu | ✅ | liczba, skuteczność, średni R, wynik z transakcji |
+| Przykładowy wykres | ✅ | generowany SVG |
+| Dodanie setupu | ✅ | nazwa, interwał, ocena, 3 zasady, „nie graj tego” |
+| Edycja setupu | ✅ | |
+| Przejście do transakcji setupu | ✅ | filtr dziennika |
+
+---
+
+## 6. Kalkulator Alpha
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Krypto (dźwignia, depozyt, wartość) | ✅ | |
+| FX/indeksy/surowce (loty, pipsy) | ✅ | |
+| Long/Short | ✅ | walidacja SL/TP |
+| Szybkie kwoty | ✅ | saldo, dźwignia, ryzyko |
+| Auto SL/TP 1:3 | ✅ | |
+| Reset | ✅ | |
+| Kroki obliczeń | ✅ | |
+
+Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnicze.
+
+---
+
+## 7. Statystyki
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Zakres 7/30/90 dni/wszystko | ✅ | |
+| Wynik, skuteczność, PF, expectancy | ✅ | z transakcji |
+| Max obsunięcie | ✅ | z krzywej kapitału |
+| % ze SL, zgodność z planem, opłaty | ✅ | |
+| Krzywa kapitału | ✅ | SVG z realnych danych |
+| Kalendarz PnL | ✅ | 35 dni |
+| Wynik wg oceny | ✅ | |
+| Checklista a wynik | ✅ | |
+| Koszt błędów | ✅ | |
+| MAE/MFE | ✅ | punkty z transakcji |
+| Sesje/emocje/czas trzymania | ✅ | |
+
+---
+
+## 8. Mentor AI
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| 5 tematów rozmowy | ✅ | gotowe odpowiedzi (bez API LLM) |
+| Forma żeńska/męska | ✅ | |
+| Uwagi mentora | ✅ | generowane z danych (limit strat, odgrywanie, MFE, ocena A, sesja) |
+| Analiza rynku | ✅ | najbliższe ★★★, instrument, ryzyko tygodnia |
+| Raport tygodnia | ✅ | z ostatnich 7 dni |
+| Odświeżenie analizy | ✅ | |
+| Proaktywna wiadomość przy limicie strat | ✅ | po zalogowaniu |
+
+Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłączenie LLM to przyszły krok.
+
+---
+
+## 9. Akademia
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Live dziś 20:00 + countdown | ✅ | strefa Warsaw |
+| Dołącz / przypomnienie | ✅ | modal, powiadomienie przeglądarki (jeśli pozwolono) |
+| Konsultacje 1:1 | ✅ | rezerwacja lokalna, zapis w stanie |
+| Harmonogram live'ów | ✅ | |
+| Nagrania | 🟡 | karta i modal demo; brak player'a |
+| Materiały / postęp kursu | ✅ | postęp w stanie |
+| Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
+
+---
+
+## 10. Podatki PIT-38
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Przychód/koszty/nadwyżka/podatek 19% | ✅ | z wpłat i wypłat |
+| Zdarzenia podatkowe | ✅ | tabela |
+| Eksport CSV | ✅ | |
+| „PDF dla księgowej” | 🟡 | otwiera okno wydruku (Zapisz jako PDF); fallback HTML |
+| Wpłaty/wypłaty | ✅ | dodawanie, usuwanie, wpływ na saldo konta |
+| Neutralne podatkowo | ✅ | liczba transakcji futures |
+
+To zestawienie pomocnicze, nie porada podatkowa.
+
+---
+
+## 11. Kalendarz makro
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Ten/następny tydzień | ✅ | |
+| Filtr ★★ | ✅ | |
+| Statusy (zakończone/dziś/za X min) | ✅ | odświeżanie |
+| Następne ważne | ✅ | |
+| Twoje dane w dni makro | ✅ | z transakcji |
+| Powiadomienia 30 min | ✅ | toast + Notification API, jeśli pozwolono |
+| Widget MAKRO | ✅ | |
+
+---
+
+## 12. Ciało i głowa
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Urządzenia Garmin/Apple/Oura/Whoop | 🟡 | połączenie/odłączenie w UI, dane demo |
+| Gotowość | ✅ | check-in + dane zdrowia |
+| Check-in (emocja, energia, notatka) | ✅ | zapis, wpływ na pulpit i mentora |
+| Wykres sen → wynik | ✅ | statyczny materiał edukacyjny |
+
+Brak realnej integracji z API producentów zegarków.
+
+---
+
+## 13. Giełdy i API
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| WEEX/OKX/BingX — formularz klucza | 🟡 | walidacja, zapis zamaskowanego klucza |
+| Połączenie/odłączenie | 🟡 | status w UI, `lastSync` |
+| Synchronizuj teraz | 🟡 | aktualizuje czas; nie pobiera transakcji z giełdy |
+| MetaTrader — hasło inwestora | 🟡 | walidacja, zapis loginu/serwera (bez hasła) |
+| Kod parowania EA | ✅ | generowany, kopiowanie, instrukcja TXT |
+| Import CSV | ✅ | prawdziwy parser i zapis transakcji |
+| Import XLS | ⚪ | komunikat „zapisz jako CSV” |
+
+Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera — poza zakresem tego MVP.
+
+---
+
+## 14. Konto i zasady
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Profil (imię, waluta, cel, motto) | ✅ | |
+| Personalizacja (płeć mentora, styl, rynki, akcent, strefa, godziny) | ✅ | |
+| Wyłącznik bezpieczeństwa | ✅ | limit strat, limit dzienny, czas blokady, wymóg powodu |
+| 3 zasady + punkty checklisty | ✅ | własny punkt checklisty |
+| Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |
+| Wpłaty/wypłaty | ✅ | saldo + PIT |
+| Odznaki | ✅ | postęp z danych |
+| Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
+| 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
+| Aplikacja na telefonie | ⚪ | instrukcja PWA; manifest nie jest jeszcze dodany |
+
+---
+
+## 15. Dokumenty prawne
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Polityka prywatności | ✅ | modal z treścią |
+| Regulamin | ✅ | modal z treścią |
+| „Czym jest Akademia?” | ✅ | modal |
+| Zakup + zgody | 🟡 | modal, checkboxy, aktywacja planu demo; brak Stripe |
+
+Treści prawne zawierają placeholdery `[data publikacji]` i wymagają weryfikacji prawnika przed produkcją.
+
+---
+
+## 16. Tryb offline
+
+Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
+
+- UI działa z `localStorage`,
+- logowanie jest lokalne (bez Discord),
+- badge u góry pokazuje **TRYB OFFLINE**,
+- po powrocie serwera i zalogowaniu stan z MySQL zastępuje lokalny.
+
+To celowy fallback, nie drugi równoległy backend.

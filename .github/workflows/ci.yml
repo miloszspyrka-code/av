@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP + API + UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: alpha_vault
+          MYSQL_USER: alpha_vault
+          MYSQL_PASSWORD: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, curl, mbstring
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          find app public -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Create test configuration
+        run: |
+          cat > tests/config.test.json <<'JSON'
+          {
+            "APP_URL": "http://127.0.0.1:4173",
+            "APP_ENV": "local",
+            "SESSION_SECRET": "ci-test-session-secret-0123456789abcdef",
+            "DB_HOST": "127.0.0.1",
+            "DB_PORT": "3306",
+            "DB_NAME": "alpha_vault",
+            "DB_USER": "alpha_vault",
+            "DB_PASSWORD": "test",
+            "DISCORD_CLIENT_ID": "",
+            "DISCORD_CLIENT_SECRET": "",
+            "DISCORD_REDIRECT_URI": "http://127.0.0.1:4173/auth/discord/callback",
+            "DISCORD_GUILD_ID": "",
+            "DISCORD_REQUIRED_ROLE_ID": "",
+            "DISCORD_DEFAULT_PLAN": "full",
+            "DISCORD_TRIAL_DAYS": "0",
+            "ALLOW_DEMO_LOGIN": "true",
+            "MAX_STATE_BYTES": "12582912"
+          }
+          JSON
+
+      - name: Apply database schema
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: php app/db/migrate.php
+
+      - name: Start PHP server
+        run: |
+          set -euo pipefail
+          ALPHA_VAULT_CONFIG=tests/config.test.json php -S 127.0.0.1:4173 -t public public/router.php > /tmp/php-server.log 2>&1 &
+          echo $! > /tmp/php-server.pid
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/api/health >/dev/null 2>&1; then
+              echo "PHP server is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "PHP server did not become ready."
+          cat /tmp/php-server.log
+          exit 1
+
+      - name: API E2E
+        env:
+          APP_URL: http://127.0.0.1:4173
+        run: node tests/api.e2e.mjs
+
+      - name: UI E2E
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/ui.e2e.mjs
+
+      - name: Upload PHP server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-server-log
+          path: /tmp/php-server.log
+          retention-days: 3

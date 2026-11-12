@@ -1,0 +1,22 @@
+Options -Indexes
+DirectoryIndex index.php
+
+RewriteEngine On
+
+# Istniejące pliki i katalogi obsługuje Apache.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Wszystko inne trafia do front controllera.
+RewriteRule ^ index.php [L]
+
+<FilesMatch "^(app-path\.php|\.env|config\.json)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
