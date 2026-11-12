@@ -193,6 +193,7 @@ Pełny kontrakt: [docs/API.md](docs/API.md). Specyfikacja: [docs/openapi.yaml](d
 | DELETE | `/api/state` | tak | reset stanu |
 | DELETE | `/api/account` | tak | usunięcie konta |
 | GET | `/api/me/export` | tak | eksport JSON |
+| GET | `/api/quotes` | nie | notowania rynkowe z cache i fallbackiem |
 | GET | `/api/events` | tak | wydarzenia, live, konsultacje, sync |
 | GET | `/api/admin/events` | admin | wszystkie wydarzenia + sync |
 | PUT | `/api/admin/events/{id}/category` | admin | ręczne przypisanie |
@@ -666,6 +667,8 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
 | Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
+| Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
+| Notowania E2E | `tests/quotes.e2e.mjs` | HTTP, kształt JSON, cache, błąd dostawcy, pusty stan | 5/5 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport, prop | 21/21 PASS |
 | UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, pusty stan, zapisy, 8 odznak | 51/51 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
@@ -687,6 +690,8 @@ npm run test:ui
 npm run test:ui:empty
 npm run test:pwa
 npm run test:events
+npm run test:quotes
+npm run test:quotes:e2e
 npm run test:wearables
 npm run test:docs
 ```

@@ -412,6 +412,29 @@ Pole `integrations` zawiera:
 }
 ```
 
+### 3.20. `GET /api/quotes`
+
+Publiczny, read-only pasek notowań. Dane pochodzą z Yahoo Finance Chart API (bez klucza) i są cache'owane w pliku `cache/quotes.json`.
+
+- `QUOTES_TTL` (domyślnie 60 s) ogranicza liczbę zapytań do dostawcy; `0` wymusza odświeżenie przy każdym żądaniu.
+- Sukces: `{"quotes":[...],"updatedAt":"2026-11-12T20:00:00Z","stale":false}`.
+- `stale=true` oznacza odpowiedź z cache po błędzie dostawcy albo brak części symboli.
+- Notowanie starsze niż 15 min znika z odpowiedzi zamiast być pokazywane jako aktualne.
+- Błąd dostawcy bez cache: `{"quotes":[],"updatedAt":null,"stale":true}` (HTTP 200).
+
+```json
+{
+  "quotes": [
+    {"symbol": "BTC", "price": 100000.0, "changePercent": 1.5},
+    {"symbol": "EUR/USD", "price": 1.087, "changePercent": -0.2}
+  ],
+  "updatedAt": "2026-11-12T20:00:00Z",
+  "stale": false
+}
+```
+
+Symbole: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
+
 ## 4. Bezpieczeństwo
 
 - brak haseł użytkowników; tylko Discord OAuth2,
@@ -443,6 +466,9 @@ Pole `integrations` zawiera:
 | `DISCORD_TRIAL_DAYS` | 0 = bez daty końca |
 | `ALLOW_DEMO_LOGIN` | `false` na produkcji |
 | `MAX_STATE_BYTES` | limit stanu (12 MiB) |
+| `QUOTES_BASE` | bazowy URL dostawcy notowań (domyślnie Yahoo Finance) |
+| `QUOTES_TTL` | TTL cache notowań w sekundach, 0–3600 (domyślnie 60) |
+| `QUOTES_CACHE` | ścieżka pliku cache (domyślnie `cache/quotes.json`) |
 | `WEARABLES_ENCRYPTION_KEY` | opcjonalny klucz AES dla tokenów urządzeń; domyślnie pochodna `SESSION_SECRET` |
 | `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja Oura |
 | `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja Whoop |

@@ -27,17 +27,26 @@
   };
 
   /* ---------- ticker ---------- */
-  AV.tickerData = AV.TICKER.map((x) => x.slice());
+  AV.tickerData = [];
   AV.renderTicker = () => {
     const t = AV.tickerData;
-    AV.setHTML('#ticker', t.map(([s, p, c]) => '<span><b>' + s + '</b>' + AV.fmt(p, p < 10 ? 4 : p < 500 ? 2 : 0) + ' <span class="' + (c >= 0 ? 'win' : 'loss') + '">' + (c >= 0 ? '+' : 'â’') + AV.fmt(Math.abs(c), 1) + '%</span></span>').join(''));
+    AV.setHTML('#ticker', t.map(([s, p, c]) => '<span><b>' + s + '</b>' + AV.fmt(p, p < 10 ? 4 : p < 500 ? 2 : 0) + (c === null || c === undefined ? '' : ' <span class="' + (c >= 0 ? 'win' : 'loss') + '">' + (c >= 0 ? '+' : '\u2212') + AV.fmt(Math.abs(c), 1) + '%</span>') + '</span>').join(''));
   };
-  AV.tickTicker = () => {
-    AV.tickerData = AV.tickerData.map(([s, p, c]) => {
-      const d = (Math.random() - 0.5) * 0.0035;
-      return [s, p * (1 + d), AV.clamp(c + d * 100, -9, 9)];
-    });
-    AV.renderTicker();
+  AV.loadQuotes = async () => {
+    try {
+      const res = await AV.apiFetch('/api/quotes');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!Array.isArray(data.quotes)) throw new Error('bad_quotes');
+      AV.tickerData = data.quotes
+        .filter((q) => q && typeof q.symbol === 'string' && Number.isFinite(Number(q.price)))
+        .map((q) => [q.symbol, Number(q.price), q.changePercent === null || q.changePercent === undefined ? null : Number(q.changePercent)]);
+      AV.renderTicker();
+      return true;
+    } catch (err) {
+      AV.api.lastError = err.message;
+      return false;
+    }
   };
 
   /* ---------- countdown ---------- */
@@ -1410,7 +1419,7 @@
     AV.bindCalc(); AV.bindMentor(); AV.bindAcademy(); AV.bindTax(); AV.bindCalendar();
     AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats();
     if (AV.bindProp) AV.bindProp();
-    AV.renderTicker(); AV.tickCountdowns();
+    AV.renderTicker(); AV.loadQuotes(); AV.tickCountdowns();
     AV.updateEnvBadge();
     const params = new URLSearchParams(location.search);
     const connected = params.get('connected');
@@ -1420,11 +1429,12 @@
       history.replaceState(null, '', location.pathname + '#cialo');
     }
     setInterval(AV.tickCountdowns, 1000);
-    setInterval(AV.tickTicker, 12000);
+    setInterval(AV.loadQuotes, 60000);
     setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); if (AV.propNotify) AV.propNotify(); } }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadWearables(); }, 300000);
     document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') AV.loadQuotes();
       if (document.visibilityState === 'visible' && AV.isLoggedIn()) { AV.loadEvents(); AV.loadWearables(); }
     });
     setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); if (AV.propNotify) AV.propNotify(); }, 4000);
