@@ -101,6 +101,11 @@ jobs:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php app/db/migrate.php
 
+      - name: Role recheck tests
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: npm run test:roles
+
       - name: Discord events tests
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
@@ -155,6 +160,12 @@ jobs:
           APP_URL: http://127.0.0.1:4173
           CHROME_PATH: /usr/bin/google-chrome
         run: node tests/ui.e2e.mjs
+
+      - name: Tax E2E
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/tax.e2e.mjs
 
       - name: PWA E2E (iPhone emulation)
         env:

@@ -22,6 +22,7 @@ final class Config
         public readonly array $discord,
         public readonly bool $discordConfigured,
         public readonly bool $roleCheckConfigured,
+        public readonly bool $roleRecheckConfigured,
         public readonly bool $eventsConfigured,
         public readonly array $adminDiscordIds,
         public readonly array $discordEventRules,
@@ -108,6 +109,8 @@ final class Config
             'guildId' => (string) $env('DISCORD_GUILD_ID', ''),
             'requiredRoleId' => (string) $env('DISCORD_REQUIRED_ROLE_ID', ''),
             'botToken' => (string) $env('DISCORD_BOT_TOKEN', ''),
+            'apiBase' => rtrim((string) $env('DISCORD_API_BASE', 'https://discord.com/api/v10'), '/'),
+            'roleRecheckSeconds' => max(300, $parseInt($env('DISCORD_ROLE_RECHECK_SECONDS'), 300)),
             'defaultPlan' => $env('DISCORD_DEFAULT_PLAN') === 'solo' ? 'solo' : 'full',
             'trialDays' => $parseInt($env('DISCORD_TRIAL_DAYS'), 0),
         ];
@@ -116,6 +119,7 @@ final class Config
             && $discord['clientSecret'] !== ''
             && $discord['redirectUri'] !== '';
         $roleCheckConfigured = $discord['guildId'] !== '' && $discord['requiredRoleId'] !== '';
+        $roleRecheckConfigured = $roleCheckConfigured && $discord['botToken'] !== '';
         $eventsConfigured = $discord['guildId'] !== '' && $discord['botToken'] !== '';
         $adminDiscordIds = array_values(array_filter(array_map(
             static fn (string $value): string => trim($value),
@@ -204,6 +208,7 @@ final class Config
             discord: $discord,
             discordConfigured: $discordConfigured,
             roleCheckConfigured: $roleCheckConfigured,
+            roleRecheckConfigured: $roleRecheckConfigured,
             eventsConfigured: $eventsConfigured,
             adminDiscordIds: $adminDiscordIds,
             discordEventRules: $rules,
@@ -215,7 +220,7 @@ final class Config
             quotesBase: rtrim((string) $env('QUOTES_BASE', 'https://query1.finance.yahoo.com'), '/'),
             quotesTtl: max(0, min(3600, $parseInt($env('QUOTES_TTL'), 60))),
             quotesCacheFile: (string) $env('QUOTES_CACHE', $root . '/cache/quotes.json'),
-            version: '3.7.0',
+            version: '3.8.0',
         );
     }
 }

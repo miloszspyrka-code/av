@@ -306,8 +306,10 @@ textarea.input{resize:vertical;line-height:1.5}
 .pro .who{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.22em;color:var(--alpha)}
 .btn.dc{background:#5865F2;color:#fff;box-shadow:0 10px 30px -10px rgba(88,101,242,.7),inset 0 1px 0 rgba(255,255,255,.25)}.btn.dc:hover{background:#6b77f5;transform:translateY(-1px)}
 .authsteps{margin-top:18px;display:none}.authsteps.on{display:block}.astep{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--dim);padding:6px 0;transition:.2s}.astep.ok{color:var(--cream)}.astep .box{width:18px;height:18px}.astep.ok .box{background:var(--win);border-color:var(--win);color:var(--ink)}
-#expired{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,rgba(var(--a),.18),transparent 60%),rgba(6,5,5,.94);backdrop-filter:blur(10px)}#expired.on{display:flex}
-#expired .bx{max-width:520px;text-align:center}#expired h1{font-size:34px}#expired p{color:var(--mut);line-height:1.6;margin-top:12px}
+#expired,#roleGate{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,rgba(var(--a),.18),transparent 60%),rgba(6,5,5,.94);backdrop-filter:blur(10px)}#expired.on,#roleGate.on{display:flex}
+#roleGate{z-index:160}
+#expired .bx,#roleGate .bx{max-width:520px;text-align:center}#expired h1,#roleGate h1{font-size:34px}#expired p,#roleGate p{color:var(--mut);line-height:1.6;margin-top:12px}
+#roleGate small{display:block;margin-top:16px;color:var(--dim);font-size:12px;line-height:1.5}
 .tipcard{display:flex;gap:16px;align-items:flex-start}.tipcard .tic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--alphaS);color:var(--alpha);flex-shrink:0}.tipcard .tic .i{width:22px;height:22px}
 #tipTxt{font-size:16.5px;line-height:1.5;font-weight:600;margin-top:6px;transition:opacity .2s}
 .medals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
@@ -445,6 +447,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     <button class="btn dc" id="enter" style="width:100%;margin-top:26px;padding:15px;font-size:15px"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>Zaloguj przez Discord</button>
     <div class="check on" id="remember"><span class="box"><svg class="i"><use href="#i-check"/></svg></span>Nie wylogowuj mnie na tym urządzeniu</div>
     <div class="authsteps" id="asteps"><div class="astep"><span class="box"><svg class="i"><use href="#i-check"/></svg></span>Łączę z Discordem…</div><div class="astep"><span class="box"><svg class="i"><use href="#i-check"/></svg></span>Sprawdzam rolę <b style="margin:0 4px">Alpha</b> na serwerze Alpha Moves…</div><div class="astep"><span class="box"><svg class="i"><use href="#i-check"/></svg></span>Subskrypcja aktywna do 03.12.2026</div></div>
+    <div class="dim" style="font-size:12px;margin-top:12px;text-align:center">Dostęp dostają wyłącznie osoby z aktywną rolą <b>Alpha</b> na serwerze Alpha Moves. Rola jest sprawdzana przy logowaniu i co 5 minut.</div>
     <div class="or">Nie masz jeszcze dostępu?</div>
     <div class="plans">
       <div class="plan"><div class="nm">Alpha Vault</div><div class="pr">49 $ <small>/ mies. brutto</small></div>
@@ -869,20 +872,20 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= PODATKI ================= -->
 <section class="view" id="tax">
-  <div class="head"><div><div class="eyebrow" id="taxYearEyebrow">Podatki · rok 2026</div><h1>Zestawienie do <span class="serif">PIT-38.</span></h1><p>Alpha Vault zbiera z całego roku tylko to, co liczy się do podatku. Termin złożenia PIT-38 za 2026: <b style="color:var(--cream)">30 kwietnia 2027</b>.</p></div><div style="display:flex;gap:10px"><button class="btn g" id="taxCsv">Eksport CSV</button><button class="btn p" id="taxPdf"><svg class="i"><use href="#i-file"/></svg>PDF dla księgowej</button></div></div>
+  <div class="head"><div><div class="eyebrow" id="taxYearEyebrow">Podatki · rok 2026</div><h1>Zestawienie do <span class="serif">PIT-38.</span></h1><p>Alpha Vault zbiera z całego roku tylko to, co liczy się do podatku. Termin złożenia PIT-38 za <span id="taxYear">2026</span>: <b style="color:var(--cream)" id="taxDeadline">30 kwietnia 2027</b>.</p></div><div style="display:flex;gap:10px"><button class="btn g" id="taxCsv">Eksport CSV</button><button class="btn p" id="taxPdf"><svg class="i"><use href="#i-file"/></svg>PDF dla księgowej</button></div></div>
   <div class="note" style="margin-bottom:16px"><svg class="i" style="color:var(--win)"><use href="#i-check"/></svg><div><b>Wymiana krypto na krypto jest neutralna podatkowo.</b> Zyski i straty z transakcji w USDT na giełdzie nie wchodzą do PIT-38, dopóki nie wymienisz krypto na złotówki, euro, dolary albo nie zapłacisz nim za towar czy usługę.</div></div>
   <div class="grid g4">
-    <div class="card"><div class="lbl">Przychód</div><div class="val win" id="taxRevenue">7 420,74 zł</div><div class="hint">sprzedaż krypto za PLN i EUR</div></div>
-    <div class="card"><div class="lbl">Koszty 2026</div><div class="val" id="taxCosts">4 980,00 zł</div><div class="hint">zakup krypto i prowizje</div></div>
-    <div class="card"><div class="lbl">Nadwyżka kosztów z 2025</div><div class="val" id="taxLoss">380,00 zł</div><div class="hint">przeniesiona z zeznania za 2025</div></div>
-    <div class="card hl"><div class="lbl">Podatek 19%</div><div class="val al" id="taxDue">≈ 392 zł</div><div class="hint" id="taxDueHint">od dochodu 2 060,74 zł</div></div>
+    <div class="card"><div class="lbl">Przychód</div><div class="val win" id="taxRevenue">0,00 zł</div><div class="hint">sprzedaż krypto za PLN i EUR</div></div>
+    <div class="card"><div class="lbl">Koszty <span id="taxCostsYear">2026</span></div><div class="val" id="taxCosts">0,00 zł</div><div class="hint">zakup krypto i prowizje</div></div>
+    <div class="card"><div class="lbl">Nadwyżka kosztów z <span id="taxLossYear">2025</span> <button type="button" class="link" id="taxLossEdit" style="background:none;border:0;padding:0;font:inherit;margin-left:6px">zmień</button></div><div class="val" id="taxLoss">0,00 zł</div><div class="hint" id="taxLossHint">przeniesiona z zeznania za 2025</div></div>
+    <div class="card hl"><div class="lbl">Podatek 19%</div><div class="val al" id="taxDue">≈ 0 zł</div><div class="hint" id="taxDueHint">od dochodu 0,00 zł</div></div>
   </div>
   <div class="card sec" style="padding:0;overflow-x:auto"><div style="padding:20px 22px 6px" class="sech"><h2>Zdarzenia podatkowe</h2><span class="mono dim" style="font-size:12px">waluty obce wg kursu NBP z dnia roboczego przed transakcją</span></div>
     <table class="taxt"><thead><tr><th>Data</th><th>Operacja</th><th>Rodzaj</th><th>Waluta</th><th style="text-align:right">Kwota</th><th style="text-align:right">Kurs NBP</th><th style="text-align:right">W PLN</th></tr></thead><tbody id="taxBody"></tbody></table></div>
   <div class="grid sec g3">
-    <div class="card"><h3>Neutralne podatkowo</h3><div class="val" style="font-size:24px" id="taxNeutral">47 transakcji</div><div class="hint">futures w USDT i wymiany krypto–krypto. Są w dzienniku, ale nie w PIT-38.</div></div>
-    <div class="card"><h3>Forex i CFD (MT5)</h3><div class="val" style="font-size:24px" id="taxForex">brak w 2026</div><div class="hint">instrumenty pochodne rozlicza się w PIT-38 osobno, w części o innych przychodach kapitałowych.</div></div>
-    <div class="card"><h3>Do przeniesienia na 2027</h3><div class="val" style="font-size:24px" id="taxCarry">0,00 zł</div><div class="hint">nadwyżka kosztów przechodzi na kolejny rok, gdy koszty są wyższe niż przychód.</div></div>
+    <div class="card"><h3>Neutralne podatkowo</h3><div class="val" style="font-size:24px" id="taxNeutral">0 transakcji</div><div class="hint">futures w USDT i wymiany krypto–krypto. Są w dzienniku, ale nie w PIT-38.</div></div>
+    <div class="card"><h3>Forex i CFD (MT5)</h3><div class="val" style="font-size:24px" id="taxForex">0 transakcji</div><div class="hint">instrumenty pochodne rozlicza się w PIT-38 osobno, w części o innych przychodach kapitałowych.</div></div>
+    <div class="card"><h3>Do przeniesienia na <span id="taxCarryYear">2027</span></h3><div class="val" style="font-size:24px" id="taxCarry">0,00 zł</div><div class="hint">nadwyżka kosztów przechodzi na kolejny rok, gdy koszty są wyższe niż przychód.</div></div>
   </div>
   <div class="note r sec"><svg class="i"><use href="#i-file"/></svg><div>Zestawienie pomocnicze, nie porada podatkowa. Kwalifikacja kontraktów futures rozliczanych w USDT bywa interpretowana różnie, więc przed złożeniem PIT-38 pokaż zestawienie księgowej albo doradcy.</div></div>
 </section>
@@ -1056,6 +1059,18 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div class="grid g3" style="margin-top:22px;text-align:left"><div class="card flat" style="padding:14px"><div class="lbl">Transakcje</div><div style="font-weight:800;font-size:20px;margin-top:4px" id="expTrades">47</div></div><div class="card flat" style="padding:14px"><div class="lbl">Dni z dziennikiem</div><div style="font-weight:800;font-size:20px;margin-top:4px" id="expDays">12</div></div><div class="card flat" style="padding:14px"><div class="lbl">Odznaki</div><div style="font-weight:800;font-size:20px;margin-top:4px" id="expBadges">4</div></div></div>
   <div style="display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap"><span class="btn p" data-buy="full">Odnów z Akademią · 168 $</span><span class="btn g" data-buy="solo">Tylko Alpha Vault · 49 $</span><button class="btn g" id="downloadDataExpired">Pobierz moje dane</button></div>
   <div class="dim" style="font-size:12.5px;margin-top:18px">Po odnowieniu i przywróceniu roli wszystko wraca w tym samym miejscu. · <span class="link" id="expBack" style="font-size:12.5px">Podgląd: wróć do panelu</span></div>
+</div></div>
+<div id="roleGate"><div class="bx">
+  <div class="eyebrow">Dostęp wstrzymany</div>
+  <h1 style="margin-top:10px">Brak aktywnej roli <span class="serif">Alpha.</span></h1>
+  <p>Panel jest dostępny wyłącznie dla osób z aktywną rolą <b>Alpha</b> na serwerze Alpha Moves. Rolę dostajesz po zakupie dostępu. Sprawdzamy ją przy logowaniu i co 5 minut.</p>
+  <p class="dim" style="font-size:13px">Właśnie kupiłeś? Poczekaj chwilę na nadanie roli i kliknij „Sprawdź ponownie”. Jeśli rola została zdjęta, odnów subskrypcję. Dostęp wraca automatycznie po nadaniu roli.</p>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap">
+    <a class="btn p" href="/auth/discord?remember=1">Zaloguj ponownie</a>
+    <button class="btn g" id="roleCheck" type="button">Sprawdź ponownie</button>
+    <button class="btn g" id="roleLogout" type="button">Wyloguj</button>
+  </div>
+  <small id="roleGateMsg">Sprawdzamy rolę na Discordzie. Jeśli dopiero kupiłeś dostęp, nadanie roli może zająć kilka minut.</small>
 </div></div>
 <div class="modal" id="qa"><div class="mbox" style="max-width:860px"><span class="mclose" data-close="qa"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></span>
   <div class="eyebrow">Alpha Vault na telefonie</div><h1 style="font-size:30px">Szybkie dodanie w <span class="serif">10 sekund.</span></h1>

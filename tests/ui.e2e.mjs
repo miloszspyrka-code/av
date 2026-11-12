@@ -444,6 +444,13 @@ try {
   const restoredCount = await page.evaluate(() => AV.state.trades.length);
   log('przywrócenie stanu demo', restoredCount === 47, restoredCount);
 
+  // bramka roli: pełnoekranowa blokada panelu
+  await page.evaluate(() => window.AV.showAccessGate('Brak aktywnej roli Alpha.'));
+  const gateVisible = await page.locator('#roleGate').isVisible();
+  const gateZ = await page.locator('#roleGate').evaluate((el) => Number(getComputedStyle(el).zIndex));
+  log('bramka roli blokuje panel', gateVisible && gateZ >= 150, 'z-index ' + gateZ);
+  await page.evaluate(() => document.getElementById('roleGate').classList.remove('on'));
+
   // wylogowanie
   await page.evaluate(() => document.querySelector('#logout').click());
   await page.waitForURL(BASE + '/', { timeout: 10000 }).catch(() => {});

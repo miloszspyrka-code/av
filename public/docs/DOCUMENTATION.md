@@ -53,6 +53,7 @@ Apache + PHP 8.3 (LH.pl)
         ▲
         │  co 5 minut
   LH Cron → bin/sync-discord-events.php → Discord REST API
+  LH Cron → bin/check-discord-roles.php → Discord guild member (recheck roli)
 ```
 
 ### 2.1. Macierz punktów styku
@@ -124,9 +125,10 @@ Apache + PHP 8.3 (LH.pl)
 10. Wymienia `code` na token (client ID + secret).
 11. Pobiera `GET https://discord.com/api/users/@me`.
 12. Pobiera członkostwo `GET /guilds/{guild.id}/member` i sprawdza rolę `DISCORD_REQUIRED_ROLE_ID`.
-13. Tworzy/aktualizuje użytkownika w `users`.
-14. Tworzy sesję: losowy token → hash w `sessions`, cookie `av_session`.
-15. `remember=1` → cookie 30 dni; `0` → sesja przeglądarki.
+13. `RoleGuard::loginDecision()`: brak roli/członkostwa → 403. Chwilowy błąd Discord (429/5xx) → 503, ale konto już zweryfikowane (`role_verified=1`) dostaje dostęp z grace, żeby kupujący nie tracił panelu podczas awarii Discorda.
+14. Tworzy/aktualizuje użytkownika w `users` i zapisuje `role_checked_at`, `role_check_status`, `role_check_error`.
+15. Tworzy sesję: losowy token → hash w `sessions`, cookie `av_session`.
+16. `remember=1` → cookie 30 dni; `0` → sesja przeglądarki.
 
 **Błąd:** brak konfiguracji OAuth → 503; brak roli/członkostwa → odmowa i brak sesji; błąd Discord → komunikat, bez ujawniania szczegółów.
 
@@ -139,6 +141,16 @@ Apache + PHP 8.3 (LH.pl)
 - `Auth::readSession()` dołącza użytkownika i sprawdza wygaśnięcie.
 - `requireAuth()` zwraca 401 dla `/api/state`, `/api/events`, `/api/account`, `/api/me/export`.
 - Wylogowanie usuwa sesję z DB i czyści cookie.
+
+### 4.2a. Cykliczna weryfikacja roli (co 5 min)
+
+- `cron/sync-discord-events.sh` uruchamia po synchronizacji `bin/check-discord-roles.php` (LH Cron co 5 min).
+- `RoleGuard::reapDue()` bierze aktywne sesje, których `role_checked_at` jest starsze niż próg (domyślnie 300 s, minimum 300 s) i sprawdza członka bota: `GET /guilds/{guild.id}/members/{user.id}`.
+- Rola obecna → `role_verified=1`, `role_check_status=ok`.
+- Brak roli lub brak członkostwa → `role_verified=0`, `role_check_status=missing`, usunięcie wszystkich sesji użytkownika i wpis `access.role_revoked` w `audit_log`.
+- Błąd Discorda (429 po 3 próbach, 5xx, timeout) → `role_check_status=error`, dostęp pozostaje (fail open), żeby awaria Discorda nie odcięła kupujących.
+- Blokada `role_check_state.lock_token` chroni przed nakładaniem się cronów; stan i liczniki są widoczne w `/api/health.roleRecheck`.
+- Frontend co 5 min wywołuje `GET /api/me`; 401 lub `roleVerified=false` pokazuje pełnoekranową bramkę `#roleGate` bez możliwości wejścia do panelu.
 
 ### 4.3. CSRF
 
@@ -393,7 +405,15 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 */15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
 ```
 
-Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` oraz `/usr/bin/php .../bin/sync-macro-events.php`.
+Wrapper uruchamia kolejno `bin/sync-discord-events.php` i `bin/check-discord-roles.php` (recheck roli co 5 min).
+
+Ręcznie (bez panelu):
+
+```bash
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/check-discord-roles.php
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-macro-events.php
+```
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
@@ -403,6 +423,7 @@ Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/al
 
 - Jedna kolumna `lock_token` i `locked_until` w `discord_sync_state`.
 - Blokada wygasa po 10 minutach (awaria procesu nie blokuje na zawsze).
+- Recheck roli ma osobną blokadę w `role_check_state` (4 min) i limit czasu 45 s na przebieg.
 - Równoległe uruchomienie kończy się `skipped` i kodem 0.
 
 ### 9.3. Obsługa błędów
@@ -454,11 +475,12 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 
 | Tabela | Rola | Klucz |
 | --- | --- | --- |
-| `users` | konto Discord/demo, plan, rola | `id`, `discord_id` |
+| `users` | konto Discord/demo, plan, rola, `role_checked_at`, `role_check_status`, `role_check_error` | `id`, `discord_id` |
 | `sessions` | hash sesji, IP, UA, wygaśnięcie | `token_hash` |
 | `oauth_states` | jednorazowe `state` OAuth | `state` |
 | `user_states` | JSON stanu + rewizja | `user_id` |
-| `audit_log` | logowania, zapisy, usunięcia | `id` |
+| `audit_log` | logowania, zapisy, usunięcia, odebranie roli | `id` |
+| `role_check_state` | stan i blokada cronu weryfikacji roli | `id=1` |
 | `rate_limits` | limity | `(bucket, ip)` |
 | `discord_scheduled_events` | wydarzenia Discord | `discord_event_id` (UNIQUE) |
 | `discord_sync_state` | stan i blokada sync | `id=1` |
@@ -523,12 +545,14 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 1. `AV.bootstrap()` → `GET /api/me`.
 2. Brak sesji → ekran logowania.
-3. Sesja → `GET /api/state`; brak stanu → `buildEmpty()` lub `buildDemo()` dla demo.
-4. `AV.applyServerUser()`.
-5. `AV.loadEvents()` → `GET /api/events`.
-6. `AV.loadMacroEvents()` → `GET /api/macro-events` (błąd nie czyści ostatniego dobrego zestawu).
-7. `AV.loadWearables()` → `GET /api/wearables` (błąd nie blokuje panelu).
-8. `AV.renderAll()` → `renderAcademy()`, `renderBody()`.
+3. Sesja, ale `roleVerified=false` lub 401 → pełnoekranowa bramka `#roleGate` (bez wejścia do panelu).
+4. Sesja → `GET /api/state`; brak stanu → `buildEmpty()` lub `buildDemo()` dla demo.
+5. `AV.applyServerUser()`.
+6. `AV.loadEvents()` → `GET /api/events`.
+7. `AV.loadMacroEvents()` → `GET /api/macro-events` (błąd nie czyści ostatniego dobrego zestawu).
+8. `AV.loadWearables()` → `GET /api/wearables` (błąd nie blokuje panelu).
+9. `AV.renderAll()` → `renderAcademy()`, `renderBody()`.
+10. Co 5 min `AV.checkAccess()` → `GET /api/me`; 401/brak roli zamyka panel bramką.
 
 ### 11.3. Render Akademii
 
@@ -692,10 +716,11 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
 | Makro DB/sync | `tests/macro-events.test.php` | normalizacja FF/TradingView, UTC, UPSERT, soft delete, okno źródła | 21/21 PASS |
+| Rola / cron | `tests/role-guard.test.php` + `tests/role-recheck.e2e.mjs` | decyzje login, fail-open, 404, 429, lock, revoke sesji | 18/18 PASS |
 | Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, macro, admin, eksport, prop | 23/23 PASS |
-| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak | 52/52 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak | 53/53 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 + PKCE, rotacja tokenów i klucza, statusy, Garmin push pending, Apple, UI, bezpieczeństwo | 42/42 PASS |

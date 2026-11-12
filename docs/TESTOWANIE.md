@@ -19,6 +19,7 @@ $env:APP_URL = "http://127.0.0.1:4173"
 npm test
 npm run test:macro
 npm run test:ui
+npm run test:tax
 npm run test:pwa
 ```
 
@@ -34,6 +35,21 @@ php -S 127.0.0.1:4174 -t public public/router.php
 $env:APP_URL = "http://127.0.0.1:4174"
 npm run test:ui:empty
 ```
+
+## Podatki PIT-38 — 8 scenariuszy
+
+`npm run test:tax` (`tests/tax.e2e.mjs`) zapisuje deterministyczny stan do MySQL, wczytuje go ponownie i klika panel Podatki:
+
+- przychód, koszty, nadwyżka, dochód i podatek 19% dla roku 2026,
+- zdarzenie z 2025 nie wchodzi do zestawienia 2026,
+- edycja nadwyżki kosztów z poprzedniego roku,
+- neutralne podatkowo (47) i forex/MT5 (2) liczone z dziennika,
+- eksport CSV z podsumowaniem i rokiem w nazwie,
+- wydruk PDF z rokiem, nadwyżką i licznikami,
+- formularz wpłaty/wypłaty wymaga kursu NBP dla EUR i zasila PIT-38,
+- puste konto nie dziedziczy demo 380 zł; brak błędów JS.
+
+Test przywraca poprzedni stan demo po zakończeniu.
 
 ## Urządzenia zdrowotne — 42 scenariusze + 4 testy konfiguracji
 
@@ -86,6 +102,15 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - błędny payload nie zmienia bazy,
 - pusty sukces czyści listę i soft-deletuje rekordy,
 - powrót wydarzenia przywraca rekord.
+
+## Rola i recheck — 18 scenariuszy
+
+`npm run test:roles`:
+
+- `tests/role-guard.test.php` — interpretacja odpowiedzi Discord (`ok`, `missing`, `not_member`, 429, 5xx, 403 bota) i decyzje logowania (403, 503, grace dla zweryfikowanych, fail closed bez konfiguracji),
+- `tests/role-recheck.e2e.mjs` — lokalny mock Discord + MySQL: rola obecna utrzymuje sesję, brak roli usuwa sesję i dodaje `access.role_revoked`, błąd 500 nie odbiera dostępu, 404 odbiera, 429 jest ponawiane, blokada cronu pomija równoległy przebieg.
+
+Test nie używa prawdziwego Discorda ani danych klientów.
 
 ## Prop challenge — 27 scenariuszy
 
@@ -140,7 +165,7 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 52 scenariusze
+## UI - 53 scenariusze
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -227,6 +252,7 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 - dokumentacja (`docs:check` + `test:docs`),
 - PHP lint,
 - migracja,
+- rola: decyzje login + cron na mocku Discord,
 - Discord DB/sync,
 - API e2e,
 - UI e2e (systemowy Chrome),

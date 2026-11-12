@@ -51,12 +51,14 @@ php -S 127.0.0.1:4173 -t public public/router.php
 npm ci
 npm test                 # API: 23 scenariusze
 npm run test:prop        # silnik prop challenge: 27 scenariuszy
-npm run test:ui          # UI: 52 scenariusze
+npm run test:ui          # UI: 53 scenariusze
+npm run test:tax         # PIT-38: 8 scenariuszy (MySQL + UI)
 npm run test:pwa         # PWA mobile: 20 scenariuszy
 npm run test:ui:empty    # puste pola: 12 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze
 npm run test:macro       # kalendarz makro DB/sync: 21 scenariuszy
 npm run test:quotes      # notowania rynkowe: 14 scenariuszy
+npm run test:roles       # rola: login + cron recheck: 18 scenariuszy
 npm run test:wearables   # urządzenia zdrowotne API + UI: 42 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
 ```

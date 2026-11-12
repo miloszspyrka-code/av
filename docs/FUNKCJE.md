@@ -14,7 +14,7 @@ Legenda:
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Logowanie Discord OAuth2 | ✅ | `GET /auth/discord` → callback → sesja w MySQL; wymaga danych aplikacji Discord |
-| Weryfikacja roli Alpha | ✅ (opcjonalna) | bot + `DISCORD_GUILD_ID` + `DISCORD_REQUIRED_ROLE_ID` |
+| Weryfikacja roli Alpha | ✅ | logowanie tokenem użytkownika; cron co 5 min botem, odebranie roli usuwa sesje i pokazuje bramkę |
 | Logowanie demo | ✅ | `POST /auth/demo`, konto `demo-local`, dane z `db/demo-state.json` |
 | Wylogowanie | ✅ | usuwa sesję z DB i cookie |
 | „Nie wylogowuj mnie” | ✅ | zapis w stanie; cookie 30 dni |
@@ -192,12 +192,16 @@ Szczegóły techniczne: [DOCUMENTATION.md §7](../DOCUMENTATION.md#7-discord-sch
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Przychód/koszty/nadwyżka/podatek 19% | ✅ | z wpłat i wypłat |
-| Zdarzenia podatkowe | ✅ | tabela |
-| Eksport CSV | ✅ | |
-| „PDF dla księgowej” | 🟡 | otwiera okno wydruku (Zapisz jako PDF); fallback HTML |
-| Wpłaty/wypłaty | ✅ | dodawanie, usuwanie, wpływ na saldo konta |
-| Neutralne podatkowo | ✅ | liczba transakcji futures |
+| Przychód/koszty/nadwyżka/podatek 19% | ✅ | z wpłat i wypłat roku podatkowego |
+| Zakres roku podatkowego | ✅ | zdarzenia i transakcje tylko z `tax.year`; rok i termin w nagłówku liczone dynamicznie |
+| Nadwyżka kosztów z poprzedniego roku | ✅ | edycja w panelu („zmień”), zapis w stanie; nowe konto = 0,00 zł |
+| Zdarzenia podatkowe | ✅ | tabela; waluty obce wymagają kursu NBP |
+| Eksport CSV | ✅ | zdarzenia, podsumowanie, transakcje neutralne/MT4-MT5, rok w nazwie |
+| „PDF dla księgowej” | 🟡 | otwiera okno wydruku (Zapisz jako PDF); fallback HTML; rok i podsumowanie |
+| Wpłaty/wypłaty | ✅ | dodawanie, usuwanie, wpływ na saldo konta; walidacja kursu NBP |
+| Neutralne podatkowo | ✅ | liczba transakcji z dziennika roku (futures/krypto, bez MT4/MT5) |
+| Forex i CFD (MT4/MT5) | ✅ | liczba transakcji roku rozpoznana po koncie/źródle MT4/MT5 |
+| Do przeniesienia na kolejny rok | ✅ | nadwyżka kosztów roku po odjęciu przychodu i wykorzystanej nadwyżki |
 
 To zestawienie pomocnicze, nie porada podatkowa.
 
