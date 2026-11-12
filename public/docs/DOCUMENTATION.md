@@ -416,7 +416,7 @@ Ręcznie (bez panelu):
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
-**Stan 2026-11-12:** jedyny wpis Cron jest aktywny; `/api/health` potwierdza `sync.lastSuccessAt=22:00:02 UTC`, `roleRecheck.lastSuccessAt=22:00:02 UTC`, `stale=false`. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`, który od wersji 3.9.1 uruchamia też makro (co 15 min) i urządzenia (co 30 min).
+**Stan 2026-11-12:** jedyny wpis Cron jest aktywny; `/api/health` potwierdza świeże (<10 min) `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` oraz `stale=false`. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`, który od wersji 3.9.1 uruchamia też makro (co 15 min) i urządzenia (co 30 min).
 
 ### 9.2. Blokada
 

@@ -380,7 +380,7 @@ node scripts/sync-docs.mjs
 | Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; **Oura skonfigurowana** (`ouraConfigured=true`, deploy 3.8.0 z 2026-11-12); Garmin i Whoop wyłączone |
 | Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
 | Cron urządzeń | wrapper `*/5` uruchamia `bin/sync-wearables.php` co 30 min (throttle, bez osobnego wpisu) |
-| LH Cron | **1 wpis `*/5`**; sync i recheck roli 22:00:02 UTC, `stale=false` |
+| LH Cron | **1 wpis `*/5`**; `sync` i `roleRecheck` świeże (<10 min), `stale=false` |
 | Monitoring | `monitor-production.yml` — co 15 min: health, sync, UI, docs, `.app` 403 |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
@@ -392,7 +392,7 @@ node scripts/sync-docs.mjs
 3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
 4. Oura: zarejestruj redirect `https://alphavault.pl/auth/wearables/oura/callback` w Oura Cloud i wykonaj interaktywny test połączenia; sekrety `OURA_*` są już wdrożone.
 5. Dodaj sekrety `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*` (obecnie oba wyłączone w UI/API).
-6. Makro i urządzenia pozostają ręczne; jeśli mają być cykliczne, dopnij je do `cron/sync-discord-events.sh` z throttle — bez nowego wpisu w panelu LH.
+6. Makro (15 min) i urządzenia (30 min) działają z wrappera `*/5` przez throttle; nowe cykliczne zadania dopinaj tam, bez nowego wpisu w panelu LH.
 7. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego

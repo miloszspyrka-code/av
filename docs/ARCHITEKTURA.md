@@ -40,9 +40,9 @@ Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request. Szczeg
 | `app/routes/api.php` | `/api/health`, `/api/me`, `/api/state`, `/api/events`, `/api/macro-events`, `/api/wearables`, admin, konto, eksport |
 | `app/routes/auth.php` | `/auth/discord`, `/auth/wearables/*`, callback, demo, logout |
 | `bin/sync-discord-events.php` | skrypt LH Cron (co 5 min) |
-| `bin/sync-macro-events.php` | kalendarz makro (ręcznie; brak wpisu LH Cron) |
+| `bin/sync-macro-events.php` | kalendarz makro (wrapper `*/5`, throttle 15 min) |
 | `bin/check-discord-roles.php` | recheck roli aktywnych sesji (co 5 min, ten sam wpis LH Cron) |
-| `bin/sync-wearables.php` | odświeżanie tokenów i metryk urządzeń (ręcznie; brak wpisu LH Cron) |
+| `bin/sync-wearables.php` | odświeżanie tokenów i metryk urządzeń (wrapper `*/5`, throttle 30 min) |
 | `public/index.php` | routing i serwowanie UI |
 | `scripts/sync-docs.mjs` | generowanie `public/docs` z `docs/` |
 

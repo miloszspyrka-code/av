@@ -82,7 +82,7 @@ Kanoniczna bramka: PR → `ci.yml` (`PHP + API + UI`) → merge → `deploy-alph
 - Repo jest publiczne; włączone secret scanning, push protection i Dependabot security updates.
 - Rollback: workflow z `rollback=true` przywraca ostatni backup z `~/alphavault-backups`.
 
-**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK (DB + Discord flagi `true`), sync Discord 3/3, `/docs/` 200, **jeden wpis LH Cron `*/5`** (`sync.lastSuccessAt=22:00:02 UTC`), makro i urządzenia ręcznie, CI gate `PHP + API + UI` aktywny.
+**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK (DB + Discord flagi `true`), sync Discord 3/3, `/docs/` 200, **jeden wpis LH Cron `*/5`** (`sync.lastSuccessAt` świeży <10 min, `stale=false`), z niego makro (15 min) i urządzenia (30 min) przez throttle, CI gate `PHP + API + UI` aktywny.
 
 Wymagane sekrety GitHub:
 
