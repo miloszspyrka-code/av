@@ -47,7 +47,9 @@ async function main() {
   assert.equal(health.res.status, 200, 'health');
   assert.equal(health.json.ok, true);
   assert.equal(health.json.db.ok, true);
-  log('health + MySQL', true, health.json.db.version);
+  assert.ok(health.json.sync && typeof health.json.sync.status === 'string', 'health.sync');
+  assert.equal(typeof health.json.sync.stale, 'boolean');
+  log('health + MySQL', true, health.json.db.version + ' · sync=' + health.json.sync.status);
 
   const anon = await req('/api/me');
   assert.equal(anon.res.status, 200);

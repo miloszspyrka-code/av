@@ -102,11 +102,19 @@ Publiczny. Sprawdza MySQL i konfigurację.
   "discordConfigured": true,
   "roleCheckConfigured": true,
   "eventsConfigured": true,
-  "demoAllowed": false
+  "demoAllowed": false,
+  "sync": {
+    "status": "success",
+    "lastSuccessAt": "2026-11-12 18:15:02",
+    "eventsCount": 3,
+    "stale": false
+  }
 }
 ```
 
 Baza niedostępna → `503 {"ok":false,"error":"db_unavailable"}`.
+
+`sync` to skrót stanu synchronizacji Discord: `status` (`success`/`error`/`never`), `lastSuccessAt` (UTC), `eventsCount` i `stale` (brak sukcesu > 15 min). Jest publiczny, bo zawiera wyłącznie metadane operacyjne — bez tokenów, treści wydarzeń i danych użytkowników.
 
 ### 3.2. `GET /api/me`
 

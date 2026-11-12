@@ -17,6 +17,20 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                     'message' => $config->isProd ? 'Baza danych jest niedostępna.' : $err->getMessage(),
                 ], 503);
             }
+            $sync = null;
+            try {
+                $events = new DiscordEvents($config, $db);
+                $syncState = $events->syncState();
+                $sync = [
+                    'status' => $syncState['status'],
+                    'lastSuccessAt' => $syncState['lastSuccessAt'],
+                    'eventsCount' => $syncState['eventsCount'],
+                    'stale' => $syncState['stale'],
+                ];
+            } catch (\Throwable $err) {
+                // Brak tabeli stanu nie może wywalić publicznego health checku.
+                $sync = null;
+            }
             Http::json([
                 'ok' => $health['ok'],
                 'service' => 'alpha-vault',
@@ -28,6 +42,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'roleCheckConfigured' => $config->roleCheckConfigured,
                 'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
+                'sync' => $sync,
             ]);
         }
 

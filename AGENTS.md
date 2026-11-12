@@ -209,6 +209,7 @@ curl.exe -sS https://alphavault.pl/api/health
 curl.exe -sS -I https://alphavault.pl
 ssh serwer445119@serwer445119.lh.pl "php ~/public_html/alphavault.pl/.app/bin/sync-discord-events.php"
 ssh serwer445119@serwer445119.lh.pl "tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log"
+gh workflow run monitor-production.yml --repo miloszspyrka-code/av
 ```
 
 `/api/events` wymaga sesji — nie testuj go bez logowania.
@@ -295,6 +296,7 @@ npm run test:docs
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
+| Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **nieprzetestowany interaktywnie** |
 
