@@ -186,7 +186,7 @@ final class Config
             adminDiscordIds: $adminDiscordIds,
             discordEventRules: $rules,
             wearables: $wearables,
-            version: '3.1.0',
+            version: '3.3.0',
         );
     }
 }

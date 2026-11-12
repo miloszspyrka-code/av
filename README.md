@@ -9,6 +9,7 @@ Aplikacja działa na hostingu współdzielonym LH.pl:
 - baza: MySQL/MariaDB,
 - logowanie: Discord OAuth2 (`identify guilds.members.read`),
 - sesje: token w cookie HttpOnly + hash w MySQL,
+- prop challenge: szablony FTMO i innych firm, limity, alerty i statystyki per challenge ([docs/PROP.md](docs/PROP.md)),
 - wdrożenia: GitHub Actions → SSH → `alphavault.pl` (alternatywnie `scripts/local-deploy.sh`).
 
 Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerze produkcyjnym nie działa proces Node.
@@ -48,8 +49,9 @@ php app/db/migrate.php
 php -S 127.0.0.1:4173 -t public public/router.php
 
 npm ci
-npm test                 # API: 20 scenariuszy
-npm run test:ui          # UI: 37 scenariuszy
+npm test                 # API: 21 scenariuszy
+npm run test:prop        # silnik prop challenge: 27 scenariuszy
+npm run test:ui          # UI: 51 scenariuszy
 npm run test:pwa         # PWA mobile: 20 scenariuszy
 npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze

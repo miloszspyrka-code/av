@@ -112,7 +112,7 @@ h3{font-size:15.5px;font-weight:700}
 .card{position:relative;border-radius:var(--r);padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 24px 48px -28px rgba(0,0,0,.8)}
 .card.hl{border-color:rgba(var(--a),.32);background:radial-gradient(ellipse at 0% 0%,rgba(var(--a),.14),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012))}
 .card.flat{background:rgba(255,255,255,.015);box-shadow:none}
-.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.propgrid{grid-template-columns:1.45fr 1fr}.propgrid>*,.propgrid .card{min-width:0}#propDaily>div{max-width:100%}@media(max-width:900px){.propgrid{grid-template-columns:1fr}}
 .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
 .val{font-size:28px;font-weight:800;margin-top:8px;letter-spacing:-.8px}.hint{font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.45}
 .sec{margin-top:28px}.sech{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
@@ -471,7 +471,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     <button data-v="play"><svg class="i"><use href="#i-star"/></svg>Playbook</button>
     <button data-v="nowa"><svg class="i"><use href="#i-plus"/></svg>Nowa transakcja<span class="badge lk lkb"><svg class="i"><use href="#i-lock"/></svg></span></button>
     <button data-v="kalk"><svg class="i"><use href="#i-calc"/></svg>Kalkulator Alpha</button>
-    <button data-v="prop"><svg class="i"><use href="#i-flag"/></svg>Prop challenge<span class="badge g" style="font-size:9px;letter-spacing:.06em">WKRÓTCE</span></button>
+    <button data-v="prop"><svg class="i"><use href="#i-flag"/></svg>Prop challenge<span class="badge" id="propNavBadge" style="display:none">0</span></button>
   </div>
   <div class="navg">
     <div class="gl">AKADEMIA</div>
@@ -507,6 +507,15 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge"><b>Krypto</b></span><span class="bdg">Trader Alpha · <b id="levelBadge">poziom 1</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
 
   <div class="lock lkb" id="lockBar"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Tryb ochronny włączony</b><p id="lockTxt">Dwie straty dziś, limit osiągnięty. Nowe pozycje w dzienniku są zablokowane do północy.</p></div><div class="cd cdt">--:--:--</div></div>
+
+  <div class="card" id="propDash" style="display:none;cursor:pointer;padding:16px 20px;margin-bottom:16px" data-go="prop">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div id="propDashIc" style="width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;background:var(--alphaS);color:var(--alpha)"><svg class="i"><use href="#i-flag"/></svg></div>
+      <div style="flex:1;min-width:0"><b id="propDashTitle"></b><p class="mut" id="propDashDesc" style="font-size:13.5px;margin-top:2px;line-height:1.45"></p></div>
+      <div class="mono" id="propDashVal" style="font-weight:800;white-space:nowrap"></div>
+      <svg class="i" style="color:var(--dim)"><use href="#i-arrow"/></svg>
+    </div>
+  </div>
 
   <div class="hero">
     <div class="card">
@@ -594,18 +603,24 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= PROP ================= -->
 <section class="view" id="prop">
-  <div class="head"><div><div class="eyebrow">Prop challenge · wkrótce</div><h1>Tryb <span class="serif">prop firmy.</span></h1><p>Zdajesz challenge w FTMO albo innej firmie? Alpha Vault będzie pilnować limitów za Ciebie: cel zysku, dzienny limit straty, maksymalne obsunięcie i dni do końca.</p></div><span class="tag al" style="font-size:12px;padding:6px 14px">WKRÓTCE DOSTĘPNE</span></div>
-  <div class="card soon" style="padding:0"><div class="blurz" style="padding:22px">
-    <div class="grid g4">
-      <div class="card"><div class="lbl">Cel zysku</div><div class="val win">5,2% / 8%</div><div class="bar"><i style="width:65%;background:var(--win)"></i></div></div>
-      <div class="card"><div class="lbl">Dzienny limit straty</div><div class="val warnc">1,8% / 5%</div><div class="bar"><i style="width:36%;background:var(--warn)"></i></div></div>
-      <div class="card"><div class="lbl">Max obsunięcie</div><div class="val">3,1% / 10%</div><div class="bar"><i style="width:31%;background:var(--cream)"></i></div></div>
-      <div class="card"><div class="lbl">Dni do końca</div><div class="val">18</div><div class="hint">min. 4 dni handlowe ✓</div></div>
+  <div class="head"><div><div class="eyebrow" id="propEyebrow">Prop challenge</div><h1>Tryb <span class="serif">prop firmy.</span></h1><p>Zdajesz challenge w FTMO albo innej firmie? Alpha Vault pilnuje limitów za Ciebie: cel zysku, dzienny limit straty, maksymalne obsunięcie i dni do końca — na podstawie transakcji z wybranego konta.</p></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="tag al" id="propHeaderTag" style="font-size:12px;padding:6px 14px">brak challenge'u</span><button class="btn g" data-prop-templates><svg class="i"><use href="#i-book"/></svg>Szablony</button><button class="btn p" data-prop-new><svg class="i"><use href="#i-plus"/></svg>Nowy challenge</button></div></div>
+  <div id="propToolbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px"><select class="input" id="propSelect" style="max-width:340px"></select><span class="chip" id="propArchToggle" style="cursor:pointer">Archiwum</span><span class="dim" style="font-size:12px">Wybierz challenge, żeby zobaczyć jego limity i statystyki.</span></div>
+  <div id="propEmpty" class="card" style="display:none"><div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 0"><div style="width:60px;height:60px;border-radius:18px;margin:0 auto 14px;display:grid;place-items:center;background:var(--alphaS);color:var(--alpha)"><svg class="i" style="width:28px;height:28px"><use href="#i-flag"/></svg></div><h2 style="font-size:24px">Ustaw pierwszy challenge</h2><p class="mut" style="margin-top:8px;line-height:1.6">Wybierz szablon FTMO lub innej firmy, wskaż konto i limity. Alpha Vault policzy postęp, bufor limitu i dni do końca.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap"><button class="btn p" data-prop-new><svg class="i"><use href="#i-plus"/></svg>Nowy challenge</button><button class="btn g" data-prop-templates>Przeglądaj szablony</button></div></div></div>
+  <div id="propBody">
+    <div id="propAlerts"></div>
+    <div class="grid g4" id="propKpis"></div>
+    <div class="grid propgrid" style="align-items:start;margin-top:16px">
+      <div class="grid">
+        <div class="card"><div class="sech"><h2>Limity challenge'u</h2><span class="mono dim" style="font-size:12px">liczone z zamkniętych transakcji</span></div><div id="propLimits"></div></div>
+        <div class="card"><div class="sech"><h2>Krzywa kapitału</h2><span class="mono dim" style="font-size:12px" id="propCurveTag"></span></div><svg id="propCurve" viewBox="0 0 600 190" width="100%" height="190" preserveAspectRatio="none"></svg><div id="propCurveMeta" style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:10px"></div></div>
+        <div class="card"><div class="sech"><h2>Wynik dzienny</h2><span class="mono dim" style="font-size:12px">ostatnie 10 dni z transakcjami</span></div><div id="propDaily"></div></div>
+      </div>
+      <div class="grid">
+        <div class="card hl"><div class="sech" style="margin:0"><div class="lbl">Status challenge'u</div><span id="propStatusTag"></span></div><h2 id="propStatus" style="font-size:26px;margin-top:12px">—</h2><p class="mut" id="propStatusDesc" style="font-size:13.5px;line-height:1.5;margin-top:6px"></p><div id="propChecklist" style="margin-top:14px"></div></div>
+        <div class="card"><div class="lbl" style="margin-bottom:6px">Statystyki challenge'u</div><div id="propStats"></div></div>
+        <div class="card"><div class="lbl">Zarządzanie</div><p class="hint" style="margin-top:6px">Edycja nie zmienia transakcji. Duplikat przydaje się przy kolejnej fazie.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn g sm" data-prop-act="edit">Edytuj</button><button class="btn g sm" data-prop-act="duplicate">Duplikuj</button><button class="btn g sm" data-prop-act="archive">Archiwizuj</button><button class="btn g sm" data-prop-act="delete" style="color:var(--loss)">Usuń</button></div><div class="hint" style="margin-top:12px">Limity prop firm zmieniają się. Przed startem potwierdź je w regulaminie firmy.</div></div>
+      </div>
     </div>
-    <div class="card" style="margin-top:16px;height:220px"></div></div>
-    <div class="ov"><div style="max-width:460px;padding:20px"><div style="width:60px;height:60px;border-radius:18px;margin:0 auto 14px;display:grid;place-items:center;background:var(--alphaS);color:var(--alpha)"><svg class="i" style="width:28px;height:28px"><use href="#i-flag"/></svg></div>
-      <h2 style="font-size:24px">Pracujemy nad tym</h2><p class="mut" style="margin-top:8px;line-height:1.6">Szablony zasad popularnych prop firm, alarm przed złamaniem limitu i osobne statystyki dla każdego challenge'u.</p>
-      <button class="btn p" id="propNotify" style="margin-top:18px"><svg class="i"><use href="#i-bell"/></svg>Powiadom mnie, gdy będzie gotowe</button></div></div>
   </div>
 </section>
 
@@ -1167,9 +1182,11 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <script src="js/core.js" defer></script>
 <script src="js/pwa.js" defer></script>
 <script src="js/data.js" defer></script>
+<script src="js/prop.js" defer></script>
 <script src="js/state.js" defer></script>
 <script src="js/render1.js" defer></script>
 <script src="js/render2.js" defer></script>
+<script src="js/propui.js" defer></script>
 <script src="js/actions.js" defer></script>
 </body>
 </html>

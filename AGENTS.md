@@ -176,8 +176,9 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 ### Testy
 
 ```powershell
-npm test                 # API 20/20
-npm run test:ui          # UI 37/37 (Chrome/Edge)
+npm test                 # API 21/21
+npm run test:prop        # silnik prop challenge 27/27 (bez serwera)
+npm run test:ui          # UI 51/51 (Chrome/Edge)
 npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
@@ -287,7 +288,7 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | API 20/20, UI 37/37, empty 10/10, events 24/24, wearables 33/33, PWA 20/20 |
+| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, wearables 33/33, PWA 20/20 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (14), w tym 4 tabele `wearable_*`, login OK |
 | `https://alphavault.pl` | **200** — wdrożona |

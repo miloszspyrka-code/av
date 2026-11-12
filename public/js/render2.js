@@ -172,6 +172,7 @@
     AV.renderWeekly();
     AV.setText('#analysisWhen', new Date().toLocaleDateString('pl-PL', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' · ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
     AV.renderQ();
+    if (AV.mentorExport) AV.setText('#mentorExport', AV.mentorExport(s));
     $$('#mChips .chip').forEach((c) => { c.style.pointerEvents = ''; });
   };
 
@@ -909,6 +910,8 @@
     AV.renderUser();
     AV.renderLock();
     AV.renderDashboard();
+    if (AV.renderProp) AV.renderProp();
+    if (AV.renderPropDashboard) AV.renderPropDashboard();
     AV.renderPlan();
     AV.renderJournal();
     AV.renderPlaybook();

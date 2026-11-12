@@ -487,9 +487,11 @@ index.html
   → core.js       (AV, $, $$, esc, fmt)
   → pwa.js        (instalacja PWA, powiadomienia, deep link)
   → data.js       (dane demo/statyczne)
+  → prop.js       (silnik prop challenge: szablony, limity, metryki)
   → state.js      (stan, API, rewizje, wydarzenia)
   → render1.js    (widoki, pulpit, dziennik)
   → render2.js    (statystyki, mentor, akademia, admin)
+  → propui.js     (widok prop, edytor, szablony, alerty)
   → actions.js    (zdarzenia, timery, modale)
 ```
 
@@ -665,8 +667,9 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Suita | Plik | Zakres | Wynik lokalny |
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
-| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
-| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy, 8 odznak | 37/37 PASS |
+| Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
+| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport, prop | 21/21 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, pusty stan, zapisy, 8 odznak | 51/51 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |

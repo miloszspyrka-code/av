@@ -204,6 +204,17 @@ Panel jest instalowalny z przeglądarki bez App Store i Google Play (`manifest.w
 
 Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Watch przez jednorazowy kod parowania i ingest z iPhone. Alpha Vault pobiera sen, HRV, tętno spoczynkowe, Body Battery i wynik regeneracji, liczy gotowość oraz pokazuje, jak sen wpływa na wynik dnia. Tokeny są szyfrowane, dane o zdrowiu przetwarzane tylko za zgodą, a odłączenie urządzenia usuwa je z bazy. Check-in przed rynkiem wnosi 30% gotowości.
 
+### FR-19 — Prop challenge
+
+Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów na podstawie dziennika.
+
+- szablony popularnych firm (FTMO, FundedNext, FundingPips, Topstep, Apex, Breakout) oraz własne zasady,
+- cel zysku, dzienny limit straty i maksymalne obsunięcie (static/trailing) liczone z zamkniętych transakcji wybranego konta,
+- dni do końca i minimalna liczba dni handlowych,
+- alerty przy 75/90/100% limitu, banner na pulpicie i powiadomienie (raz dziennie),
+- osobne statystyki, krzywa kapitału i status dla każdego challenge'u,
+- archiwum, duplikat i usuwanie konfiguracji bez wpływu na transakcje.
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -272,6 +283,7 @@ Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Wa
 | Synchronizacja Discord | gotowa, test realny 3/3 VOICE |
 | Testy DB/sync | PASS |
 | API / UI / empty-state | PASS |
+| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 21/21`, `UI 51/51`; deploy po merge |
 | Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
 | Deploy na `alphavault.pl` | **200** — wdrożony |
 | App path | `~/public_html/alphavault.pl/.app` (open_basedir, deny) |
@@ -306,3 +318,4 @@ Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Wa
 | FR-14 | [DOCUMENTATION.md §15](DOCUMENTATION.md#15-bezpieczeństwo) |
 | FR-15 | [docs/API.md](docs/API.md) |
 | FR-16 | [DOCUMENTATION.md §17](DOCUMENTATION.md#17-zarządzanie-dokumentacją), [AGENTS.md](AGENTS.md) |
+| FR-19 | [docs/PROP.md](docs/PROP.md), [docs/FUNKCJE.md](docs/FUNKCJE.md) |
