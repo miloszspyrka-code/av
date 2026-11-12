@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace AlphaVault;
 
 /**
- * Notowania rynkowe do paska tickera.
+ * Notowania rynkowe do paska tickera i kalkulatora.
  *
  * Źródło: Yahoo Finance Chart API (bez klucza, tylko odczyt).
  * Cache: plik JSON w katalogu aplikacji; TTL ogranicza liczbę zapytań do dostawcy.
@@ -12,7 +12,7 @@ namespace AlphaVault;
  */
 final class Quotes
 {
-    /** @var array<string,string> etykieta UI => symbol Yahoo */
+    /** @var array<string,string> etykieta UI => symbol Yahoo (pasek tickera) */
     private const SYMBOLS = [
         'BTC' => 'BTC-USD',
         'ETH' => 'ETH-USD',
@@ -22,6 +22,30 @@ final class Quotes
         'XAUUSD' => 'GC=F',
         'EUR/USD' => 'EURUSD=X',
         'OIL' => 'CL=F',
+    ];
+
+    /** @var array<string,string> instrumenty kalkulatora => symbol Yahoo */
+    private const INSTRUMENTS = [
+        'BTC/USDT' => 'BTC-USD',
+        'ETH/USDT' => 'ETH-USD',
+        'SOL/USDT' => 'SOL-USD',
+        'XRP/USDT' => 'XRP-USD',
+        'BNB/USDT' => 'BNB-USD',
+        'DOGE/USDT' => 'DOGE-USD',
+        'LINK/USDT' => 'LINK-USD',
+        'AVAX/USDT' => 'AVAX-USD',
+        'GBP/USD' => 'GBPUSD=X',
+        'USD/JPY' => 'JPY=X',
+        'AUD/USD' => 'AUDUSD=X',
+        'USD/CHF' => 'CHF=X',
+        'USD/CAD' => 'CAD=X',
+        'NZD/USD' => 'NZDUSD=X',
+        'EUR/GBP' => 'EURGBP=X',
+        'US30' => '^DJI',
+        'GER40' => '^GDAXI',
+        'UK100' => '^FTSE',
+        'JPN225' => '^N225',
+        'XAGUSD' => 'SI=F',
     ];
 
     /** Po tym czasie nieaktualne pojedyncze notowanie znika z odpowiedzi. */
@@ -41,14 +65,19 @@ final class Quotes
     }
 
     /**
+     * @param string[] $requested etykiety instrumentów; pusto = zestaw tickera
      * @return array{quotes:list<array{symbol:string,price:float,changePercent:?float}>,updatedAt:?string,stale:bool}
      */
-    public function get(): array
+    public function get(array $requested = []): array
     {
+        $symbols = $requested === [] ? array_keys(self::SYMBOLS) : $this->resolve($requested);
+        if ($symbols === []) {
+            return ['quotes' => [], 'updatedAt' => null, 'stale' => true];
+        }
+
         $state = $this->readCache();
-        $now = time();
-        if ($state !== null && $this->ttl > 0 && $now - (int) $state['fetchedAt'] < $this->ttl) {
-            return $this->payload($state, false);
+        if ($this->isFresh($state, $symbols)) {
+            return $this->payload($state, $symbols, false);
         }
 
         $this->ensureCacheDir();
@@ -58,20 +87,20 @@ final class Quotes
                 fclose($lock);
             }
             return $state !== null
-                ? $this->payload($state, true)
+                ? $this->payload($state, $symbols, true)
                 : ['quotes' => [], 'updatedAt' => null, 'stale' => true];
         }
 
         try {
             // Inny proces mógł odświeżyć cache, zanim przejęliśmy blokadę.
             $state = $this->readCache();
-            $now = time();
-            if ($state !== null && $this->ttl > 0 && $now - (int) $state['fetchedAt'] < $this->ttl) {
-                return $this->payload($state, false);
+            if ($this->isFresh($state, $symbols)) {
+                return $this->payload($state, $symbols, false);
             }
 
+            $now = time();
             try {
-                $fresh = $this->fetch();
+                $fresh = $this->fetch($symbols);
             } catch (\Throwable $err) {
                 error_log('[quotes] ' . $err->getMessage());
                 $fresh = [];
@@ -79,43 +108,104 @@ final class Quotes
 
             if ($fresh === []) {
                 return $state !== null
-                    ? $this->payload($state, true)
+                    ? $this->payload($state, $symbols, true)
                     : ['quotes' => [], 'updatedAt' => null, 'stale' => true];
             }
 
-            $quotes = [];
-            foreach (array_keys(self::SYMBOLS) as $symbol) {
-                if (isset($fresh[$symbol])) {
-                    $quotes[$symbol] = $fresh[$symbol] + ['at' => $now];
-                    continue;
-                }
-                $old = $state['quotes'][$symbol] ?? null;
-                if (is_array($old) && is_numeric($old['price'] ?? null) && $now - (int) ($old['at'] ?? 0) <= self::MAX_ITEM_AGE) {
-                    $quotes[$symbol] = $old;
+            $quotes = is_array($state['quotes'] ?? null) ? $state['quotes'] : [];
+            foreach ($fresh as $symbol => $quote) {
+                if (is_numeric($quote['price'] ?? null) && (float) $quote['price'] > 0) {
+                    $quotes[$symbol] = $quote + ['at' => $now];
                 }
             }
 
             $state = ['fetchedAt' => $now, 'quotes' => $quotes];
             $this->writeCache($state);
 
-            return $this->payload($state, count($quotes) < count(self::SYMBOLS));
+            return $this->payload($state, $symbols, false);
         } finally {
             @flock($lock, LOCK_UN);
             fclose($lock);
         }
     }
 
+    /** Etykieta z UI („NAS100 · Nasdaq 100”) na klucz notowań („NAS100”). */
+    public static function normalize(string $raw): string
+    {
+        $parts = preg_split('/[\x{2013}\x{2014}\x{00B7}]/u', $raw);
+        $value = is_array($parts) && isset($parts[0]) ? $parts[0] : $raw;
+        $value = preg_replace('/\s+/u', '', trim($value));
+
+        return strtoupper((string) $value);
+    }
+
+    /** @return string[] obsługiwane symbole (ticker + instrumenty) */
+    public static function supported(): array
+    {
+        return array_keys(self::all());
+    }
+
+    /** @return array<string,string> */
+    private static function all(): array
+    {
+        return self::SYMBOLS + self::INSTRUMENTS;
+    }
+
+    /**
+     * @param string[] $requested
+     * @return string[]
+     */
+    private function resolve(array $requested): array
+    {
+        $known = self::all();
+        $out = [];
+        foreach ($requested as $label) {
+            $symbol = self::normalize((string) $label);
+            if ($symbol !== '' && isset($known[$symbol]) && !in_array($symbol, $out, true)) {
+                $out[] = $symbol;
+            }
+            if (count($out) >= 40) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param ?array{fetchedAt:int,quotes:array<string,array{price:float,change:?float,at:int}>} $state
+     * @param string[] $symbols
+     */
+    private function isFresh(?array $state, array $symbols): bool
+    {
+        if ($state === null || $this->ttl <= 0 || time() - (int) $state['fetchedAt'] >= $this->ttl) {
+            return false;
+        }
+        foreach ($symbols as $symbol) {
+            if (!is_numeric($state['quotes'][$symbol]['price'] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * @param array{fetchedAt:int,quotes:array<string,array{price:float,change:?float,at:int}>} $state
+     * @param string[] $symbols
      * @return array{quotes:list<array{symbol:string,price:float,changePercent:?float}>,updatedAt:?string,stale:bool}
      */
-    private function payload(array $state, bool $stale): array
+    private function payload(array $state, array $symbols, bool $stale): array
     {
         $quotes = [];
         $latest = 0;
-        foreach (array_keys(self::SYMBOLS) as $symbol) {
+        $now = time();
+        foreach ($symbols as $symbol) {
             $item = $state['quotes'][$symbol] ?? null;
             if (!is_array($item) || !is_numeric($item['price'] ?? null)) {
+                continue;
+            }
+            if ($now - (int) ($item['at'] ?? 0) > self::MAX_ITEM_AGE) {
                 continue;
             }
             $quotes[] = [
@@ -129,14 +219,15 @@ final class Quotes
         return [
             'quotes' => $quotes,
             'updatedAt' => $latest > 0 ? gmdate('Y-m-d\TH:i:s\Z', $latest) : null,
-            'stale' => $stale,
+            'stale' => $stale || count($quotes) < count($symbols),
         ];
     }
 
     /**
+     * @param string[] $symbols
      * @return array<string,array{price:float,change:?float}>
      */
-    private function fetch(): array
+    private function fetch(array $symbols): array
     {
         if ($this->fetcher !== null) {
             return ($this->fetcher)();
@@ -150,8 +241,13 @@ final class Quotes
             throw new \RuntimeException('Nie można uruchomić klienta HTTP.');
         }
 
+        $known = self::all();
         $handles = [];
-        foreach (self::SYMBOLS as $symbol => $yahooSymbol) {
+        foreach ($symbols as $symbol) {
+            $yahooSymbol = $known[$symbol] ?? null;
+            if ($yahooSymbol === null) {
+                continue;
+            }
             $url = $this->baseUrl . '/v8/finance/chart/' . rawurlencode($yahooSymbol) . '?interval=1d&range=2d';
             $handle = curl_init($url);
             if ($handle === false) {
