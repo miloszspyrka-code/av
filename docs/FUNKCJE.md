@@ -24,6 +24,7 @@ Legenda:
 | Usunięcie konta | ✅ | `DELETE /api/account` (kaskada) |
 | Eksport danych ZIP | ✅ | JSON, CSV transakcji, CSV podatków, plany, screeny, avatar |
 | Eksport JSON przez API | ✅ | `GET /api/me/export` |
+| Ticker notowań | ✅ | `GET /api/quotes` co 60 s; realne ceny Yahoo Finance; `stale` i ostatni dobry zestaw przy błędzie |
 
 > Płatności Stripe nie są podłączone. Modal zakupu jest demonstracyjny i nie pobiera pieniędzy.
 

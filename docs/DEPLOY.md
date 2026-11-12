@@ -63,6 +63,7 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja Garmin Health API (opcjonalne; wymaga zatwierdzenia partnera) |
 | `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | endpointy przydzielone przez Garmin |
 | `WEARABLES_ENCRYPTION_KEY` | opcjonalny klucz AES tokenów urządzeń |
+| `QUOTES_BASE`, `QUOTES_TTL`, `QUOTES_CACHE` | notowania rynkowe: URL dostawcy, TTL cache w sekundach (0–3600), plik cache |
 
 Zmienne repozytorium:
 

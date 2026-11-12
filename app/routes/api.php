@@ -100,6 +100,11 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             Http::json([...$base, 'user' => $auth->publicUser($user)]);
         }
 
+        if ($path === '/api/quotes' && $method === 'GET') {
+            $quotes = new Quotes($config->quotesCacheFile, $config->quotesBase, $config->quotesTtl);
+            Http::json($quotes->get());
+        }
+
         if ($path === '/api/state' && $method === 'GET') {
             $current = $auth->requireAuth($user);
             $row = $db->queryOne('SELECT state, revision, bytes, updated_at FROM user_states WHERE user_id = ?', [$current['id']]);
