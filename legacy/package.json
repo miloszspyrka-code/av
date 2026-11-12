@@ -1,0 +1,30 @@
+{
+  "name": "alpha-vault",
+  "version": "2.1.0",
+  "private": true,
+  "description": "Alpha Vault — panel tradera z logowaniem Discord, API i bazą MySQL",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "serve:static": "node tools/serve.js",
+    "db:setup": "node db/migrate.js",
+    "mysql:start": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/mysql-start.ps1",
+    "mysql:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/mysql-stop.ps1",
+    "mysql:status": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/mysql-status.ps1",
+    "build": "node tools/build.js",
+    "test": "node tests/api.e2e.mjs",
+    "test:ui": "node tests/ui.e2e.mjs",
+    "test:all": "node tests/api.e2e.mjs && node tests/ui.e2e.mjs"
+  },
+  "keywords": ["trading", "journal", "discord", "mysql"],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "mysql2": "^3.15.3"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.57.0"
+  }
+}

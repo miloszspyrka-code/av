@@ -1,0 +1,323 @@
+openapi: 3.1.0
+info:
+  title: Alpha Vault API
+  version: 2.1.0
+  description: |
+    API panelu Alpha Vault. Uwierzytelnianie przez sesję w cookie HttpOnly
+    ustawianą po logowaniu Discord OAuth2 lub w trybie demo.
+    Stan aplikacji jest dokumentem JSON zapisywanym w MySQL z optymistyczną rewizją.
+  contact:
+    name: Alpha Moves
+    url: https://www.alphamoves.pl
+servers:
+  - url: http://127.0.0.1:4173
+    description: Lokalny
+  - url: https://vault.alphamoves.pl
+    description: Produkcja (przykład)
+tags:
+  - name: Auth
+  - name: API
+  - name: System
+
+paths:
+  /api/health:
+    get:
+      tags: [System]
+      summary: Health check + MySQL
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Baza niedostępna
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/me:
+    get:
+      tags: [API]
+      summary: Profil zalogowanego użytkownika lub stan anonimowy
+      responses:
+        '200':
+          description: Zawsze 200; pole authenticated mówi o sesji
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+  /api/state:
+    get:
+      tags: [API]
+      summary: Pobierz stan użytkownika
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Stan i rewizja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StateEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [API]
+      summary: Zapisz cały stan (optymistyczna rewizja)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatePutRequest'
+      responses:
+        '200':
+          description: Zapisano
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatePutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Złe Origin (CSRF)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Konflikt rewizji
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Stan za duży
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit
+    delete:
+      tags: [API]
+      summary: Wyczyść stan (konto zostaje)
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Wyczyszczono
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/me/export:
+    get:
+      tags: [API]
+      summary: Eksport JSON (attachment)
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Plik JSON
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/account:
+    delete:
+      tags: [API]
+      summary: Usuń konto i wszystkie dane
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Usunięto
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/discord:
+    get:
+      tags: [Auth]
+      summary: Start OAuth2 Discord
+      parameters:
+        - name: remember
+          in: query
+          schema:
+            type: string
+            enum: ['0', '1']
+            default: '1'
+      responses:
+        '302':
+          description: Przekierowanie do Discord
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        '503':
+          description: Brak konfiguracji Discord
+  /auth/discord/callback:
+    get:
+      tags: [Auth]
+      summary: Callback OAuth2 Discord
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '302':
+          description: Zalogowano, przekierowanie do UI
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+        '400':
+          description: Zły lub wygasły state
+        '403':
+          description: Brak wymaganej roli/członkostwa
+        '502':
+          description: Błąd Discorda
+  /auth/demo:
+    post:
+      tags: [Auth]
+      summary: Logowanie demo (gdy ALLOW_DEMO_LOGIN=true)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                remember:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Sesja demo
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  redirect: { type: string }
+                  user:
+                    $ref: '#/components/schemas/User'
+        '403':
+          description: Demo wyłączone
+        '429':
+          description: Rate limit
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Wyloguj
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sesja usunięta
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: av_session
+  responses:
+    Unauthorized:
+      description: Brak sesji
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Nieprawidłowe żądanie
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string }
+        message: { type: string }
+        revision: { type: integer }
+        bytes: { type: integer }
+        limit: { type: integer }
+    Health:
+      type: object
+      properties:
+        ok: { type: boolean }
+        service: { type: string }
+        version: { type: string }
+        uptime: { type: integer }
+        now: { type: string, format: date-time }
+        db:
+          type: object
+          properties:
+            ok: { type: boolean }
+            version: { type: string }
+            latencyMs: { type: integer }
+    Subscription:
+      type: object
+      properties:
+        plan: { type: string, enum: [solo, full] }
+        accessUntil: { type: [string, 'null'], format: date }
+        expired: { type: boolean }
+        roleVerified: { type: boolean }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        globalName: { type: [string, 'null'] }
+        avatarUrl: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        isDemo: { type: boolean }
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+    Me:
+      type: object
+      properties:
+        authenticated: { type: boolean }
+        discordConfigured: { type: boolean }
+        roleCheckConfigured: { type: boolean }
+        demoAllowed: { type: boolean }
+        db: { type: string }
+        user:
+          $ref: '#/components/schemas/User'
+    StateEnvelope:
+      type: object
+      properties:
+        state:
+          type: [object, 'null']
+          additionalProperties: true
+        revision: { type: integer }
+        bytes: { type: integer }
+        updatedAt: { type: [string, 'null'] }
+    StatePutRequest:
+      type: object
+      required: [state, baseRevision]
+      properties:
+        state:
+          type: object
+          additionalProperties: true
+        baseRevision:
+          type: integer
+          minimum: 0
+    StatePutResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        revision: { type: integer }
+        bytes: { type: integer }
+        updatedAt: { type: string, format: date-time }
