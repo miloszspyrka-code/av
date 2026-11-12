@@ -1,8 +1,7 @@
 # Changelog
 
-## 3.5.0 — 2026-11-12
+## 3.6.0 - 2026-11-12
 
-<<<<<<< HEAD
 ### Dodane
 - Kalendarz makro w MySQL: `macro_events` + `macro_sync_state` oraz `GET /api/macro-events`.
 - Sync `bin/sync-macro-events.php`: bieżący tydzień ForexFactory, następny tydzień TradingView; UPSERT, soft delete, tylko ★★/★★★.
@@ -12,7 +11,9 @@
 ### Zmienione
 - Puste dane makro = puste pola (bez „Brak wydarzeń”, „spokojnie do końca tygodnia”).
 - Deploy uruchamia jednorazowy sync makro po migracji; LH Cron co 15 min.
-=======
+
+## 3.5.0 - 2026-11-12
+
 ### Zmienione
 - WEEX: każdy klucz API przechodzi połączenie. Usunięte odrzucanie kluczy z prawem handlu lub wypłat (`read_only_required`) i próba zlecenia na nieistniejącym symbolu; wymagany jest wyłącznie działający odczyt konta. Połączenie zapisuje `permissions: any`.
 - Giełdy UI: instrukcja WEEX bez nakazu „tylko odczyt”, nota o warunkach per giełda, wiersz uprawnień pokazuje „dowolne (odczyt wystarcza)”.
@@ -22,7 +23,6 @@
 ### Testy
 - Integracje: WEEX z kluczem `weex-trade` = 201 i `permissions: any` (było 422).
 - UI integracje: formularz WEEX przyjmuje klucz z handlem i pokazuje uprawnienia „dowolne (odczyt wystarcza)”.
->>>>>>> origin/main
 
 ## 3.4.0 — 2026-11-12
 
