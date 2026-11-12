@@ -400,10 +400,9 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 
 ```text
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
-*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
 ```
 
-Wrapper uruchamia kolejno `bin/sync-discord-events.php` i `bin/check-discord-roles.php` (recheck roli co 5 min).
+Wrapper uruchamia kolejno `bin/sync-discord-events.php`, `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu: `.app/.runtime/*.stamp`, więc kolejny wpis w panelu LH nie jest potrzebny.
 
 Ręcznie (bez panelu):
 

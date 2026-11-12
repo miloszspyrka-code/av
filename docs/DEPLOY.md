@@ -103,11 +103,7 @@ Garmin i Whoop są wyłączone na razie: kod OAuth i konfiguracja pozostają w r
 
 Apple Watch nie używa OAuth. Panel generuje kod `AV-XXXX-XXXX`; aplikacja iPhone wysyła nim `POST /api/wearables/apple/ingest` i dostaje token urządzenia. Sama aplikacja iPhone nie jest częścią tego repozytorium — backend jest gotowy, ale do realnego użycia potrzebna jest aplikacja klienta.
 
-Synchronizacja OAuth2 może być uruchamiana ręcznie z panelu i przez cron:
-
-```cron
-*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh >> /public_html/alphavault.pl/.app/logs/wearables-sync.log 2>&1
-```
+Synchronizacja OAuth2 działa z panelu i z crona. Osobny wpis w panelu nie jest potrzebny — wrapper `cron/sync-discord-events.sh` uruchamia `bin/sync-wearables.php` co 30 min (throttle). Log z wrappera: `~/public_html/alphavault.pl/.app/logs/cron.log`.
 
 ## 5. Synchronizacja Discord (CRON)
 
@@ -117,7 +113,7 @@ Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadan
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-Skrypt uruchamia kolejno `bin/sync-discord-events.php` i `bin/check-discord-roles.php` (recheck roli co 5 min).
+Skrypt uruchamia kolejno `bin/sync-discord-events.php`, `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu są w `.app/.runtime/*.stamp`.
 
 Ręcznie (bez panelu):
 
@@ -130,11 +126,7 @@ Ręcznie (bez panelu):
 
 ## 5a. Synchronizacja kalendarza makro (CRON)
 
-Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadanie:
-
-```text
-*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
-```
+Osobny wpis w panelu nie jest potrzebny. Wrapper `cron/sync-discord-events.sh` uruchamiany co 5 min wywołuje `bin/sync-macro-events.php` co 15 min (throttle w `.app/.runtime/macro.stamp`).
 
 Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-macro-events.php`.
 
@@ -308,11 +300,7 @@ Istniejące zadanie co 5 min wywołuje także worker integracji i recheck roli:
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-Kalendarz makro ma osobne zadanie co 15 min:
-
-```text
-*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
-```
+Kalendarz makro, urządzenia i recheck roli nie mają osobnych wpisów — wrapper wywołuje je z throttle (15/30 min).
 
 Worker pilnuje progu 25 minut, więc realny import odbywa się co ok. 30 min. Ręcznie:
 

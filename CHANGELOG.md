@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.9.1 - 2026-11-13
+
+### Zmienione
+- Jeden wpis LH Cron `*/5` uruchamia teraz także sync makro (co 15 min) i sync urządzeń (co 30 min) przez throttle `.runtime/*.stamp`; osobne wpisy w panelu nie są potrzebne.
+
 ## 3.9.0 — 2026-11-13
 
 ### Naprawione

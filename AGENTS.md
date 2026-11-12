@@ -154,7 +154,7 @@ MySQL: serwer445119_alphavault
 | DB name/user | `serwer445119_alphavault` |
 | PHP CLI | `/usr/bin/php` (8.3) |
 | Cron (panel LH) | `*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh` |
-| Cron makro (panel LH) | `*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh` |
+| Cron makro (panel LH) | brak osobnego wpisu — wrapper `*/5` uruchamia makro co 15 min (throttle) |
 | Cron (ręcznie) | `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
 | Log sync | `~/public_html/alphavault.pl/.app/logs/discord-sync.log` |
 
@@ -309,7 +309,7 @@ npm run test:docs
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 doda kolumnę EA i tabele MCP |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
 | Cron integracji | `success` 20:20:01, 0 połączeń, 0 importów (LH Cron co 5 min) |
-| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; zadanie LH Cron co 15 min do dodania w panelu |
+| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; wrapper LH Cron `*/5` uruchamia sync co 15 min (throttle, bez osobnego wpisu) |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
@@ -322,7 +322,7 @@ npm run test:docs
 | PWA na fizycznym telefonie | **niezweryfikowane** — wymaga instalacji i zgody na powiadomienia |
 | Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; **Oura skonfigurowana** (`ouraConfigured=true`, deploy 3.8.0 z 2026-11-12); Garmin i Whoop wyłączone |
 | Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
-| Cron urządzeń | `cron/sync-wearables.sh` wdrożony, uruchomiony ręcznie 2026-11-12 (`ok=0 failed=0 total=0`); wpis w panelu LH do dodania |
+| Cron urządzeń | `cron/sync-wearables.sh` wdrożony; wrapper LH Cron `*/5` uruchamia sync co 30 min (throttle, bez osobnego wpisu) |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
@@ -334,8 +334,7 @@ npm run test:docs
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
 4. Oura: zarejestruj redirect `https://alphavault.pl/auth/wearables/oura/callback` w Oura Cloud i wykonaj interaktywny test połączenia; sekrety `OURA_*` są już wdrożone.
-5. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
-6. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+5. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego
 
