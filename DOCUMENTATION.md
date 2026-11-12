@@ -608,7 +608,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 
 - `main` wymaga PR i zielonego checku `PHP + API + UI`; bez bezpośredniego push, force push i usuwania gałęzi.
 - `enforce_admins=true`; merge commit wyłączony — dozwolone squash/rebase.
-- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje przez `deploy-alphavault.yml`.
+- `DEPLOY_ENABLED=true`; deploy na `main` startuje dopiero po zielonym CI (`workflow_run`), na commicie zweryfikowanym przez `PHP + API + UI`.
 - Environment `alphavault-production` dopuszcza deploy tylko z `main`.
 - Repo jest publiczne; secret scanning, push protection i Dependabot security updates są włączone.
 
