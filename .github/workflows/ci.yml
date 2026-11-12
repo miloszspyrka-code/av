@@ -208,7 +208,7 @@ jobs:
             Object.assign(config, {
               APP_URL: "http://127.0.0.1:4175",
               INTEGRATIONS_KEY: "ci-integrations-key-0123456789abcdef0123456789abcdef",
-              METAAPI_TOKEN: "ci-metaapi-token",
+              METAAPI_TOKEN: "test-metaapi-token",
               OKX_BASE: "http://127.0.0.1:4191/okx",
               BINGX_BASE: "http://127.0.0.1:4191/bingx",
               WEEX_SPOT_BASE: "http://127.0.0.1:4191/weex",
