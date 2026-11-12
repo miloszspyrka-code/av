@@ -20,7 +20,7 @@ W panelu LH.pl (`https://panel.lh.pl/` → Serwery → serwer445119 → Bazy dan
 
 Nie używaj bazy ani użytkownika WordPressa.
 
-**Stan 2026-11-12:** baza i użytkownik istnieją, logowanie działa, tabel brak. Migracja wykona się przy deployu.
+**Stan 2026-11-12:** baza i użytkownik istnieją, logowanie działa, tabele utworzone przez deploy (`users`, `sessions`, `user_states`, `discord_scheduled_events`, `discord_sync_state`, `discord_sync_runs` i pozostałe).
 
 Hasło użytkownika bazy trafia do GitHub secret `DB_PASSWORD` przez `gh secret set`; nie jest zapisywane w repo.
 
@@ -175,6 +175,8 @@ Po deployu:
 3. uruchom ręcznie sync i porównaj `events_count` z Discordem,
 4. skonfiguruj Cron i potwierdź wpis w logu po 5 minutach,
 5. sprawdź puste pola na środowisku testowym, nie na produkcji.
+
+**Wynik 2026-11-12:** `/` 200, health wszystkie flagi `true`, `/docs/` 200, `.app` 403, sync 3/3 bez duplikatów, UI read-only PASS. Cron nadal wymaga wpisu w panelu.
 
 ## 8. Bezpieczeństwo
 

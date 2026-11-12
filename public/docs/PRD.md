@@ -260,10 +260,12 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | Synchronizacja Discord | gotowa, test realny 3/3 VOICE |
 | Testy DB/sync | PASS |
 | API / UI / empty-state | PASS |
-| Baza `serwer445119_alphavault` | istnieje, login OK, brak tabel |
-| Deploy na `alphavault.pl` | brak; strona zwraca 403 |
-| GitHub Actions | zablokowane przez billing |
-| LH Cron | nieskonfigurowany |
+| Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
+| Deploy na `alphavault.pl` | **200** — wdrożony |
+| GitHub Actions | działa |
+| Prod sync | success, 3 wydarzenia, 3 unikalne ID |
+| Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
+| LH Cron | nieskonfigurowany — wymaga panelu LH |
 | Stage | niezweryfikowany |
 | OAuth Discord w przeglądarce | nieprzetestowany interaktywnie |
 

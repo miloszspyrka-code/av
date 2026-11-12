@@ -567,6 +567,8 @@ Plik: `.github/workflows/deploy-alphavault.yml`.
    - health check,
    - rollback przy błędzie.
 
+**Stan 2026-11-12:** deploy zakończony sukcesem; `https://alphavault.pl` → 200, `/api/health` → `ok=true`, `db.ok=true`, `discordConfigured=true`, `roleCheckConfigured=true`, `eventsConfigured=true`, `demoAllowed=false`; `/.app/config.json` → 403; `/docs/` → 200.
+
 ### 14.2. Health check
 
 `GET /api/health` musi zwrócić:
@@ -618,6 +620,9 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
+| Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
+| Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | 3/3, bez duplikatów |
+| Prod UI read-only | Playwright + sesja testowa | live, harmonogram, puste konsultacje | 10/10 PASS |
 
 Komendy:
 
@@ -631,7 +636,7 @@ npm run test:docs
 
 CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-state na osobnym porcie.
 
-**Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika.
+**Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika; LH Cron wymaga dodania wpisu w panelu LH (SSH nie ma dostępu do `crontab`).
 
 ## 17. Zarządzanie dokumentacją
 

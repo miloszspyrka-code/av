@@ -14,6 +14,14 @@
 - Deploy synchronizuje katalog `config/`, bez nadpisywania aktywnego `discord_event_rules.json`.
 - CI uruchamia test dokumentacji przed testami PHP.
 - README, API, architektura, baza, funkcje, testy i deploy wskazują na nowe dokumenty.
+- Kod i `config.json` przeniesione do `~/public_html/alphavault.pl/.app` z powodu `open_basedir` LH; katalog blokowany przez `.htaccess`.
+- `/docs/` kierowane do indeksu dokumentacji (wcześniej Apache zwracał 403).
+
+### Wdrożone
+- Produkcja `https://alphavault.pl` → 200, health OK.
+- Realny sync Discord → 3 wydarzenia VOICE, bez duplikatów.
+- Prod UI read-only: live, harmonogram, puste konsultacje.
+- LH Cron pozostaje do dodania w panelu LH.
 
 ## 3.0.0 — 2026-11-12
 

@@ -62,8 +62,10 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 - Domena: `https://alphavault.pl`
 - Document root: `~/public_html/alphavault.pl`
 - Kod aplikacji i `config.json`: `~/public_html/alphavault.pl/.app` (ukryty katalog, deny)
-- Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml`.
-- Rollback: ręczne uruchomienie workflow z `rollback=true` (przywraca ostatni backup z `~/alphavault-backups`).
+- Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml` (gdy `DEPLOY_ENABLED=true`).
+- Rollback: workflow z `rollback=true` przywraca ostatni backup z `~/alphavault-backups`.
+
+**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK, sync Discord 3/3, `/docs/` 200; LH Cron do dodania w panelu.
 
 Wymagane sekrety GitHub:
 
