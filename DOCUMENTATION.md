@@ -785,7 +785,7 @@ bin/sync-exchange-trades.php  ręczny/CRON worker
 
 1. Przeglądarka wysyła `POST /api/connections` z polami klucza.
 2. Serwer waliduje klucz u dostawcy i sprawdza uprawnienia.
-3. Klucz z prawem handlu/wypłat jest odrzucany (`read_only_required`).
+3. OKX i BingX odrzucają klucz z prawem handlu/wypłat (`read_only_required`). WEEX akceptuje każdy klucz, który przechodzi odczyt konta — również z handlem i wypłatami (`permissions: any`).
 4. Poświadczenia są szyfrowane AES-256-GCM kluczem `INTEGRATIONS_KEY` i zapisywane w `exchange_connections`.
 5. Do UI wraca wyłącznie maska, status i liczniki.
 
