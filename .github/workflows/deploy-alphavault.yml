@@ -69,6 +69,8 @@ jobs:
           DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
           DISCORD_REQUIRED_ROLE_ID: ${{ secrets.DISCORD_REQUIRED_ROLE_ID }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          INTEGRATIONS_KEY: ${{ secrets.INTEGRATIONS_KEY }}
+          METAAPI_TOKEN: ${{ secrets.METAAPI_TOKEN }}
         run: |
           set -euo pipefail
           missing=0

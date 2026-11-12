@@ -73,7 +73,7 @@ try {
   log('Discord strip live', liveTop.length > 0, liveTop);
 
   // nawigacja po wszystkich widokach
-  const views = ['plan', 'trans', 'play', 'nowa', 'kalk', 'stat', 'mentor', 'akad', 'tax', 'kal', 'cialo', 'gieldy', 'ust', 'pulpit'];
+  const views = ['plan', 'trans', 'play', 'nowa', 'kalk', 'prop', 'stat', 'mentor', 'akad', 'tax', 'kal', 'cialo', 'gieldy', 'ust', 'pulpit'];
   for (const v of views) {
     await page.click(`.navg button[data-v="${v}"]`);
     const on = await page.locator('.view.on').getAttribute('id');
@@ -127,13 +127,165 @@ try {
   await page.click('#statSeg [data-r="90"]');
   log('statystyki: zakresy', st90 !== st7, st90 + ' → ' + st7);
 
+  // prop challenge: szablony, create, walidacja, XSS, alert, archiwum, reload, delete
+  const dayKeyLocal = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const dStart = new Date(); dStart.setDate(dStart.getDate() - 20);
+  const dEnd = new Date(); dEnd.setDate(dEnd.getDate() + 10);
+  await page.click('.navg button[data-v="prop"]');
+  assert.equal(await page.locator('.view.on').getAttribute('id'), 'prop');
+  await page.click('#prop .head [data-prop-templates]');
+  await page.waitForSelector('#gModal.on');
+  const templateCount = await page.locator('#gModal [data-prop-template]').count();
+  log('prop: katalog szablonów', templateCount >= 8, templateCount + ' szablonów');
+  await page.evaluate(() => AV.closeModal());
+
+  await page.click('#prop .head [data-prop-new]');
+  await page.waitForSelector('#peSave');
+  await page.selectOption('#peTemplate', 'ftmo-2step');
+  await page.fill('#peName', 'E2E Prop 10K');
+  await page.selectOption('#peAccount', 'WEEX');
+  await page.fill('#peSize', '10000');
+  await page.fill('#peStartBalance', '10000');
+  await page.fill('#peTarget', '10');
+  await page.fill('#peDaily', '5');
+  await page.fill('#peMax', '10');
+  await page.fill('#peStart', dayKeyLocal(dStart));
+  await page.fill('#peEnd', dayKeyLocal(dEnd));
+  await page.click('#peSave');
+  await page.waitForTimeout(350);
+  const createdProp = await page.evaluate(() => AV.state.prop.challenges.find((c) => c.name === 'E2E Prop 10K'));
+  assert.ok(createdProp, 'challenge nie zapisany');
+  assert.equal(createdProp.account, 'WEEX');
+  assert.equal(createdProp.targetPct, 10);
+  const kpiCount = await page.locator('#propKpis .card').count();
+  const propText = await page.locator('#prop').innerText();
+  log('prop: nowy challenge + 4 KPI', kpiCount === 4 && !propText.includes('WKRÓTCE'), kpiCount + ' KPI');
+
+  // walidacja: pusta nazwa nie zapisuje
+  await page.click('[data-prop-act="edit"]');
+  await page.waitForSelector('#peSave');
+  await page.fill('#peName', '');
+  await page.click('#peSave');
+  const validationVisible = await page.locator('#peError').isVisible();
+  assert.ok(validationVisible, 'brak komunikatu walidacji');
+  await page.fill('#peName', 'E2E Prop Edited');
+  await page.click('#peSave');
+  await page.waitForTimeout(300);
+  log('prop: walidacja formularza', validationVisible, 'pusta nazwa zablokowana');
+
+  // XSS w nazwie: literal w stanie, zero wykonania
+  await page.click('[data-prop-act="edit"]');
+  await page.fill('#peName', '<img src=x onerror="window.__xss=1">');
+  await page.click('#peSave');
+  await page.waitForTimeout(250);
+  const xssState = await page.evaluate(() => ({
+    literal: AV.state.prop.challenges.some((c) => c.name === '<img src=x onerror="window.__xss=1">'),
+    fired: window.__xss === 1,
+    injected: document.querySelectorAll('#prop img[src="x"]').length
+  }));
+  assert.ok(xssState.literal && !xssState.fired && xssState.injected === 0);
+  await page.click('[data-prop-act="edit"]');
+  await page.fill('#peName', 'E2E Prop Edited');
+  await page.click('#peSave');
+  await page.waitForTimeout(250);
+  log('prop: XSS w nazwie', true, 'escaped');
+
+  // alarm: tymczasowa strata ponad dzienny limit + banner na pulpicie
+  await page.evaluate(() => {
+    const c = AV.state.prop.challenges.find((x) => x.name === 'E2E Prop Edited');
+    c.dailyLossPct = 0.01;
+    AV.state.trades.push({ id: 'e2e_prop_tmp', date: new Date().toISOString(), result: -100, r: -1, account: 'WEEX', pair: 'E2E/USDT' });
+    AV.propSetSelected(c.id);
+    AV.renderProp();
+    AV.renderPropDashboard();
+  });
+  await page.waitForTimeout(120);
+  const alarmText = await page.locator('#propAlerts').innerText();
+  const dashState = await page.evaluate(() => ({
+    display: document.querySelector('#propDash')?.style.display,
+    title: document.querySelector('#propDashTitle')?.textContent,
+    desc: document.querySelector('#propDashDesc')?.textContent
+  }));
+  assert.ok(/dzienny limit/i.test(alarmText), 'brak alarmu dziennego limitu');
+  assert.notEqual(dashState.display, 'none', 'banner prop nie został pokazany');
+  log('prop: alarm limitu + pulpit', true, dashState.title + ' / ' + dashState.desc);
+  await page.evaluate(() => {
+    AV.state.trades = AV.state.trades.filter((t) => t.id !== 'e2e_prop_tmp');
+    const c = AV.state.prop.challenges.find((x) => x.name === 'E2E Prop Edited');
+    c.dailyLossPct = 5;
+    AV.renderProp();
+    AV.renderPropDashboard();
+    AV.saveNow();
+  });
+
+  // archiwum: ukrycie, podgląd, przywrócenie
+  await page.click('[data-prop-act="archive"]');
+  await page.waitForTimeout(150);
+  const archived = await page.evaluate(() => AV.state.prop.challenges.find((c) => c.name === 'E2E Prop Edited')?.archived);
+  assert.equal(archived, true);
+  await page.waitForTimeout(400);
+  await page.locator('#propArchToggle').scrollIntoViewIfNeeded();
+  await page.click('#propArchToggle');
+  await page.waitForTimeout(150);
+  const archivedOption = await page.locator('#propSelect option').allTextContents();
+  assert.ok(archivedOption.some((t) => t.includes('E2E Prop Edited') && t.includes('archiwum')));
+  await page.selectOption('#propSelect', { label: 'E2E Prop Edited · archiwum' });
+  await page.click('[data-prop-act="archive"]');
+  await page.waitForTimeout(120);
+  const restored = await page.evaluate(() => AV.state.prop.challenges.find((c) => c.name === 'E2E Prop Edited')?.archived);
+  assert.equal(restored, false);
+  await page.waitForTimeout(200);
+  await page.locator('#propArchToggle').scrollIntoViewIfNeeded();
+  await page.click('#propArchToggle');
+  log('prop: archiwum + przywrócenie', true);
+
+  // empty state po zarchiwizowaniu wszystkiego (i powrót)
+  const archivedBefore = await page.evaluate(() => AV.state.prop.challenges.map((c) => c.archived));
+  await page.evaluate(() => {
+    AV.state.prop.challenges.forEach((c) => { c.archived = true; });
+    AV._propShowArchived = false;
+    AV.renderProp();
+  });
+  const emptyVisible = await page.locator('#propEmpty').isVisible();
+  assert.ok(emptyVisible, 'brak empty state');
+  const archiveOnEmpty = await page.locator('#propArchToggle').isVisible();
+  assert.ok(archiveOnEmpty, 'brak dostępu do archiwum w empty state');
+  await page.click('#propArchToggle');
+  await page.waitForTimeout(100);
+  const archivedView = await page.locator('#propBody').isVisible();
+  assert.ok(archivedView, 'archiwum nie otwiera się z empty state');
+  await page.evaluate((before) => {
+    AV.state.prop.challenges.forEach((c, i) => { c.archived = before[i]; });
+    AV._propShowArchived = false;
+    AV.renderProp();
+  }, archivedBefore);
+  log('prop: empty state + archiwum', emptyVisible && archiveOnEmpty && archivedView);
+
+  // trwałość: zapis do MySQL i reload
+  await page.waitForTimeout(900);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.AV && AV.ready);
+  await page.waitForFunction(() => window.AV?.api?.authenticated);
+  const persisted = await page.evaluate(() => AV.state.prop.challenges.some((c) => c.name === 'E2E Prop Edited' && !c.archived));
+  assert.ok(persisted, 'challenge nie przeżył reloadu');
+  log('prop: przeżył reload (MySQL)', persisted);
+
+  // usunięcie challenge'u przez UI
+  await page.click('.navg button[data-v="prop"]');
+  await page.selectOption('#propSelect', { label: 'E2E Prop Edited' });
+  await page.click('[data-prop-act="delete"]');
+  await page.waitForSelector('#gModal.on');
+  await page.click('#gConfirmOk');
+  await page.waitForTimeout(200);
+  const deleted = await page.evaluate(() => !AV.state.prop.challenges.some((c) => c.name === 'E2E Prop Edited'));
+  assert.ok(deleted, 'challenge nie usunięty');
+  log('prop: usuwanie challenge', deleted);
+
   // mentor
   await page.click('.navg button[data-v="mentor"]');
-  const beforeChat = await page.locator('#msgs .msg').count();
-  await page.locator('#mChips .chip').first().click();
-  await page.waitForFunction((n) => document.querySelectorAll('#msgs .msg').length >= n + 2, beforeChat, { timeout: 5000 });
-  const afterChat = await page.locator('#msgs .msg').count();
-  log('mentor: odpowiedź', afterChat >= beforeChat + 2, beforeChat + ' → ' + afterChat);
+  const ctxText = await page.locator('#mentorExport').innerText();
+  const cards = await page.locator('#mentorCards .card').count();
+  log('mentor: kontekst + 3 asystenci', ctxText.includes('MENTOR AI') && ctxText.length > 120 && cards === 3, ctxText.length + ' znaków, ' + cards + ' karty');
 
   // akademia
   await page.click('.navg button[data-v="akad"]');

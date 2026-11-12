@@ -20,10 +20,19 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `discord_sync_state` | ostatnia próba/sukces, licznik, błąd, blokada CRON |
 | `discord_sync_runs` | historia synchronizacji (30 dni) |
 | `schema_migrations` | wersje migracji |
+| `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu |
+| `exchange_imports` | deduplikacja transakcji po `(user_id, provider, external_id)` |
+| `exchange_sync_runs` | historia synchronizacji integracji (fetched/imported/error) |
+| `exchange_sync_state` | stan schedulera integracji (ostatnia próba/sukces, liczniki) |
+| `mcp_tokens` | tokeny agenta MCP (hash, scopes, TTL, unieważnienie) |
+| `mcp_proposals` | propozycje zmian z diffem, statusem, TTL i rewizją bazową |
+| `mcp_audit` | niezmienialny audyt propozycji, decyzji i tokenów |
 
 ## Stan JSON
 
 `user_states.state` to jeden dokument JSON. Limit `MAX_STATE_BYTES` = 12 MiB. Zapis jest optymistyczny: `revision` + `baseRevision`; konflikt → 409. Przy setkach screenów należy przenieść obrazy do osobnego storage i trzymać w stanie URL.
+
+Dokument zawiera m.in. `prop.challenges` (konfiguracje challenge'ów) i `prop.selectedId`. Metryki prop (cel, dzienny limit, obsunięcie, dni) są liczone po stronie frontendu z `trades` — bez dodatkowych tabel i endpointów. Szczegóły: [PROP.md](PROP.md).
 
 ## MariaDB
 

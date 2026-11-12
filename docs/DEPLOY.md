@@ -218,3 +218,60 @@ gh workflow run monitor-production.yml --repo miloszspyrka-code/av
 ```
 
 Błąd workflow oznacza powiadomienie GitHub do obserwujących repozytorium. Monitoring nie zastępuje LH Cron — tylko wykrywa zatrzymany sync lub awarię health.
+
+## 19. Integracje giełd i MetaTrader — konfiguracja produkcji
+
+### 19.1. Zmienne
+
+W `.app/config.json` (600, deny w `.htaccess`):
+
+| Zmienna | Wymagana | Opis |
+|---|---|---|
+| `INTEGRATIONS_KEY` | tak | 32+ losowych znaków; klucz AES-256-GCM do poświadczeń |
+| `METAAPI_TOKEN` | dla MetaTrader | token MetaApi; bez niego panel zwraca `meta_not_configured` |
+| `OKX_BASE`, `BINGX_BASE`, `WEEX_SPOT_BASE`, `WEEX_FUTURES_BASE` | nie | nadpisania adresów API (testy/mock) |
+| `METAAPI_BASE`, `METAAPI_CLIENT_BASE` | nie | nadpisania MetaApi (testy/mock) |
+
+Wygeneruj klucz:
+
+```bash
+php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+```
+
+### 19.2. Migracja
+
+```bash
+/usr/bin/php ~/public_html/alphavault.pl/.app/app/db/migrate.php
+```
+
+Tworzy `exchange_connections`, `exchange_imports`, `exchange_sync_runs`, `exchange_sync_state`.
+
+### 19.3. Cron
+
+Istniejące zadanie co 5 min wywołuje także worker integracji:
+
+```text
+*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
+```
+
+Worker pilnuje progu 25 minut, więc realny import odbywa się co ok. 30 min. Ręcznie:
+
+```bash
+/usr/bin/php ~/public_html/alphavault.pl/.app/bin/sync-exchange-trades.php --force
+```
+
+### 19.4. Weryfikacja
+
+```bash
+curl -sS https://alphavault.pl/api/health
+```
+
+Oczekiwane: `integrations.configured=true`, `integrations.metaApiConfigured` zgodne z konfiguracją, `integrations.sync.status` = `success` po pierwszym przebiegu.
+
+### 19.5. MetaTrader EA
+
+Plik `integrations/mt5/AlphaVault.mq5` kompiluje się w MetaEditorze. Wymaga:
+
+1. `WebRequest` dla `https://alphavault.pl`,
+2. kodu parowania z panelu,
+3. włączonego MetaTradera (lub VPS) — EA nie handluje.

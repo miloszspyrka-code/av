@@ -25,6 +25,11 @@ final class Config
         public readonly bool $eventsConfigured,
         public readonly array $adminDiscordIds,
         public readonly array $discordEventRules,
+        public readonly array $wearables,
+        public readonly string $integrationsKey,
+        public readonly bool $integrationsConfigured,
+        public readonly string $metaApiToken,
+        public readonly array $integrationBases,
         public readonly string $version,
     ) {
     }
@@ -114,9 +119,46 @@ final class Config
             explode(',', (string) $env('ADMIN_DISCORD_IDS', ''))
         ), static fn (string $value): bool => $value !== ''));
 
+        $wearables = [
+            'encryptionKey' => (string) $env('WEARABLES_ENCRYPTION_KEY', ''),
+            'garmin' => [
+                'clientId' => (string) $env('GARMIN_CLIENT_ID', ''),
+                'clientSecret' => (string) $env('GARMIN_CLIENT_SECRET', ''),
+                'authorizeUrl' => (string) $env('GARMIN_AUTHORIZE_URL', ''),
+                'tokenUrl' => (string) $env('GARMIN_TOKEN_URL', ''),
+                'apiBase' => rtrim((string) $env('GARMIN_API_BASE', ''), '/'),
+                'revokeUrl' => (string) $env('GARMIN_REVOKE_URL', ''),
+                'scopes' => (string) $env('GARMIN_SCOPES', ''),
+                'redirectUri' => $appUrl . '/auth/wearables/garmin/callback',
+            ],
+            'oura' => [
+                'clientId' => (string) $env('OURA_CLIENT_ID', ''),
+                'clientSecret' => (string) $env('OURA_CLIENT_SECRET', ''),
+                'authorizeUrl' => (string) $env('OURA_AUTHORIZE_URL', 'https://cloud.ouraring.com/oauth/authorize'),
+                'tokenUrl' => (string) $env('OURA_TOKEN_URL', 'https://api.ouraring.com/oauth/token'),
+                'apiBase' => rtrim((string) $env('OURA_API_BASE', 'https://api.ouraring.com'), '/'),
+                'revokeUrl' => (string) $env('OURA_REVOKE_URL', 'https://api.ouraring.com/oauth/revoke'),
+                'scopes' => (string) $env('OURA_SCOPES', 'daily sleep heartrate personal'),
+                'redirectUri' => $appUrl . '/auth/wearables/oura/callback',
+            ],
+            'whoop' => [
+                'clientId' => (string) $env('WHOOP_CLIENT_ID', ''),
+                'clientSecret' => (string) $env('WHOOP_CLIENT_SECRET', ''),
+                'authorizeUrl' => (string) $env('WHOOP_AUTHORIZE_URL', 'https://api.prod.whoop.com/oauth/oauth2/auth'),
+                'tokenUrl' => (string) $env('WHOOP_TOKEN_URL', 'https://api.prod.whoop.com/oauth/oauth2/token'),
+                'apiBase' => rtrim((string) $env('WHOOP_API_BASE', 'https://api.prod.whoop.com'), '/'),
+                'revokeUrl' => (string) $env('WHOOP_REVOKE_URL', 'https://api.prod.whoop.com/oauth/oauth2/revoke'),
+                'scopes' => (string) $env('WHOOP_SCOPES', 'read:recovery read:sleep read:profile offline'),
+                'redirectUri' => $appUrl . '/auth/wearables/whoop/callback',
+            ],
+            'apple' => [
+                'redirectUri' => '',
+                'scopes' => '',
+            ],
+        ];
+
         $rules = [];
-        $rulesFile = $root . '/config/discord_event_rules.json';
-        if (is_file($rulesFile)) {
+        $rulesFile = $root . '/config/discord_event_rules.json';        if (is_file($rulesFile)) {
             $rawRules = file_get_contents($rulesFile);
             if ($rawRules !== false) {
                 $decodedRules = json_decode($rawRules, true);
@@ -125,6 +167,17 @@ final class Config
                 }
             }
         }
+
+        $integrationsKey = (string) $env('INTEGRATIONS_KEY', '');
+        $metaApiToken = (string) $env('METAAPI_TOKEN', '');
+        $integrationBases = [
+            'okx' => rtrim((string) $env('OKX_BASE', 'https://www.okx.com'), '/'),
+            'bingx' => rtrim((string) $env('BINGX_BASE', 'https://open-api.bingx.com'), '/'),
+            'weex_spot' => rtrim((string) $env('WEEX_SPOT_BASE', 'https://api-spot.weex.com'), '/'),
+            'weex_futures' => rtrim((string) $env('WEEX_FUTURES_BASE', 'https://api-contract.weex.com'), '/'),
+            'metaapi' => rtrim((string) $env('METAAPI_BASE', 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai'), '/'),
+            'metaapi_client' => (string) $env('METAAPI_CLIENT_BASE', 'https://mt-client-api-v1.{region}.agiliumtrade.agiliumtrade.ai'),
+        ];
 
         return new self(
             root: $root,
@@ -146,7 +199,12 @@ final class Config
             eventsConfigured: $eventsConfigured,
             adminDiscordIds: $adminDiscordIds,
             discordEventRules: $rules,
-            version: '3.0.0',
+            wearables: $wearables,
+            integrationsKey: $integrationsKey,
+            integrationsConfigured: strlen($integrationsKey) >= 32,
+            metaApiToken: $metaApiToken,
+            integrationBases: $integrationBases,
+            version: '3.3.0',
         );
     }
 }

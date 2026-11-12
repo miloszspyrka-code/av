@@ -104,7 +104,7 @@ h3{font-size:15.5px;font-weight:700}
 .card{position:relative;border-radius:var(--r);padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 24px 48px -28px rgba(0,0,0,.8)}
 .card.hl{border-color:rgba(var(--a),.32);background:radial-gradient(ellipse at 0% 0%,rgba(var(--a),.14),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012))}
 .card.flat{background:rgba(255,255,255,.015);box-shadow:none}
-.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.propgrid{grid-template-columns:1.45fr 1fr}.propgrid>*,.propgrid .card{min-width:0}#propDaily>div{max-width:100%}@media(max-width:900px){.propgrid{grid-template-columns:1fr}}
 .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
 .val{font-size:28px;font-weight:800;margin-top:8px;letter-spacing:-.8px}.hint{font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.45}
 .sec{margin-top:28px}.sech{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
@@ -151,6 +151,8 @@ textarea.input{resize:vertical;line-height:1.5}
 /* ===== PULPIT ===== */
 .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
 .ready{display:flex;gap:20px;align-items:center}
+.bodygrid{grid-template-columns:1fr 1.4fr;align-items:start}
+@media(max-width:900px){.bodygrid{grid-template-columns:1fr}}
 .lock{display:flex;align-items:center;gap:16px;border-radius:18px;padding:16px 20px;border:1px solid rgba(255,93,98,.3);background:linear-gradient(90deg,rgba(255,93,98,.12),rgba(255,93,98,.02));margin-bottom:16px}
 .lock .ic{width:42px;height:42px;border-radius:12px;background:var(--lossS);color:var(--loss);display:grid;place-items:center;flex-shrink:0}
 .lock b{font-size:15.5px}.lock p{font-size:13.5px;color:#ffc5c7;margin-top:2px}
@@ -272,6 +274,8 @@ textarea.input{resize:vertical;line-height:1.5}
 .dev .lg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:13px;flex-shrink:0}
 .dev b{display:block;font-size:14.5px}.dev span{font-size:12.5px;color:var(--dim)}
 .dev .btn{margin-left:auto}
+.dev .btn[data-sync]{margin-left:auto}
+.dev .btn[data-sync] + .btn{margin-left:0}
 .trend{font-size:12px;font-weight:700;margin-top:4px}
 .ex{display:grid;grid-template-columns:240px 1fr;gap:16px}
 .exl button{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid transparent;margin-bottom:6px;font-weight:700}
@@ -456,7 +460,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     <button data-v="play"><svg class="i"><use href="#i-star"/></svg>Playbook</button>
     <button data-v="nowa"><svg class="i"><use href="#i-plus"/></svg>Nowa transakcja<span class="badge lk lkb"><svg class="i"><use href="#i-lock"/></svg></span></button>
     <button data-v="kalk"><svg class="i"><use href="#i-calc"/></svg>Kalkulator Alpha</button>
-    <button data-v="prop"><svg class="i"><use href="#i-flag"/></svg>Prop challenge<span class="badge g" style="font-size:9px;letter-spacing:.06em">WKRÓTCE</span></button>
+    <button data-v="prop"><svg class="i"><use href="#i-flag"/></svg>Prop challenge<span class="badge" id="propNavBadge" style="display:none">0</span></button>
   </div>
   <div class="navg">
     <div class="gl">AKADEMIA</div>
@@ -492,6 +496,15 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge">Day trader · <b>Krypto</b></span><span class="bdg">Trader Alpha · <b>poziom 3</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
 
   <div class="lock lkb" id="lockBar"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Tryb ochronny włączony</b><p id="lockTxt">Dwie straty dziś, limit osiągnięty. Nowe pozycje w dzienniku są zablokowane do północy.</p></div><div class="cd cdt">--:--:--</div></div>
+
+  <div class="card" id="propDash" style="display:none;cursor:pointer;padding:16px 20px;margin-bottom:16px" data-go="prop">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div id="propDashIc" style="width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;background:var(--alphaS);color:var(--alpha)"><svg class="i"><use href="#i-flag"/></svg></div>
+      <div style="flex:1;min-width:0"><b id="propDashTitle"></b><p class="mut" id="propDashDesc" style="font-size:13.5px;margin-top:2px;line-height:1.45"></p></div>
+      <div class="mono" id="propDashVal" style="font-weight:800;white-space:nowrap"></div>
+      <svg class="i" style="color:var(--dim)"><use href="#i-arrow"/></svg>
+    </div>
+  </div>
 
   <div class="hero">
     <div class="card">
@@ -579,18 +592,24 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= PROP ================= -->
 <section class="view" id="prop">
-  <div class="head"><div><div class="eyebrow">Prop challenge · wkrótce</div><h1>Tryb <span class="serif">prop firmy.</span></h1><p>Zdajesz challenge w FTMO albo innej firmie? Alpha Vault będzie pilnować limitów za Ciebie: cel zysku, dzienny limit straty, maksymalne obsunięcie i dni do końca.</p></div><span class="tag al" style="font-size:12px;padding:6px 14px">WKRÓTCE DOSTĘPNE</span></div>
-  <div class="card soon" style="padding:0"><div class="blurz" style="padding:22px">
-    <div class="grid g4">
-      <div class="card"><div class="lbl">Cel zysku</div><div class="val win">5,2% / 8%</div><div class="bar"><i style="width:65%;background:var(--win)"></i></div></div>
-      <div class="card"><div class="lbl">Dzienny limit straty</div><div class="val warnc">1,8% / 5%</div><div class="bar"><i style="width:36%;background:var(--warn)"></i></div></div>
-      <div class="card"><div class="lbl">Max obsunięcie</div><div class="val">3,1% / 10%</div><div class="bar"><i style="width:31%;background:var(--cream)"></i></div></div>
-      <div class="card"><div class="lbl">Dni do końca</div><div class="val">18</div><div class="hint">min. 4 dni handlowe ✓</div></div>
+  <div class="head"><div><div class="eyebrow" id="propEyebrow">Prop challenge</div><h1>Tryb <span class="serif">prop firmy.</span></h1><p>Zdajesz challenge w FTMO albo innej firmie? Alpha Vault pilnuje limitów za Ciebie: cel zysku, dzienny limit straty, maksymalne obsunięcie i dni do końca — na podstawie transakcji z wybranego konta.</p></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="tag al" id="propHeaderTag" style="font-size:12px;padding:6px 14px">brak challenge'u</span><button class="btn g" data-prop-templates><svg class="i"><use href="#i-book"/></svg>Szablony</button><button class="btn p" data-prop-new><svg class="i"><use href="#i-plus"/></svg>Nowy challenge</button></div></div>
+  <div id="propToolbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px"><select class="input" id="propSelect" style="max-width:340px"></select><span class="chip" id="propArchToggle" style="cursor:pointer">Archiwum</span><span class="dim" style="font-size:12px">Wybierz challenge, żeby zobaczyć jego limity i statystyki.</span></div>
+  <div id="propEmpty" class="card" style="display:none"><div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 0"><div style="width:60px;height:60px;border-radius:18px;margin:0 auto 14px;display:grid;place-items:center;background:var(--alphaS);color:var(--alpha)"><svg class="i" style="width:28px;height:28px"><use href="#i-flag"/></svg></div><h2 style="font-size:24px">Ustaw pierwszy challenge</h2><p class="mut" style="margin-top:8px;line-height:1.6">Wybierz szablon FTMO lub innej firmy, wskaż konto i limity. Alpha Vault policzy postęp, bufor limitu i dni do końca.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap"><button class="btn p" data-prop-new><svg class="i"><use href="#i-plus"/></svg>Nowy challenge</button><button class="btn g" data-prop-templates>Przeglądaj szablony</button></div></div></div>
+  <div id="propBody">
+    <div id="propAlerts"></div>
+    <div class="grid g4" id="propKpis"></div>
+    <div class="grid propgrid" style="align-items:start;margin-top:16px">
+      <div class="grid">
+        <div class="card"><div class="sech"><h2>Limity challenge'u</h2><span class="mono dim" style="font-size:12px">liczone z zamkniętych transakcji</span></div><div id="propLimits"></div></div>
+        <div class="card"><div class="sech"><h2>Krzywa kapitału</h2><span class="mono dim" style="font-size:12px" id="propCurveTag"></span></div><svg id="propCurve" viewBox="0 0 600 190" width="100%" height="190" preserveAspectRatio="none"></svg><div id="propCurveMeta" style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:10px"></div></div>
+        <div class="card"><div class="sech"><h2>Wynik dzienny</h2><span class="mono dim" style="font-size:12px">ostatnie 10 dni z transakcjami</span></div><div id="propDaily"></div></div>
+      </div>
+      <div class="grid">
+        <div class="card hl"><div class="sech" style="margin:0"><div class="lbl">Status challenge'u</div><span id="propStatusTag"></span></div><h2 id="propStatus" style="font-size:26px;margin-top:12px">—</h2><p class="mut" id="propStatusDesc" style="font-size:13.5px;line-height:1.5;margin-top:6px"></p><div id="propChecklist" style="margin-top:14px"></div></div>
+        <div class="card"><div class="lbl" style="margin-bottom:6px">Statystyki challenge'u</div><div id="propStats"></div></div>
+        <div class="card"><div class="lbl">Zarządzanie</div><p class="hint" style="margin-top:6px">Edycja nie zmienia transakcji. Duplikat przydaje się przy kolejnej fazie.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn g sm" data-prop-act="edit">Edytuj</button><button class="btn g sm" data-prop-act="duplicate">Duplikuj</button><button class="btn g sm" data-prop-act="archive">Archiwizuj</button><button class="btn g sm" data-prop-act="delete" style="color:var(--loss)">Usuń</button></div><div class="hint" style="margin-top:12px">Limity prop firm zmieniają się. Przed startem potwierdź je w regulaminie firmy.</div></div>
+      </div>
     </div>
-    <div class="card" style="margin-top:16px;height:220px"></div></div>
-    <div class="ov"><div style="max-width:460px;padding:20px"><div style="width:60px;height:60px;border-radius:18px;margin:0 auto 14px;display:grid;place-items:center;background:var(--alphaS);color:var(--alpha)"><svg class="i" style="width:28px;height:28px"><use href="#i-flag"/></svg></div>
-      <h2 style="font-size:24px">Pracujemy nad tym</h2><p class="mut" style="margin-top:8px;line-height:1.6">Szablony zasad popularnych prop firm, alarm przed złamaniem limitu i osobne statystyki dla każdego challenge'u.</p>
-      <button class="btn p" id="propNotify" style="margin-top:18px"><svg class="i"><use href="#i-bell"/></svg>Powiadom mnie, gdy będzie gotowe</button></div></div>
   </div>
 </section>
 
@@ -756,44 +775,45 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= MENTOR ================= -->
 <section class="view" id="mentor">
-  <div class="head"><div><div class="eyebrow">Mentor AI</div><h1>Twój <span class="serif">mentor.</span></h1><p>Zna Twoje transakcje, plan, emocje, sen i zasady. Wyłapuje wzorce, analizuje rynek i mówi wprost, co zmienić. Nie daje sygnałów.</p></div>
-    <div class="seg" id="mTabs"><button class="on" data-t="m1">Rozmowa</button><button data-t="m2">Uwagi · <span id="notesCount">3</span></button><button data-t="m3">Analiza rynku</button><button data-t="m4">Raport tygodnia</button></div></div>
+  <div class="head"><div><div class="eyebrow">Mentor AI</div><h1>Podłącz <span class="serif">mentora.</span></h1><p>Mentor liczy wszystko w panelu i nie wysyła danych do modeli. Żeby dostać analizę w Grok, ChatGPT albo Claude, wyeksportuj kontekst i wklej go w rozmowie. Mentor nie daje sygnałów.</p></div>
+    <div class="seg" id="mTabs"><button class="on" data-t="m1">Połącz z AI</button><button data-t="m2">Uwagi · <span id="notesCount">0</span></button></div></div>
 
   <div class="mt" id="m1">
     <div class="grid" style="grid-template-columns:1.6fr 1fr;align-items:start">
       <div class="card">
-        <div class="msgs" id="msgs"></div>
-        <div class="lbl" style="margin-top:20px">Napisz do mentora</div>
-        <div class="chips" style="margin-top:10px" id="mChips"></div>
+        <div class="sech" style="margin:0"><div class="lbl">Kontekst do wklejenia</div><span class="mono dim" style="font-size:11.5px" id="ctxWhen"></span></div>
+        <pre class="mono" id="mentorExport" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12.5px;line-height:1.6;margin-top:12px;max-height:430px;overflow:auto"></pre>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap"><button class="btn g sm" id="copyCtx"><svg class="i"><use href="#i-file"/></svg>Kopiuj kontekst</button><button class="btn g sm" id="reCtx"><svg class="i"><use href="#i-sync"/></svg>Odśwież</button></div>
+        <div class="step" id="ctxHint" style="margin-top:14px"><b>Krok:</b> skopiuj kontekst i wklej go jako pierwszą wiadomość u wybranego asystenta.</div>
       </div>
       <div class="grid">
         <div class="card"><div class="lbl">Mentor widzi</div>
           <div id="mentorSees"></div></div>
-        <div class="card"><div class="lbl">Na skróty</div>
-          <div class="grid" style="margin-top:12px;gap:8px"><button class="btn g sm" data-ask="2">Co psuje moje wyniki</button><button class="btn g sm" data-ask="3">Oceń mój dzień</button><button class="btn g sm" data-ask="4">Co dziś na rynku</button></div></div>
+        <div class="card"><div class="lbl">Czego nie robi</div><p class="mut" style="margin-top:8px;font-size:13px;line-height:1.6">Nie wysyła sygnałów, nie składa zleceń, nie łączy się z brokerem i nie przyjmuje kluczy API. Dane opuszczają panel dopiero wtedy, gdy sam wkleisz kontekst.</p></div>
       </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px" id="mentorCards">
+      <div class="card ins"><span class="tag al">Grok · xAI</span><h3 style="margin-top:10px">Grok</h3>
+        <ul class="steps" style="margin-top:8px"><li><span class="n">1</span><span>Otwórz <b>grok.com</b> lub aplikację Grok i zacznij nową rozmowę.</span></li><li><span class="n">2</span><span>Wklej kontekst z panelu jako pierwszą wiadomość.</span></li><li><span class="n">3</span><span>Dopisz pytanie z listy poniżej.</span></li></ul>
+        <p class="hint" style="margin-top:10px">Grok nie ma dostępu do panelu, więc kontekst wklejasz w każdej nowej rozmowie.</p></div>
+      <div class="card ins"><span class="tag al">ChatGPT · OpenAI</span><h3 style="margin-top:10px">ChatGPT</h3>
+        <ul class="steps" style="margin-top:8px"><li><span class="n">1</span><span>Otwórz <b>chatgpt.com</b> i wybierz nowy czat.</span></li><li><span class="n">2</span><span>Wklej kontekst jako pierwszą wiadomość.</span></li><li><span class="n">3</span><span>W Projekcie dodaj kontekst do instrukcji projektu, żeby został między rozmowami.</span></li></ul>
+        <p class="hint" style="margin-top:10px">Bez projektu kontekst wklejasz od nowa w każdym czacie.</p></div>
+      <div class="card ins"><span class="tag al">Claude · Anthropic</span><h3 style="margin-top:10px">Claude</h3>
+        <ul class="steps" style="margin-top:8px"><li><span class="n">1</span><span>Otwórz <b>claude.ai</b> i zacznij nową rozmowę.</span></li><li><span class="n">2</span><span>Wklej kontekst albo załącz go jako plik <b>.md</b>.</span></li><li><span class="n">3</span><span>W Projekcie dodaj kontekst do wiedzy projektu, żeby nie wklejać go za każdym razem.</span></li></ul>
+        <p class="hint" style="margin-top:10px">Claude czyta też pliki, więc możesz zapisać kontekst jako notatkę.</p></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="lbl">O co pytać</div>
+      <div class="chips" style="margin-top:12px"><span class="chip" style="cursor:default">Co psuje moje wyniki?</span><span class="chip" style="cursor:default">Oceń mój dzień.</span><span class="chip" style="cursor:default">Jak trzymam się zasad?</span><span class="chip" style="cursor:default">Co dziś na rynku?</span></div>
+      <div class="note" style="margin-top:14px"><svg class="i" style="color:var(--win)"><use href="#i-shield"/></svg><div><b>Prywatność.</b> Po wklejeniu dane wychodzą z Alpha Vault i podlegają zasadom wybranego dostawcy. Nie wklejaj tokenów, numerów kont ani kluczy API. Twoje wpisy w dzienniku widzisz tylko Ty.</div></div>
     </div>
   </div>
 
   <div class="mt" id="m2" style="display:none">
     <div class="grid g2" id="notesList"></div>
-  </div>
-
-  <div class="mt" id="m3" style="display:none">
-    <div class="grid" style="grid-template-columns:1.5fr 1fr;align-items:start">
-      <div class="card"><div class="sech"><div><span class="tag al">Analiza AI</span> <span class="mono dim" style="font-size:11.5px;margin-left:6px" id="analysisWhen">czw 12.11 · 14:10</span></div><button class="btn g sm" id="reAn"><svg class="i"><use href="#i-sync"/></svg>Odśwież</button></div>
-        <div id="marketAnalysis"></div>
-      </div>
-      <div class="grid" id="marketSide">
-        <div class="card"><div class="lbl">Instrument</div><div class="chips sel" style="margin-top:12px" id="mktInst"><span class="chip on" data-i="BTC">BTC</span><span class="chip" data-i="ETH">ETH</span><span class="chip" data-i="SOL">SOL</span><span class="chip" data-i="NAS100">NAS100</span><span class="chip" data-i="XAUUSD">XAUUSD</span></div>
-          <div id="marketInstStats"></div></div>
-        <div class="card"><div class="lbl">Ryzyko tygodnia</div><div class="val warnc" id="weekRisk">Wysokie</div><div class="hint" id="weekRiskHint">8 wydarzeń ★★★. Mniejsze pozycje w dni publikacji.</div></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="mt" id="m4" style="display:none">
-    <div class="card" style="max-width:880px" id="weeklyReport"></div>
   </div>
 </section>
 
@@ -876,13 +896,36 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= CIAŁO ================= -->
 <section class="view" id="cialo">
-  <div class="head"><div><div class="eyebrow">Ciało i głowa</div><h1>Check-in <span class="serif">przed rynkiem.</span></h1><p>30 sekund, zanim otworzysz wykres. Zapisz nastrój, energię i to, co siedzi w głowie — mentor bierze to pod uwagę.</p></div></div>
-  <div class="grid" style="grid-template-columns:1fr;max-width:640px;align-items:start">
-    <div class="card"><h2>Check-in przed rynkiem</h2><p class="mut" style="font-size:13.5px;margin-top:4px">30 sekund, zanim otworzysz wykres.</p>
-      <span class="label">Jak się teraz czujesz?</span><div class="chips sel" id="checkMood"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip on">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Złość</span></div>
-      <span class="label">Energia</span><div class="chips sel" id="checkEnergy"><span class="chip">1</span><span class="chip on">2</span><span class="chip">3</span><span class="chip">4</span><span class="chip">5</span></div>
-      <span class="label">Co dziś siedzi w głowie?</span><textarea class="input" rows="2" id="checkNote">Wczorajsza strata, chęć odrobienia…</textarea>
-      <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
+  <div class="head"><div><div class="eyebrow">Ciało i głowa</div><h1>Twoja forma <span class="serif">pod trading.</span></h1><p>Niewyspany trader to drogi trader. Połącz zegarek, a Alpha Vault policzy gotowość i pokaże, jak sen wpływa na wyniki.</p></div></div>
+  <div class="grid bodygrid">
+    <div class="grid">
+      <div class="card"><h2>Urządzenia</h2><p class="dim" style="font-size:12.5px;line-height:1.5;margin-top:6px">Łącząc urządzenie, wyrażasz zgodę na przetwarzanie danych o zdrowiu (sen, HRV, tętno) tylko do liczenia Twojej gotowości. Zgodę wycofasz w każdej chwili, odłączając urządzenie.</p>
+        <div class="grid" style="margin-top:14px;gap:10px" id="devList">
+          <div class="dev" data-provider="garmin"><div class="lg" style="background:#007cc3;color:#fff">G</div><div><b>Garmin Connect</b><span data-devstate>sen, HRV, Body Battery</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+          <div class="dev" data-provider="apple"><div class="lg" style="background:#f2f2f2;color:#111;font-size:19px">⌚</div><div><b>Apple Watch · Zdrowie</b><span data-devstate>przez aplikację Alpha Vault na iPhone</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev>Połącz</button></div>
+          <div class="dev" data-provider="oura"><div class="lg" style="background:#1c1c1c;color:#fff;border:1px solid #444">◯</div><div><b>Oura Ring</b><span data-devstate>sen, HRV, gotowość</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+          <div class="dev" data-provider="whoop"><div class="lg" style="background:#333;color:#fff">W</div><div><b>Whoop</b><span data-devstate>regeneracja, obciążenie</span></div><button class="btn g sm" data-sync hidden title="Synchronizuj">↻</button><button class="btn p sm" data-dev disabled>Połącz</button></div>
+        </div>
+        <p class="dim" id="wearablesNotice" style="font-size:12px;line-height:1.5;margin-top:10px"></p>
+      </div>
+      <div class="card"><h2>Check-in przed rynkiem</h2><p class="mut" style="font-size:13.5px;margin-top:4px">30 sekund, zanim otworzysz wykres.</p>
+        <span class="label">Jak się teraz czujesz?</span><div class="chips sel" id="checkMood"><span class="chip">Spokój</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Złość</span></div>
+        <span class="label">Energia</span><div class="chips sel" id="checkEnergy"><span class="chip">1</span><span class="chip">2</span><span class="chip">3</span><span class="chip">4</span><span class="chip">5</span></div>
+        <span class="label">Co dziś siedzi w głowie?</span><textarea class="input" rows="2" id="checkNote" placeholder="Jedno zdanie, szczerze."></textarea>
+        <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
+    </div>
+    <div class="grid">
+      <div class="card hl"><div class="ready"><div class="ring" id="bodyRing" style="width:128px;height:128px"><div style="width:106px;height:106px"><b id="bodyReady"></b><small>GOTOWOŚĆ</small></div></div>
+        <div><div class="lbl" id="bodyReadyDay">Dziś</div><h2 style="margin-top:6px;font-size:22px" id="bodyReadyTitle"></h2><p class="mut" style="font-size:14px;line-height:1.55;margin-top:6px" id="bodyReadyDesc"></p></div></div></div>
+      <div class="grid g4">
+        <div class="card"><div class="lbl">Sen</div><div class="val" id="metricSleep"></div><div class="trend" id="metricSleepTrend"></div></div>
+        <div class="card"><div class="lbl">HRV</div><div class="val" id="metricHrv"></div><div class="trend" id="metricHrvTrend"></div></div>
+        <div class="card"><div class="lbl">Tętno</div><div class="val" id="metricHr"></div><div class="trend" id="metricHrTrend"></div></div>
+        <div class="card"><div class="lbl">Body Battery</div><div class="val" id="metricBattery"></div><div class="trend" id="metricBatteryTrend"></div></div>
+      </div>
+      <div class="card" id="sleepCard" hidden><h3 style="margin-bottom:10px">Średni wynik dnia a sen</h3>
+        <div id="sleepChart"></div></div>
+    </div>
   </div>
 </section>
 
@@ -945,6 +988,13 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
       <div class="card"><div class="sech" style="margin:0"><h2>Alpha Vault na telefonie</h2><span class="tag info">bez App Store</span></div>
         <p class="mut" style="font-size:13.5px;line-height:1.55;margin-top:6px">Zainstaluj panel jak aplikację. Po zamknięciu transakcji dostaniesz powiadomienie i dodasz emocję, ocenę i zdjęcie wykresu w 10 sekund.</p>
         <button class="btn p sm" data-qa style="margin-top:12px">Zobacz, jak to działa</button></div>
+      <div class="card" id="mcpCard"><div class="sech" style="margin:0"><h2>Agent MCP</h2><span class="tag info" id="mcpState">tylko odczyt</span></div>
+        <p class="mut" style="font-size:13px;line-height:1.55;margin-top:6px">Agent widzi Twoje dane i może przygotować propozycje zmian. Zatwierdzasz je tutaj — agent nie ma narzędzia do zatwierdzania. Dane giełdowe są tylko do odczytu.</p>
+        <div id="mcpTokens"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><input class="input" id="mcpName" placeholder="Nazwa tokenu" style="max-width:200px"><label class="chip" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0"><input type="checkbox" id="mcpPropose"> propozycje</label><button class="btn g sm" id="mcpCreate">Wygeneruj token</button></div>
+        <div id="mcpNewToken"></div>
+        <div class="lbl" style="margin-top:16px">Propozycje agenta</div>
+        <div id="mcpProposals"></div></div>
     </div>
     <div class="grid">
       <div class="card"><div class="sech" style="margin:0"><h2>Odznaki</h2><span class="mono dim" style="font-size:12px">4 z 8 · poziom 3</span></div>
@@ -1129,9 +1179,11 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <script src="js/core.js" defer></script>
 <script src="js/data.js" defer></script>
+<script src="js/prop.js" defer></script>
 <script src="js/state.js" defer></script>
 <script src="js/render1.js" defer></script>
 <script src="js/render2.js" defer></script>
+<script src="js/propui.js" defer></script>
 <script src="js/actions.js" defer></script>
 </body>
 </html>

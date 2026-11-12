@@ -198,6 +198,36 @@ Panel administratora i `/api/events` pokazują: ostatnią próbę, ostatni sukce
 
 Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują na siebie i są weryfikowane automatycznie (`npm run test:docs`).
 
+### FR-17 — Mentor AI: eksport kontekstu do asystentów
+
+Panel generuje kontekst z danych użytkownika i pokazuje, jak wkleić go w Grok, ChatGPT albo Claude. Mentor nie wysyła danych do dostawców i nie przyjmuje kluczy API.
+
+- eksport obejmuje wyłącznie dane użytkownika: zasady, transakcje z 90 dni, plan dnia, check-iny, gotowość i makro,
+- sekcje bez danych są pomijane,
+- kopiowanie kontekstu działa bez zewnętrznych zależności,
+- instrukcje odpowiadają aktualnym możliwościom panelu (gotowość z check-inu i podłączonych urządzeń, bez brokerów).
+
+### FR-18 — Agent MCP: odczyt i propozycje zmian
+
+Agent MCP może odczytywać dane użytkownika i przygotowywać propozycje zmian danych panelu. Nie może zmieniać danych giełdowych, limitów ryzyka, kluczy API ani usuwać historii.
+
+- tokeny mają osobne zakresy `panel:read` i `panel:propose`,
+- propozycja nie zmienia rekordu przed zatwierdzeniem w panelu,
+- zatwierdzenie wymaga sesji, weryfikacji właściciela, TTL i rewizji rekordu,
+- MCP nie udostępnia narzędzia zatwierdzającego,
+- każda propozycja i decyzja trafia do audytu.
+
+### FR-19 — Prop challenge
+
+Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów na podstawie dziennika.
+
+- szablony popularnych firm (FTMO, FundedNext, FundingPips, Topstep, Apex, Breakout) oraz własne zasady,
+- cel zysku, dzienny limit straty i maksymalne obsunięcie (static/trailing) liczone z zamkniętych transakcji wybranego konta,
+- dni do końca i minimalna liczba dni handlowych,
+- alerty przy 75/90/100% limitu, banner na pulpicie i powiadomienie (raz dziennie),
+- osobne statystyki, krzywa kapitału i status dla każdego challenge'u,
+- archiwum, duplikat i usuwanie konfiguracji bez wpływu na transakcje.
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -261,6 +291,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | Synchronizacja Discord | gotowa, test realny 3/3 VOICE |
 | Testy DB/sync | PASS |
 | API / UI / empty-state | PASS |
+| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 21/21`, `UI 32/32`; deploy po merge |
 | Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
 | Deploy na `alphavault.pl` | **200** — wdrożony |
 | App path | `~/public_html/alphavault.pl/.app` (open_basedir, deny) |
@@ -295,3 +326,6 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | FR-14 | [DOCUMENTATION.md §15](DOCUMENTATION.md#15-bezpieczeństwo) |
 | FR-15 | [docs/API.md](API.md) |
 | FR-16 | [DOCUMENTATION.md §17](DOCUMENTATION.md#17-zarządzanie-dokumentacją), [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md) |
+| FR-17 | [DOCUMENTATION.md §11](DOCUMENTATION.md#11-frontend---od-bootstrapu-do-renderu), [docs/FUNKCJE.md](FUNKCJE.md) |
+| FR-18 | [DOCUMENTATION.md §11](DOCUMENTATION.md#11-frontend---od-bootstrapu-do-renderu), [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md) |
+| FR-19 | [docs/PROP.md](PROP.md), [docs/FUNKCJE.md](FUNKCJE.md) |

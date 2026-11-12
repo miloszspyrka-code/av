@@ -11,10 +11,11 @@
 | [ARCHITEKTURA.md](ARCHITEKTURA.md) | warstwy, przepływy, decyzje, rozszerzenia | tak |
 | [BAZA-DANYCH.md](BAZA-DANYCH.md) | MySQL, schemat, backup, bezpieczeństwo | tak |
 | [FUNKCJE.md](FUNKCJE.md) | co działa e2e, co jest demo | tak |
-| [TESTOWANIE.md](TESTOWANIE.md) | testy API i UI, checklisty | tak |
+| [PROP.md](PROP.md) | prop challenge: model danych, limity, statusy, testy | tak |
+| [TESTOWANIE.md](TESTOWANIE.md) | testy prop, API i UI, checklisty | tak |
 | [DISCORD.md](DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
 | [DEPLOY.md](DEPLOY.md) | produkcja, reverse proxy, backup | nie |
-| [MCP.md](MCP.md) | mapa narzędzi MCP, walidacje, OAuth, plan wdrożenia | nie |
+| [MCP.md](MCP.md) | polityka MCP, narzędzia, propozycje i zatwierdzanie, stan wdrożenia | nie |
 | [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md) | deploy z WSL2 bez GitHub Actions | nie |
 | [CHANGELOG.md](../CHANGELOG.md) | historia zmian | nie |
 

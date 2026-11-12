@@ -3,8 +3,40 @@ declare(strict_types=1);
 
 namespace AlphaVault;
 
+use AlphaVault\Integrations\IntegrationException;
+use AlphaVault\Integrations\Integrations;
+
+function av_integration_sync_state(Config $config, Db $db): ?array
+{
+    if (!$config->integrationsConfigured) {
+        return null;
+    }
+    try {
+        $row = $db->queryOne('SELECT last_attempt_at, last_success_at, last_status, last_error, connections_count, imported_count FROM exchange_sync_state WHERE id = 1');
+        if ($row === null) {
+            return null;
+        }
+        return [
+            'status' => (string) ($row['last_status'] ?? 'never'),
+            'lastAttemptAt' => $row['last_attempt_at'] ?? null,
+            'lastSuccessAt' => $row['last_success_at'] ?? null,
+            'connections' => (int) ($row['connections_count'] ?? 0),
+            'imported' => (int) ($row['imported_count'] ?? 0),
+            'lastError' => $row['last_error'] ?? null,
+        ];
+    } catch (\Throwable) {
+        return null;
+    }
+}
+
 function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string $method, string $path): void
 {
+    if (str_starts_with($path, '/api/mcp')) {
+        require_once __DIR__ . '/mcp.php';
+        av_handle_mcp_api($config, $db, $auth, $user, $method, $path);
+        return;
+    }
+
     try {
         if ($path === '/api/health' && $method === 'GET') {
             try {
@@ -43,6 +75,11 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
                 'sync' => $sync,
+                'integrations' => [
+                    'configured' => $config->integrationsConfigured,
+                    'metaApiConfigured' => $config->metaApiToken !== '',
+                    'sync' => av_integration_sync_state($config, $db),
+                ],
             ]);
         }
 
@@ -184,6 +221,138 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             exit;
         }
 
+        if ($path === '/api/mt/ea' && $method === 'POST') {
+            $auth->rateLimit('mt-ea', 60, 60000);
+            $body = Http::readJsonBody(1024 * 1024);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $code = trim((string) ($body['code'] ?? ''));
+            $trades = is_array($body['trades'] ?? null) ? $body['trades'] : [];
+            try {
+                $result = $bundle['mt']->ingest($code, $trades);
+                Http::json(['ok' => true, ...$result]);
+            } catch (IntegrationException $err) {
+                Http::json(['error' => $err->errorCode, 'message' => $err->getMessage()], $err->httpStatus);
+            }
+        }
+
+        if ($path === '/api/connections' && $method === 'GET') {
+            $current = $auth->requireAuth($user);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json([
+                    'configured' => false,
+                    'metaApiConfigured' => $config->metaApiToken !== '',
+                    'connections' => [],
+                ]);
+            }
+            Http::json([
+                'configured' => true,
+                'metaApiConfigured' => $config->metaApiToken !== '',
+                'connections' => $bundle['store']->listForUser((int) $current['id']),
+            ]);
+        }
+
+        if ($path === '/api/connections' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-connect', 12, 60000);
+            $body = Http::readJsonBody(65536);
+            $provider = strtolower(trim((string) ($body['provider'] ?? '')));
+            $fields = is_array($body['fields'] ?? null) ? $body['fields'] : [];
+            if ($provider === 'mt') {
+                $provider = strtolower(trim((string) ($fields['platform'] ?? 'mt5')));
+            }
+            if (!in_array($provider, ['weex', 'okx', 'bingx', 'mt4', 'mt5'], true)) {
+                Http::json(['error' => 'bad_provider', 'message' => 'Nieznana giełda lub broker.'], 422);
+            }
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            try {
+                $adapterResult = match ($provider) {
+                    'okx' => (new \AlphaVault\Integrations\OKXProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases))->connect($fields, (int) $current['id']),
+                    'bingx' => (new \AlphaVault\Integrations\BingXProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases))->connect($fields, (int) $current['id']),
+                    'weex' => (new \AlphaVault\Integrations\WEEXProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases))->connect($fields, (int) $current['id']),
+                    default => (new \AlphaVault\Integrations\MetaApiProvider(new \AlphaVault\Integrations\HttpClient(), $config->integrationBases, $config->metaApiToken))->connect($fields, (int) $current['id']),
+                };
+                $saved = $bundle['store']->save(
+                    (int) $current['id'],
+                    $provider,
+                    $adapterResult,
+                    is_array($adapterResult['credentials'] ?? null) ? $adapterResult['credentials'] : []
+                );
+                Http::json(['ok' => true, 'connection' => $saved], 201);
+            } catch (IntegrationException $err) {
+                Http::json(['error' => $err->errorCode, 'message' => $err->getMessage()], $err->httpStatus);
+            }
+        }
+
+        if ($path === '/api/connections/sync' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-sync', 20, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $body = Http::readJsonBody(8192);
+            $only = isset($body['provider']) ? strtolower(trim((string) $body['provider'])) : null;
+            if ($only === 'mt') {
+                $only = null;
+            }
+            Http::json($bundle['sync']->syncUser((int) $current['id'], $only));
+        }
+
+        if ($path === '/api/connections/mt/pair' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-pair', 10, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $body = Http::readJsonBody(8192);
+            $platform = strtolower(trim((string) ($body['platform'] ?? 'mt5')));
+            $pair = $bundle['mt']->pair((int) $current['id'], $platform);
+            Http::json(['ok' => true, 'code' => $pair['code'], 'connectionId' => $pair['id']], 201);
+        }
+
+        if (preg_match('#^/api/connections/(\d+)/sync$#', $path, $m) && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connection-sync', 30, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            try {
+                Http::json(['ok' => true, 'result' => $bundle['sync']->syncUserConnection((int) $current['id'], (int) $m[1])]);
+            } catch (IntegrationException $err) {
+                Http::json(['error' => $err->errorCode, 'message' => $err->getMessage()], $err->httpStatus);
+            }
+        }
+
+        if (preg_match('#^/api/connections/(\d+)$#', $path, $m) && $method === 'DELETE') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('connections-delete', 20, 60000);
+            $bundle = Integrations::make($config, $db);
+            if ($bundle === null) {
+                Http::json(['error' => 'integrations_not_configured', 'message' => 'Integracje nie są skonfigurowane na serwerze.'], 503);
+            }
+            $row = $bundle['store']->findForUser((int) $current['id'], (int) $m[1]);
+            if ($row === null) {
+                Http::json(['error' => 'not_found', 'message' => 'Nie znaleziono połączenia.'], 404);
+            }
+            $bundle['sync']->disconnect($row);
+            $bundle['store']->delete((int) $current['id'], (int) $m[1]);
+            Http::json(['ok' => true]);
+        }
+
         if ($path === '/api/events' && $method === 'GET') {
             $auth->requireAuth($user);
             $events = new DiscordEvents($config, $db);
@@ -217,6 +386,55 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 Http::json(['error' => 'not_found', 'message' => 'Nie ma takiego wydarzenia.'], 404);
             }
             Http::json(['ok' => true, 'id' => $matches[1], 'category' => $category]);
+        }
+
+        if ($path === '/api/wearables' && $method === 'GET') {
+            $current = $auth->requireAuth($user);
+            $wearables = new Wearables($config, $db, $auth);
+            Http::json($wearables->listForUser((int) $current['id']));
+        }
+
+        if (preg_match('#^/api/wearables/(garmin|apple|oura|whoop)/sync$#', $path, $matches) && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('wearables-sync', 20, 60000);
+            $wearables = new Wearables($config, $db, $auth);
+            $result = $wearables->sync((int) $current['id'], $matches[1]);
+            Http::json(['ok' => true, ...$result]);
+        }
+
+        if (preg_match('#^/api/wearables/(garmin|apple|oura|whoop)$#', $path, $matches) && $method === 'DELETE') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $wearables = new Wearables($config, $db, $auth);
+            $wearables->disconnect((int) $current['id'], $matches[1]);
+            Http::json(['ok' => true, 'provider' => $matches[1]]);
+        }
+
+        if ($path === '/api/wearables/apple/pair' && $method === 'POST') {
+            $current = $auth->requireAuth($user);
+            $auth->requireSameOrigin();
+            $auth->rateLimit('wearables-apple-pair', 10, 60000);
+            $wearables = new Wearables($config, $db, $auth);
+            Http::json(['ok' => true, ...$wearables->applePairCode((int) $current['id'])]);
+        }
+
+        if ($path === '/api/wearables/apple/ingest' && $method === 'POST') {
+            // Ingest z iPhone nie ma sesji: autoryzacją jest kod parowania
+            // (jednorazowo) albo token urządzenia (nagłówek Bearer).
+            $auth->rateLimit('wearables-apple-ingest', 120, 60000);
+            $body = Http::readJsonBody(262144);
+            $authorization = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+            if ($authorization === '' && function_exists('getallheaders')) {
+                $headers = getallheaders();
+                $authorization = (string) ($headers['Authorization'] ?? $headers['authorization'] ?? '');
+            }
+            $bearer = null;
+            if (preg_match('/^Bearer\s+(.+)$/i', $authorization, $m) === 1) {
+                $bearer = trim($m[1]);
+            }
+            $wearables = new Wearables($config, $db, $auth);
+            Http::json($wearables->appleIngest($body, $bearer));
         }
 
         if (str_starts_with($path, '/api/')) {

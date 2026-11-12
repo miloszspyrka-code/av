@@ -24,7 +24,12 @@
     events: null,
     eventsLoaded: false,
     eventsSync: null,
-    isAdmin: false
+    isAdmin: false,
+    wearables: null,
+    wearablesLoaded: false,
+    wearablesError: null,
+    integrationsConfigured: false,
+    metaApiConfigured: false
   };
 
   const deepMerge = (base, patch) => {
@@ -47,6 +52,18 @@
     });
     if (!s.plans || typeof s.plans !== 'object') s.plans = {};
     s.version = 2;
+    if (!s.settings || typeof s.settings !== 'object') s.settings = {};
+    if (!s.settings.connections || typeof s.settings.connections !== 'object') s.settings.connections = {};
+    ['weex', 'okx', 'bingx'].forEach((k) => {
+      if (!s.settings.connections[k] || typeof s.settings.connections[k] !== 'object') s.settings.connections[k] = { connected: false };
+    });
+    if (!s.settings.connections.mt || typeof s.settings.connections.mt !== 'object') s.settings.connections.mt = { connected: false, platform: 'mt5' };
+    if (!s.settings.connections.file || typeof s.settings.connections.file !== 'object') s.settings.connections.file = { connected: false };
+    if (!s.prop || typeof s.prop !== 'object') s.prop = { challenges: [], selectedId: null };
+    if (!Array.isArray(s.prop.challenges)) s.prop.challenges = [];
+    s.prop.challenges = s.prop.challenges
+      .filter((c) => c && typeof c === 'object')
+      .map((c) => (AV.prop ? AV.prop.normalize(c) : c));
     return s;
   };
   AV.normalizeServer = (raw) => AV.normalize(raw, AV.buildEmpty());
@@ -79,6 +96,7 @@
       start: 0, date: AV.dateLabel(new Date()), lev: '10×', goal: '', balance: 0, include: true, primary: true
     }];
     s.setups = [];
+    s.prop = { challenges: [], selectedId: null };
     s.meta.consultation = null;
     s.meta.consultationUsed = 0;
     s.user.name = 'Trader';
@@ -169,7 +187,9 @@
         AV.api.revision = 0;
       }
       AV.applyServerUser(me.user);
+      await AV.loadConnections();
       await AV.loadEvents();
+      await AV.loadWearables();
       AV.api.ready = true;
       if (!hadState || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
         await AV.pushStateImmediate();
@@ -206,6 +226,31 @@
       return true;
     } catch (err) {
       AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.loadWearables = async () => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.api.wearables = null;
+      AV.api.wearablesLoaded = false;
+      return false;
+    }
+    try {
+      const res = await AV.apiFetch('/api/wearables');
+      if (res.status === 401) {
+        AV.api.wearables = null;
+        AV.api.wearablesLoaded = false;
+        return false;
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      AV.api.wearables = await res.json();
+      AV.api.wearablesLoaded = true;
+      AV.api.wearablesError = null;
+      if (AV.renderBody) AV.renderBody();
+      return true;
+    } catch (err) {
+      AV.api.wearablesError = err.message;
       return false;
     }
   };
@@ -322,6 +367,111 @@
     }
   };
 
+  AV.loadConnections = async () => {
+    if (!AV.api.online || !AV.api.authenticated) return false;
+    try {
+      const res = await AV.apiFetch('/api/connections');
+      if (!res.ok) return false;
+      const data = await res.json();
+      AV.api.integrationsConfigured = data.configured !== false;
+      AV.api.metaApiConfigured = !!data.metaApiConfigured;
+      const c = AV.connections();
+      ['weex', 'okx', 'bingx'].forEach((k) => { c[k] = { connected: false }; });
+      c.mt = { connected: false, platform: (c.mt && c.mt.platform) || 'mt5', pairCode: (c.mt && c.mt.pairCode) || '' };
+      (data.connections || []).forEach((row) => {
+        const key = (row.provider === 'mt4' || row.provider === 'mt5') ? 'mt' : row.provider;
+        c[key] = {
+          connected: row.status === 'connected' || row.status === 'pending',
+          pending: row.status === 'pending',
+          id: row.id,
+          provider: row.provider,
+          label: row.label,
+          lastSync: row.lastSyncAt,
+          imported: row.importedCount,
+          masked: row.keyMask,
+          perms: row.permissions,
+          status: row.status,
+          error: row.lastError,
+          platform: row.platform || ((c[key] && c[key].platform) || 'mt5'),
+          server: row.serverRef || '',
+          pairCode: (c[key] && c[key].pairCode) || ''
+        };
+      });
+      if (AV.renderExchangeList) AV.renderExchangeList();
+      return true;
+    } catch (err) {
+      AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.reloadStateFromServer = async () => {
+    if (!AV.api.online || !AV.api.authenticated) return false;
+    const res = await AV.apiFetch('/api/state');
+    if (!res.ok) return false;
+    const payload = await res.json();
+    if (!payload.state) return false;
+    AV.state = AV.normalizeServer(payload.state);
+    AV.api.revision = payload.revision || 1;
+    try { AV.safeSet(AV.KEY, JSON.stringify(AV.state)); } catch {}
+    if (AV.renderAll) AV.renderAll();
+    return true;
+  };
+
+  AV.connectExchange = async (provider, fields) => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      throw new Error('Połącz się z serwerem, żeby zapisać klucz. Tryb offline nie przyjmuje sekretów.');
+    }
+    const res = await AV.apiFetch('/api/connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, fields })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Nie udało się połączyć (HTTP ' + res.status + ').');
+    await AV.loadConnections();
+    return data.connection;
+  };
+
+  AV.disconnectExchange = async (id) => {
+    if (!id) throw new Error('Brak identyfikatora połączenia.');
+    const res = await AV.apiFetch('/api/connections/' + encodeURIComponent(id), { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Nie udało się odłączyć.');
+    await AV.loadConnections();
+    return true;
+  };
+
+  AV.syncConnections = async (provider) => {
+    const res = await AV.apiFetch('/api/connections/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(provider ? { provider } : {})
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Synchronizacja nie powiodła się.');
+    await AV.reloadStateFromServer();
+    await AV.loadConnections();
+    const results = Array.isArray(data.connections) ? data.connections : [];
+    const imported = results.reduce((sum, row) => sum + (Number(row.imported) || 0), 0);
+    const failed = results.find((row) => row.error);
+    if (failed && failed.message) AV.toast(failed.message, 7000);
+    return { ...data, imported };
+  };
+
+  AV.pairMt = async (platform) => {
+    if (!AV.api.online || !AV.api.authenticated) throw new Error('Połącz się z serwerem, żeby wygenerować kod.');
+    const res = await AV.apiFetch('/api/connections/mt/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Nie udało się wygenerować kodu parowania.');
+    await AV.loadConnections();
+    return data.code;
+  };
+
   AV.serverDemoLogin = async () => {
     const res = await AV.apiFetch('/auth/demo', {
       method: 'POST',
@@ -341,6 +491,13 @@
     AV.api.eventsSync = null;
     AV.api.eventsLoaded = false;
     AV.api.isAdmin = false;
+    AV.api.integrationsConfigured = false;
+    AV.api.metaApiConfigured = false;
+    if (AV.state?.settings?.connections) {
+      ['weex', 'okx', 'bingx'].forEach((k) => { AV.state.settings.connections[k] = { connected: false }; });
+      AV.state.settings.connections.mt = { connected: false, platform: 'mt5' };
+      AV.state.settings.connections.file = { connected: false };
+    }
   };
 
   AV.serverDeleteAccount = async () => {
@@ -556,18 +713,47 @@
   };
 
   /* ---------- forma ---------- */
+  AV.sleepLabel = (minutes) => {
+    if (minutes == null || !Number.isFinite(Number(minutes))) return '';
+    const total = Math.max(0, Math.round(Number(minutes)));
+    return Math.floor(total / 60) + ' h ' + String(total % 60).padStart(2, '0') + ' min';
+  };
+
   AV.readiness = (state) => {
     const check = (state.checkins || []).filter((c) => c.date === AV.dateKey(new Date())).sort((a, b) => b.score - a.score)[0];
     const moodMod = { 'Spokój': 10, 'Skupienie': 7, 'Pewność': 5, 'Nuda': -3, 'Zmęczenie': -8, 'Strach': -10, 'FOMO': -12, 'Złość': -14, 'Chciwość': -6 }[check?.mood] || 0;
-    const checkScore = check ? AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100) : 55;
-    const score = Math.round(checkScore);
-    let title = 'Świetna forma', cls = 'win';
-    if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
-    if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
-    if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
-    // Brak integracji ze sprzętem: gotowość liczymy wyłącznie z check-inu.
-    const desc = 'Gotowość liczona z check-inu: nastrój, energia i notatka.';
-    return { score, title, cls, desc, garmin: false, checkScore, sleepScore: 0, hrvScore: 0, hrScore: 0, check };
+    const checkScore = check ? Math.round(AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100)) : null;
+    const w = AV.api.wearables;
+    const components = w?.readiness?.components || {};
+    const physiology = components.physiology != null ? Number(components.physiology) : null;
+    const today = w?.today || null;
+    let score = null;
+    let source = 'none';
+    if (physiology != null && checkScore != null) { score = Math.round(physiology * 0.7 + checkScore * 0.3); source = 'devices+checkin'; }
+    else if (physiology != null) { score = Math.round(physiology); source = 'devices'; }
+    else if (checkScore != null) { score = checkScore; source = 'checkin'; }
+
+    let title = '', cls = '';
+    if (score != null) {
+      title = 'Świetna forma'; cls = 'win';
+      if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
+      if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
+      if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
+    }
+
+    let desc = '';
+    if (physiology != null && today) {
+      const bits = [];
+      if (today.sleepMinutes != null) bits.push('Sen ' + AV.sleepLabel(today.sleepMinutes));
+      if (today.hrvMs != null) bits.push('HRV ' + Math.round(Number(today.hrvMs)) + ' ms');
+      if (today.restingHr != null) bits.push('tętno ' + today.restingHr);
+      if (bits.length) {
+        desc = bits.join(', ') + '. ' + (score != null && score < 60 ? 'Połowa normalnej pozycji albo odpuść.' : 'Możesz grać normalnie, ale trzymaj się planu.');
+      }
+    } else if (checkScore != null) {
+      desc = 'Gotowość liczona z check-inu: nastrój i energia. Podłącz urządzenie, żeby dodać sen, HRV i tętno.';
+    }
+    return { score, title, cls, desc, source, physiology, checkScore, check, today, components };
   };
 
   /* ---------- podatki ---------- */
@@ -645,7 +831,7 @@
       cWynik: AV.money(c.reduce((s, t) => s + t.result, 0), 2, ''), cN: c.length,
       aWr: a.length ? Math.round(a.filter((t) => t.result > 0).length / a.length * 100) : 0,
       planZgodne: planOK + ' z ' + todayPlanTrades.length,
-      gotowosc: r.score,
+      gotowosc: r.score == null ? '' : r.score,
       clFull: full.length ? Math.round(full.filter((t) => t.result > 0).length / full.length * 100) : 0,
       clNo: part.length ? Math.round(part.filter((t) => t.result > 0).length / part.length * 100) : 0,
       tr: today.count, event: next ? next.name : 'brak ważnych publikacji',
@@ -654,6 +840,74 @@
       macroWynik: AV.money(macroNet, 2, ''), macroN: macroTrades.length,
       kapital: AV.fmt(AV.totalCapital(state), 2), ryzyko1: AV.fmt(AV.totalCapital(state) * (Number(state.settings.maxRisk) || 1) / 100, 2)
     };
+  };
+
+  AV.mentorExport = (state) => {
+    const s = state;
+    const now = new Date();
+    const L = ['MENTOR AI - KONTEKST Z ALPHA VAULT'];
+    L.push('Wygenerowano: ' + now.toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' }) + ' ' + now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }));
+
+    const name = String(s.user.name || '').trim();
+    const plan = s.subscription && s.subscription.plan === 'full' ? 'Akademia Alpha + Vault' : 'Alpha Vault';
+    L.push('', 'KIM JESTEM');
+    if (name) L.push('Imię: ' + name + '.');
+    L.push('Plan: ' + plan + '.');
+
+    const set = s.settings || {};
+    const rules = [];
+    if (set.maxLosses) rules.push('limit strat ' + set.maxLosses + '/dzień');
+    if (set.maxDailyLoss) rules.push('limit straty dziennej ' + AV.fmt(set.maxDailyLoss, 1) + '%');
+    if (set.maxRisk) rules.push('ryzyko na transakcję ' + AV.fmt(set.maxRisk, 1) + '%');
+    if (rules.length) L.push('', 'MOJE ZASADY', 'Ustalone w panelu: ' + rules.join(', ') + '.');
+
+    const cutoff = AV.startOfDay(AV.addDays(now, -90));
+    const trades = AV.closedTrades(s).filter((t) => new Date(t.date) >= cutoff);
+    if (trades.length) {
+      const st = AV.computeStats(trades, s);
+      const a = st.byGrade.find((g) => g.grade === 'A');
+      const rows = ['Transakcje (90 dni): ' + st.n + ', wynik ' + AV.signed(st.net, 2, ' USDT') + ', skuteczność ' + Math.round(st.winRate) + '%.'];
+      if (a && a.n) rows.push('Ocena A: ' + a.n + ' transakcji, skuteczność ' + Math.round(a.wr) + '%.');
+      const worst = st.bySession.filter((x) => x.n >= 3).sort((x, y) => (x.wins / x.n) - (y.wins / y.n))[0];
+      if (worst) rows.push('Najsłabsza sesja: ' + worst.key + ' (' + Math.round(worst.wins / worst.n * 100) + '% na ' + worst.n + ' transakcjach).');
+      if (st.full.n && st.part.n) rows.push('Checklista: ' + Math.round(st.full.wr) + '% z pełną, ' + Math.round(st.part.wr) + '% bez.');
+      if (st.errors.length) rows.push('Najdroższy błąd: ' + st.errors[0].key + ' (' + AV.signed(st.errors[0].cost, 2, ' USDT') + ').');
+      L.push('', 'TRANSAKCJE', ...rows);
+    }
+
+    const plans = Object.keys(s.plans || {}).length;
+    const todayPlan = (s.plans || {})[AV.dateKey(now)];
+    const planRows = [];
+    if (plans) planRows.push('Zatwierdzone plany dnia: ' + plans + '.');
+    if (todayPlan) planRows.push('Plan na dziś: ' + (todayPlan.approvedAt ? 'zatwierdzony' : 'szkic') + '.');
+    if (planRows.length) L.push('', 'PLAN DNIA', ...planRows);
+
+    const checkins = s.checkins || [];
+    if (checkins.length) {
+      const rows = ['Check-iny: ' + checkins.length + '.'];
+      const today = checkins.filter((c) => c.date === AV.dateKey(now)).sort((a, b) => b.score - a.score)[0];
+      if (today) rows.push('Dziś: nastrój ' + today.mood + ', energia ' + today.energy + '/5' + (today.note ? ', notatka: ' + today.note : '') + '.');
+      L.push('', 'EMOCJE I CHECK-INY', ...rows);
+    }
+
+    const r = AV.readiness(s);
+    if (r.score != null) {
+      L.push('', 'GOTOWOŚĆ', 'Gotowość: ' + r.score + '/100' + (r.title ? ' · ' + r.title.toLowerCase() : '') + (r.desc ? '. ' + r.desc : '.'));
+    }
+    const day = r.today || {};
+    const body = [];
+    if (day.sleepMinutes != null) body.push('Sen: ' + AV.sleepLabel(day.sleepMinutes));
+    if (day.hrvMs != null) body.push('HRV: ' + Math.round(Number(day.hrvMs)) + ' ms');
+    if (day.restingHr != null) body.push('Tętno spoczynkowe: ' + day.restingHr);
+    if (body.length) L.push('', 'SEN I HRV', body.join('. ') + '.');
+
+    const events = AV.buildEvents();
+    const next = events.filter((e) => e.imp === 3 && new Date(e.date) > now).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+    if (next) L.push('', 'KALENDARZ MAKRO', 'Najbliższe ★★★: ' + next.name + ', ' + AV.eventStatus(next.date)[1] + ' ' + AV.timeFmt(next.date, s) + '.');
+
+    L.push('', 'PYTANIA', '1. Co psuje moje wyniki?', '2. Oceń mój dzień.', '3. Jak trzymam się zasad?');
+    L.push('', 'ZASADA: analiza edukacyjna, bez sygnałów i bez zleceń.');
+    return L.join('\n');
   };
 
   AV.fill = (text, state, extra = {}) => {
@@ -672,6 +926,12 @@
   };
 
   /* ---------- badge ---------- */
+  AV.badgeSummary = (list) => {
+    const badges = Array.isArray(list) ? list : [];
+    const done = badges.filter((b) => b.done).length;
+    return { done, total: badges.length, level: Math.min(5, 1 + Math.floor(done / 2)) };
+  };
+
   AV.badges = (state) => {
     const closed = AV.closedTrades(state);
     const plans = Object.values(state.plans);

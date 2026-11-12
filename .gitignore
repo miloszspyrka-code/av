@@ -20,3 +20,4 @@ lh_deploy_key
 lh_deploy_key.pub
 known_hosts
 .ssh/
+tests/config.integrations.json

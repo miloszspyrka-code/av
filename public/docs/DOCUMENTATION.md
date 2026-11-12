@@ -470,9 +470,11 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 index.html
   → core.js       (AV, $, $$, esc, fmt)
   → data.js       (dane demo/statyczne)
+  → prop.js       (silnik prop challenge: szablony, limity, metryki)
   → state.js      (stan, API, rewizje, wydarzenia)
   → render1.js    (widoki, pulpit, dziennik)
   → render2.js    (statystyki, mentor, akademia, admin)
+  → propui.js     (widok prop, edytor, szablony, alerty)
   → actions.js    (zdarzenia, timery, modale)
 ```
 
@@ -524,6 +526,15 @@ Skrypty mają `defer`; kolejność jest istotna.
 - `localStorage` przechowuje ostatni stan i sesję UI.
 - Po utracie sieci UI działa, ale zapisy są odkładane.
 - Po powrocie stan serwera ma pierwszeństwo; konflikt rewizji rozwiązuje 409.
+
+### 11.7. Mentor AI — eksport kontekstu
+
+- `AV.mentorExport(state)` buduje czysty tekst: kim jestem, zasady, transakcje z 90 dni, plan dnia, emocje i check-iny, gotowość, sen/HRV (jeśli urządzenie jest podłączone) oraz najbliższe makro.
+- Sekcje bez danych są pomijane; eksport nie zawiera tekstów zastępczych.
+- `renderMentor()` wpisuje tekst do `#mentorExport`, uzupełnia `#mentorSees` i `#ctxWhen`; zakładka „Uwagi” renderuje `mentorNotes()`.
+- `#copyCtx` kopiuje kontekst (`navigator.clipboard`, fallback `execCommand`), `#reCtx` odświeża eksport.
+- Instrukcje w widoku opisują wklejenie kontekstu w Grok, ChatGPT i Claude.
+- Panel nie wysyła danych do modeli i nie przechowuje kluczy API — dane trafiają do dostawcy dopiero po wklejeniu przez użytkownika.
 
 ## 12. Puste pola i stany brzegowe
 
@@ -635,8 +646,9 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Suita | Plik | Zakres | Wynik lokalny |
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
-| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
-| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy | 23/23 PASS |
+| Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
+| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport, prop | 21/21 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, pusty stan, zapisy | 32/32 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
@@ -730,3 +742,53 @@ npm run test:docs   # sprawdza linki, sekcje i brak dryfu
 | `manual_category` | ręczne przypisanie, ma pierwszeństwo nad regułami |
 | `raw_payload` | pełny JSON z Discorda, tylko do diagnostyki |
 | DST | zmiana czasu letni/zimowy |
+
+## 18. Integracje giełd, MetaTrader i API
+
+### 18.1. Warstwy
+
+```text
+public/js/state.js          loadConnections, connectExchange, syncConnections, reloadStateFromServer
+public/js/render2.js        panel Giełdy, formularze WEEX/OKX/BingX, MetaTrader, EA
+app/Integrations/           Crypto, HttpClient, providers, ConnectionStore, ExchangeSync, MtEa
+app/routes/api.php          /api/connections*, /api/mt/ea
+bin/sync-exchange-trades.php  ręczny/CRON worker
+```
+
+### 18.2. Połączenie klucza
+
+1. Przeglądarka wysyła `POST /api/connections` z polami klucza.
+2. Serwer waliduje klucz u dostawcy i sprawdza uprawnienia.
+3. Klucz z prawem handlu/wypłat jest odrzucany (`read_only_required`).
+4. Poświadczenia są szyfrowane AES-256-GCM kluczem `INTEGRATIONS_KEY` i zapisywane w `exchange_connections`.
+5. Do UI wraca wyłącznie maska, status i liczniki.
+
+### 18.3. Synchronizacja
+
+- Pierwsze 30 dni pobierane jest od razu, starsze paczki (do 90 dni) w kolejnych przebiegach.
+- Kolejne przebiegi pobierają okno od ostatniej synchronizacji minus 1 dzień.
+- Każda transakcja ma `extId`; `exchange_imports` gwarantuje idempotencję.
+- Transakcja trafia do `user_states.state.trades` i jest widoczna w dzienniku.
+- Błąd dostawcy nie usuwa ostatniego dobrego zestawu; połączenie dostaje status `error` i komunikat.
+
+### 18.4. Harmonogram
+
+`bin/sync-exchange-trades.php` jest wywoływany z istniejącego zadania LH Cron (co 5 min) i sam pilnuje, żeby realna synchronizacja nie częściej niż co 25 min. Ręcznie:
+
+```bash
+/usr/bin/php ~/public_html/alphavault.pl/.app/bin/sync-exchange-trades.php --force
+tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log
+```
+
+### 18.5. MetaTrader
+
+- Hasło inwestora: MetaApi cloud; akceptacja tylko przy `investorMode:true`.
+- EA: kod parowania `AV-XXXX-XXXX` (w bazie tylko SHA-256), endpoint `POST /api/mt/ea`, plik `integrations/mt5/AlphaVault.mq5`.
+- EA wysyła wyłącznie zamknięte transakcje; nie handluje.
+
+### 18.6. Bezpieczeństwo
+
+- `INTEGRATIONS_KEY` i `METAAPI_TOKEN` tylko po stronie serwera.
+- Brak publicznego endpointu uruchamiającego synchronizację; `/api/mt/ea` wymaga kodu parowania.
+- API nie zwraca sekretów; maska klucza jest jedynym identyfikatorem w UI.
+- Rate limiting: połączenia 12/min, synchronizacja 20/min, EA 60/min.

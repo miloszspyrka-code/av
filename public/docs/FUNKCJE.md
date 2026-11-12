@@ -137,19 +137,38 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| 5 tematów rozmowy | ✅ | gotowe odpowiedzi (bez API LLM) |
-| Forma żeńska/męska | ✅ | |
+| Eksport kontekstu | ✅ | transakcje z 90 dni, plan, check-iny, gotowość, makro — czysty tekst do wklejenia |
+| Instrukcje Grok / ChatGPT / Claude | ✅ | kroki wklejenia kontekstu u każdego dostawcy |
+| Kopiowanie kontekstu | ✅ | schowek z fallbackiem, odświeżanie |
 | Uwagi mentora | ✅ | generowane z danych (limit strat, odgrywanie, MFE, ocena A, sesja) |
-| Analiza rynku | ✅ | najbliższe ★★★, instrument, ryzyko tygodnia |
-| Raport tygodnia | ✅ | z ostatnich 7 dni |
-| Odświeżenie analizy | ✅ | |
 | Proaktywna wiadomość przy limicie strat | ✅ | po zalogowaniu |
 
-Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłączenie LLM to przyszły krok.
+Mentor jest **regułowy** — nie wysyła danych do OpenAI, xAI ani Anthropic i nie przyjmuje kluczy API. Integracja polega na wyeksportowaniu kontekstu i wklejeniu go w Grok, ChatGPT albo Claude. Gotowość liczy się z check-inu i podłączonych urządzeń, jeśli są dostępne.
 
 ---
 
-## 9. Akademia
+## 9. Prop challenge
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Szablony FTMO (2-Step/1-Step/Swing), FundedNext, FundingPips, Topstep, Apex, Breakout, własne | ✅ | limity, typ obsunięcia i min. dni; każde pole edytowalne |
+| Nowy challenge | ✅ | nazwa, firma, konto źródłowe, rozmiar, saldo startowe, cel, limity, daty |
+| Wybór challenge'u | ✅ | osobne metryki dla każdego challenge'u |
+| Cel zysku | ✅ | liczone z zamkniętych transakcji na koncie |
+| Dzienny limit straty | ✅ | podstawa: saldo startowe / początek dnia; alerty 75/90/100% |
+| Max obsunięcie | ✅ | statyczne od salda startowego lub trailing od szczytu |
+| Dni do końca i min. dni handlowych | ✅ | termin opcjonalny; firmy bez limitu czasu |
+| Krzywa kapitału i wynik dzienny | ✅ | SVG, linia celu i linia stopu |
+| Statusy | ✅ | aktywny / cel / zaliczony / limit / czas minął |
+| Alerty + banner na pulpicie | ✅ | toast, powiadomienie, deduplikacja raz dziennie |
+| Edycja, duplikat, archiwum, usuwanie | ✅ | widok archiwum w selektorze |
+| Zapis w MySQL | ✅ | `prop.challenges` + `selectedId` w JSON stanu |
+
+Limity liczone są z **zamkniętych** transakcji. Silnik nie zna ruchów śróddziennych ani equity z platformy. Szablony są punktem startowym — potwierdź aktualne zasady w regulaminie firmy. Szczegóły: [PROP.md](PROP.md).
+
+---
+
+## 10. Akademia
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -170,7 +189,7 @@ Szczegóły techniczne: [DOCUMENTATION.md §7](DOCUMENTATION.md#7-discord-schedu
 
 ---
 
-## 10. Podatki PIT-38
+## 11. Podatki PIT-38
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -185,7 +204,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 ---
 
-## 11. Kalendarz makro
+## 12. Kalendarz makro
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -199,16 +218,25 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 ---
 
-## 12. Ciało i głowa
+## 13. Giełdy, MetaTrader i API
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na podpowiedzi mentora |
-| Gotowość i urządzenia | ⛔ | usunięte z UI; brak realnej integracji z API producentów zegarków |
+| WEEX/OKX/BingX — połączenie klucza | E2E | `POST /api/connections`; walidacja na żywo, szyfrowanie AES-256-GCM, brak sekretów w UI |
+| Weryfikacja tylko-do-odczytu | E2E | OKX `perm`, BingX `apiPermissions`, WEEX bezpieczna próba zlecenia na nieistniejącym symbolu |
+| Synchronizacja transakcji | E2E | OKX: zamknięte pozycje + spot fills; BingX: positionHistory; WEEX: fills → rekonstrukcja rund |
+| Automatyczny import | E2E | wywoływany przez istniejący LH Cron (co 5 min) z blokadą „co 25 min”; ręcznie `bin/sync-exchange-trades.php` |
+| Deduplikacja | E2E | `exchange_imports.external_id` + `extId` w transakcji; ponowna synchronizacja nie tworzy duplikatów |
+| MetaTrader — hasło inwestora | E2E (wymaga `METAAPI_TOKEN`) | MetaApi cloud, wyłącznie `investorMode:true`; hasło z prawem handlu odrzucane |
+| MetaTrader — EA | E2E | kod parowania `AV-XXXX-XXXX`, endpoint `POST /api/mt/ea`, EA w `integrations/mt5/AlphaVault.mq5` |
+| Odłączenie | E2E | usuwa połączenie i poświadczenia; transakcje zostają w dzienniku |
+| Import CSV | E2E | parser WEEX/OKX/BingX/Bybit/MT w przeglądarce, podgląd i deduplikacja |
+| Import XLS/XLSX | — | komunikat „zapisz jako CSV” |
+| Błąd dostawcy | E2E | status `error` i komunikat w panelu; ostatni dobry zestaw transakcji pozostaje |
 
----
+Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy nie wracają do przeglądarki. Panel pokazuje wyłącznie maskę klucza i status.
 
-## 13. Giełdy i API
+## 14. Giełdy i API
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -224,7 +252,7 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 
 ---
 
-## 14. Konto i zasady
+## 15. Konto i zasady
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -241,7 +269,7 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 
 ---
 
-## 15. Dokumenty prawne
+## 16. Dokumenty prawne
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -254,7 +282,7 @@ Treści prawne zawierają placeholdery `[data publikacji]` i wymagają weryfikac
 
 ---
 
-## 16. Tryb offline
+## 17. Tryb offline
 
 Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 
@@ -264,3 +292,17 @@ Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 - po powrocie serwera i zalogowaniu stan z MySQL zastępuje lokalny.
 
 To celowy fallback, nie drugi równoległy backend.
+
+## 18. Agent MCP
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Tokeny agenta | ✅ | `panel:read`, `panel:propose`; token widoczny raz, unieważnianie |
+| 8 narzędzi odczytu | ✅ | profil, pulpit, transakcje, statystyki, wydarzenia, plan, setupy |
+| 4 propozycje zmian | ✅ | ręczna transakcja, recenzja, plan dnia, check-in |
+| Zatwierdzanie w panelu | ✅ | diff przed/po, zatwierdź/odrzuć, konflikt rewizji 409 |
+| Audyt | ✅ | propozycje, decyzje, tokeny |
+| Ochrona danych giełdowych | ✅ | tylko odczyt; metadane w osobnym rekordzie `tradeReviews` |
+| OAuth 2.1 (DCR, PKCE) | ⏳ | plan; teraz tokeny wydawane w panelu |
+
+Zasady: `MCP_ENABLED=true`, `MCP_WRITES_ENABLED=false` domyślnie; agent nie ma narzędzia zatwierdzającego. Szczegóły: [MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md).
