@@ -204,5 +204,6 @@ jobs:
           test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/docs/)" = "200"
           test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/.app/config.json)" = "403"
           test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/api/events)" = "401"
-          curl -fsS --max-time 25 https://alphavault.pl/ | grep -qi "Alpha Vault"
+          curl -fsS --max-time 25 https://alphavault.pl/ -o /tmp/alphavault-index.html
+          grep -qi "Alpha Vault" /tmp/alphavault-index.html
           echo "Production E2E verification passed."
