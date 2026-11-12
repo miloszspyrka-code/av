@@ -121,10 +121,12 @@ case "$DEPLOY_PATH" in
   *) fail "LH_DEPLOY_PATH must end with /alphavault.pl for this deployment." ;;
 esac
 case "$APP_PATH/" in
-  "$DEPLOY_PATH/"*) fail "LH_APP_PATH must be outside the public document root." ;;
+  "$DEPLOY_PATH/.app/") ;;
+  "$DEPLOY_PATH/"*) fail "LH_APP_PATH must be outside the public document root or exactly .app." ;;
 esac
 case "$APP_PATH" in
-  */public_html/*) fail "LH_APP_PATH must not be inside public_html." ;;
+  */public_html/*)
+    [ "$APP_PATH" = "$DEPLOY_PATH/.app" ] || fail "LH_APP_PATH inside public_html must be exactly .app." ;;
 esac
 
 BACKUP_DIR="$REMOTE_HOME/alphavault-backups"
