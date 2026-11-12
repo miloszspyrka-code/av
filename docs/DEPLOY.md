@@ -85,8 +85,12 @@ Backend odmawia dostępu, gdy:
 Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadanie:
 
 ```text
-*/5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
+*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
+
+Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php`.
+
+`crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje), więc harmonogram zmieniaj tylko w panelu LH.
 
 Wymagania:
 

@@ -1,6 +1,6 @@
 # Alpha Vault
 
-Prywatna strefa tradera Alpha Moves. Produkcja: <https://alphavault.pl>.
+Prywatna strefa tradera Alpha Moves. Produkcja: <https://alphavault.pl>. Repozytorium: <https://github.com/miloszspyrka-code/av> (publiczne).
 
 Aplikacja działa na hostingu współdzielonym LH.pl:
 
@@ -63,15 +63,18 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 - Document root: `~/public_html/alphavault.pl`
 - Kod aplikacji i `config.json`: `~/public_html/alphavault.pl/.app` (ukryty katalog, deny)
 - Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml` (gdy `DEPLOY_ENABLED=true`).
+- CI gate: PR do `main` wymaga zielonego `PHP + API + UI`; branch protection blokuje bezpośredni push, force push i usuwanie gałęzi.
+- Environment `alphavault-production` dopuszcza deploy tylko z `main`; merge commit jest wyłączony (squash/rebase).
+- Repo jest publiczne; włączone secret scanning, push protection i Dependabot security updates.
 - Rollback: workflow z `rollback=true` przywraca ostatni backup z `~/alphavault-backups`.
 
-**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK, sync Discord 3/3, `/docs/` 200; LH Cron działa co 5 min.
+**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK (DB + Discord flagi `true`), sync Discord 3/3, `/docs/` 200, LH Cron działa co 5 min (log `18:10:02`), CI gate `PHP + API + UI` aktywny.
 
 Wymagane sekrety GitHub:
 
 `LH_SSH_HOST`, `LH_SSH_PORT`, `LH_SSH_USER`, `LH_SSH_PRIVATE_KEY`, `LH_SSH_KNOWN_HOSTS`, `LH_DEPLOY_PATH`, `LH_APP_PATH`, `SESSION_SECRET`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `DISCORD_GUILD_ID`, `DISCORD_REQUIRED_ROLE_ID`, `DISCORD_BOT_TOKEN`, `ADMIN_DISCORD_IDS`.
 
-`config.json` jest generowany na serwerze z sekretów podczas deployu, z uprawnieniami `600`, poza `public_html`. Nie ma go w repozytorium.
+`config.json` jest generowany na serwerze z sekretów podczas deployu, z uprawnieniami `600`, w ukrytym `.app` wewnątrz docrootu (deny w `.htaccess`). Nie ma go w repozytorium.
 
 ## Bezpieczeństwo
 
@@ -81,7 +84,8 @@ Wymagane sekrety GitHub:
 - CSRF: kontrola `Origin` dla mutujących żądań,
 - rate limiting w MySQL,
 - CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`,
-- `config.json` w ukrytym `.app` (deny), `.env` i klucze w `.gitignore`.
+- `config.json` w ukrytym `.app` (deny), `.env` i klucze w `.gitignore`,
+- repo publiczne: secret scanning + push protection; Dependabot security updates.
 
 ## Discord Scheduled Events
 
@@ -93,12 +97,18 @@ Harmonogram live'ów i konsultacje są synchronizowane z Discorda przez `bin/syn
 - przy błędzie API ostatni poprawny zestaw wydarzeń pozostaje w bazie;
 - panel pobiera dane z `/api/events`, bez odpytywania Discorda przy każdym otwarciu.
 
-Konfiguracja Cron: `docs/DEPLOY.md`.
+Konfiguracja Cron: panel LH → Cron / Harmonogram zadań:
+```cron
+*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
+```
+Ręcznie: `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php`. Log: `~/public_html/alphavault.pl/.app/logs/discord-sync.log`. Szczegóły: `docs/DEPLOY.md`.
 
 ## CI/CD
 
 - `ci.yml`: dokumentacja, PHP lint, MySQL 8.4, migracja, Discord DB/sync, API e2e, UI e2e, empty-state.
 - `deploy-alphavault.yml`: lint, SSH, backup, rsync, migracja, health check.
+- `main` jest chroniony: wymagany PR i check `PHP + API + UI`, linear history, `enforce_admins`, bez force push/delete.
+- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje. Environment `alphavault-production` dopuszcza tylko `main`.
 - Deployment nigdy nie dotyka katalogów WordPressa ani innych domen.
 
 ## Legacy

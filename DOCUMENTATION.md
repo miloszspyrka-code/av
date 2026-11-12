@@ -373,8 +373,10 @@ Testy: `tests/discord-events.test.php`. Sortowanie odbywa się po UTC, nie po te
 Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 
 ```text
-*/5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
+*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
+
+Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php`.
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
@@ -596,6 +598,14 @@ Dodatkowo `/` musi zawierać „Alpha Vault”, a `/js/state.js` musi zwracać 2
 
 Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `public` i `app`, potem uruchamia health check.
 
+### 14.5. CI/CD gates i branch protection
+
+- `main` wymaga PR i zielonego checku `PHP + API + UI`; bez bezpośredniego push, force push i usuwania gałęzi.
+- `enforce_admins=true`; merge commit wyłączony — dozwolone squash/rebase.
+- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje przez `deploy-alphavault.yml`.
+- Environment `alphavault-production` dopuszcza deploy tylko z `main`.
+- Repo jest publiczne; secret scanning, push protection i Dependabot security updates są włączone.
+
 ## 15. Bezpieczeństwo
 
 | Obszar | Mechanizm |
@@ -639,7 +649,7 @@ npm run test:docs
 
 CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-state na osobnym porcie.
 
-**Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika; LH Cron wymaga dodania wpisu w panelu LH (SSH nie ma dostępu do `crontab`).
+**Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika; LH Cron jest skonfigurowany w panelu LH (SSH nie ma dostępu do `crontab`, więc zmiany harmonogramu tylko przez panel).
 
 ## 17. Zarządzanie dokumentacją
 
