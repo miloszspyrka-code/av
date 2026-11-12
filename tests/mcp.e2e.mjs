@@ -23,6 +23,7 @@ const BASE = REMOTE ? (process.env.MCP_BASE || 'https://mcp.alphavault.pl') : `h
 const SESSIONS_FILE = path.join(ROOT, 'tests', 'mcp-test-sessions.json');
 const LOCAL_ENV = REMOTE ? {} : {
   APP_URL: BASE,
+  SESSION_COOKIE: 'mcp_session',
   MCP_ENABLED: 'true',
   MCP_WRITES_ENABLED: 'false',
   MCP_ISSUER: BASE,

@@ -106,6 +106,7 @@ function makeConfig() {
     ...base,
     APP_URL: BASE,
     APP_ENV: 'local',
+    SESSION_COOKIE: 'mcp_session',
     DISCORD_REDIRECT_URI: BASE + '/oauth/discord/callback',
     DISCORD_GUILD_ID: 'test-guild',
     DISCORD_REQUIRED_ROLE_ID: 'test-role',
