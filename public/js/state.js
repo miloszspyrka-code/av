@@ -20,7 +20,11 @@
     pushing: false,
     dirty: false,
     lastError: null,
-    lastSavedAt: null
+    lastSavedAt: null,
+    events: null,
+    eventsLoaded: false,
+    eventsSync: null,
+    isAdmin: false
   };
 
   const deepMerge = (base, patch) => {
@@ -75,7 +79,7 @@
       start: 0, date: AV.dateLabel(new Date()), lev: '10×', goal: '', balance: 0, include: true, primary: true
     }];
     s.setups = [];
-    s.meta.consultation = { date: AV.dateKey(AV.addDays(new Date(), 5)), time: '18:00', who: 'Marcin' };
+    s.meta.consultation = null;
     s.meta.consultationUsed = 0;
     s.user.name = 'Trader';
     s.user.email = '';
@@ -140,6 +144,7 @@
       AV.api.demoAllowed = !!me.demoAllowed;
       AV.api.roleCheckConfigured = !!me.roleCheckConfigured;
       AV.api.me = me.user || null;
+      AV.api.isAdmin = !!me.isAdmin;
       if (!me.authenticated) {
         AV.api.ready = true;
         return { authenticated: false, me };
@@ -161,6 +166,7 @@
         AV.api.revision = 0;
       }
       AV.applyServerUser(me.user);
+      await AV.loadEvents();
       AV.api.ready = true;
       if (!hadState || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
         await AV.pushStateImmediate();
@@ -174,6 +180,64 @@
       return { offline: true, error: err.message };
     }
   };
+
+  AV.warsawDateKey = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(date);
+
+  AV.loadEvents = async () => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.api.events = null;
+      AV.api.eventsLoaded = false;
+      AV.api.eventsSync = null;
+      return false;
+    }
+    try {
+      const res = await AV.apiFetch('/api/events');
+      if (!res.ok) return false;
+      const data = await res.json();
+      AV.api.events = data;
+      AV.api.eventsLoaded = true;
+      AV.api.eventsSync = data.sync || null;
+      if (AV.renderAcademy) AV.renderAcademy();
+      return true;
+    } catch (err) {
+      AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.setEventCategory = async (id, category) => {
+    const res = await AV.apiFetch('/api/admin/events/' + encodeURIComponent(id) + '/category', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category })
+    });
+    if (!res.ok) return false;
+    await AV.loadEvents();
+    return true;
+  };
+
+  AV.nextLiveEvent = () => {    const data = AV.api.events || {};
+    const list = (data.live || []).filter((e) => e.statusCode !== 3 && e.statusCode !== 4);
+    const now = Date.now();
+    const active = list.find((e) => {
+      const start = new Date(e.startAt).getTime();
+      const end = e.endAt ? new Date(e.endAt).getTime() : start + 3 * 3600 * 1000;
+      return start <= now && now < end;
+    });
+    if (active) return active;
+    return list
+      .filter((e) => new Date(e.startAt).getTime() >= now)
+      .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))[0] || null;
+  };
+
+  AV.nextConsultationEvent = () => {
+    const data = AV.api.events || {};
+    return data.nextConsultation || null;
+  };
+
+  AV.eventTimeLabel = (event) => event ? (event.startLabel || '') : '';
 
   AV.schedulePush = () => {
     clearTimeout(AV._pushTimer);

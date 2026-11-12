@@ -1,0 +1,107 @@
+name: Discord sync live test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Real Discord API -> test MySQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: alpha_vault
+          MYSQL_USER: alpha_vault
+          MYSQL_PASSWORD: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, curl, mbstring
+          coverage: none
+
+      - name: Validate Discord secrets
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        run: |
+          set -euo pipefail
+          for name in DISCORD_BOT_TOKEN DISCORD_GUILD_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing secret: ${name}"
+              exit 1
+            fi
+          done
+          echo "Discord secrets are present."
+
+      - name: Create test config
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DISCORD_REQUIRED_ROLE_ID: ${{ secrets.DISCORD_REQUIRED_ROLE_ID }}
+        run: |
+          cat > tests/config.live.json <<JSON
+          {
+            "APP_URL": "http://127.0.0.1:4173",
+            "APP_ENV": "local",
+            "SESSION_SECRET": "live-sync-test-secret-0123456789abcdef",
+            "DB_HOST": "127.0.0.1",
+            "DB_PORT": "3306",
+            "DB_NAME": "alpha_vault",
+            "DB_USER": "alpha_vault",
+            "DB_PASSWORD": "test",
+            "DISCORD_CLIENT_ID": "",
+            "DISCORD_CLIENT_SECRET": "",
+            "DISCORD_REDIRECT_URI": "http://127.0.0.1:4173/auth/discord/callback",
+            "DISCORD_GUILD_ID": "${DISCORD_GUILD_ID}",
+            "DISCORD_REQUIRED_ROLE_ID": "${DISCORD_REQUIRED_ROLE_ID}",
+            "DISCORD_BOT_TOKEN": "${DISCORD_BOT_TOKEN}",
+            "ADMIN_DISCORD_IDS": "",
+            "ALLOW_DEMO_LOGIN": "true",
+            "MAX_STATE_BYTES": "12582912"
+          }
+          JSON
+          chmod 600 tests/config.live.json
+
+      - name: Apply schema
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.live.json
+        run: php app/db/migrate.php
+
+      - name: Real sync twice
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.live.json
+        run: |
+          set -euo pipefail
+          php bin/sync-discord-events.php
+          php bin/sync-discord-events.php
+
+      - name: Report real events
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.live.json
+        run: php tests/report-discord-events.php
+
+      - name: Remove secret config
+        if: always()
+        run: rm -f tests/config.live.json

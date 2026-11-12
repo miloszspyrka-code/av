@@ -22,6 +22,9 @@ final class Config
         public readonly array $discord,
         public readonly bool $discordConfigured,
         public readonly bool $roleCheckConfigured,
+        public readonly bool $eventsConfigured,
+        public readonly array $adminDiscordIds,
+        public readonly array $discordEventRules,
         public readonly string $version,
     ) {
     }
@@ -96,6 +99,7 @@ final class Config
             'redirectUri' => (string) $env('DISCORD_REDIRECT_URI', $appUrl . '/auth/discord/callback'),
             'guildId' => (string) $env('DISCORD_GUILD_ID', ''),
             'requiredRoleId' => (string) $env('DISCORD_REQUIRED_ROLE_ID', ''),
+            'botToken' => (string) $env('DISCORD_BOT_TOKEN', ''),
             'defaultPlan' => $env('DISCORD_DEFAULT_PLAN') === 'solo' ? 'solo' : 'full',
             'trialDays' => $parseInt($env('DISCORD_TRIAL_DAYS'), 0),
         ];
@@ -104,6 +108,23 @@ final class Config
             && $discord['clientSecret'] !== ''
             && $discord['redirectUri'] !== '';
         $roleCheckConfigured = $discord['guildId'] !== '' && $discord['requiredRoleId'] !== '';
+        $eventsConfigured = $discord['guildId'] !== '' && $discord['botToken'] !== '';
+        $adminDiscordIds = array_values(array_filter(array_map(
+            static fn (string $value): string => trim($value),
+            explode(',', (string) $env('ADMIN_DISCORD_IDS', ''))
+        ), static fn (string $value): bool => $value !== ''));
+
+        $rules = [];
+        $rulesFile = $root . '/config/discord_event_rules.json';
+        if (is_file($rulesFile)) {
+            $rawRules = file_get_contents($rulesFile);
+            if ($rawRules !== false) {
+                $decodedRules = json_decode($rawRules, true);
+                if (is_array($decodedRules)) {
+                    $rules = $decodedRules;
+                }
+            }
+        }
 
         return new self(
             root: $root,
@@ -122,6 +143,9 @@ final class Config
             discord: $discord,
             discordConfigured: $discordConfigured,
             roleCheckConfigured: $roleCheckConfigured,
+            eventsConfigured: $eventsConfigured,
+            adminDiscordIds: $adminDiscordIds,
+            discordEventRules: $rules,
             version: '3.0.0',
         );
     }

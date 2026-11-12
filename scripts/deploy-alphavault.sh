@@ -55,7 +55,7 @@ if [ "$DRY_RUN" != "true" ]; then
   if [ "${DISCORD_REDIRECT_URI:-}" != "https://alphavault.pl/auth/discord/callback" ]; then
     fail "DISCORD_REDIRECT_URI must be https://alphavault.pl/auth/discord/callback."
   fi
-  for name in SESSION_SECRET DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET DISCORD_GUILD_ID DISCORD_REQUIRED_ROLE_ID; do
+  for name in SESSION_SECRET DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET DISCORD_GUILD_ID DISCORD_REQUIRED_ROLE_ID DISCORD_BOT_TOKEN; do
     require_var "$name"
   done
 fi
@@ -137,7 +137,7 @@ health_check() {
   if [ -z "$body" ]; then
     fail "Health check failed: no response from $APP_URL/api/health"
   fi
-  if ! printf '%s' "$body" | jq -e '.ok == true and .db.ok == true and .discordConfigured == true and .roleCheckConfigured == true and .demoAllowed == false' >/dev/null 2>&1; then
+  if ! printf '%s' "$body" | jq -e '.ok == true and .db.ok == true and .discordConfigured == true and .roleCheckConfigured == true and .eventsConfigured == true and .demoAllowed == false' >/dev/null 2>&1; then
     printf '%s\n' "$body"
     fail "Health check failed: API/DB/Discord configuration is not production-ready."
   fi
@@ -197,7 +197,7 @@ REMOTE
 fi
 
 log "Preparing remote directories..."
-ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "mkdir -p '$DEPLOY_PATH' '$APP_PATH/app' '$APP_PATH/db'; chmod 755 '$DEPLOY_PATH' '$APP_PATH'"
+ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "mkdir -p '$DEPLOY_PATH' '$APP_PATH/app' '$APP_PATH/db' '$APP_PATH/bin' '$APP_PATH/logs'; chmod 755 '$DEPLOY_PATH' '$APP_PATH'; chmod 700 '$APP_PATH/logs'"
 
 log "Syncing public frontend..."
 rsync "${RSYNC_FLAGS[@]}" \
@@ -215,6 +215,11 @@ rsync "${RSYNC_FLAGS[@]}" \
 log "Syncing schema and demo data..."
 rsync "${RSYNC_FLAGS[@]}" \
   -e "$RSYNC_SSH" db/ "$SSH_TARGET:$APP_PATH/db/"
+
+log "Syncing CRON scripts..."
+rsync "${RSYNC_FLAGS[@]}" \
+  --exclude=config.json \
+  -e "$RSYNC_SSH" bin/ "$SSH_TARGET:$APP_PATH/bin/"
 
 if [ "$DRY_RUN" = "true" ]; then
   log "Dry run finished. No server files were changed."

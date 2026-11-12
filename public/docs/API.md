@@ -187,6 +187,47 @@ Trwale usuwa użytkownika (kaskadowo sesje i stan) i czyści cookie. `200 {"ok":
 
 Załącznik JSON z profilem, rewizją i całym stanem.
 
+### 3.8. `GET /api/events`
+
+Wymaga sesji. Zwraca wydarzenia Discord zsynchronizowane przez CRON oraz stan synchronizacji.
+
+```json
+{
+  "events": [],
+  "live": [],
+  "consultations": [],
+  "unassigned": [],
+  "nextConsultation": null,
+  "sync": {
+    "lastAttemptAt": "2026-11-12 18:00:00",
+    "lastSuccessAt": "2026-11-12 18:00:00",
+    "status": "success",
+    "eventsCount": 3,
+    "updatedCount": 3,
+    "durationMs": 240,
+    "lastHttpStatus": 200,
+    "lastError": null,
+    "stale": false
+  }
+}
+```
+
+Każde wydarzenie zawiera m.in. `id`, `name`, `description`, `entityType`, `status`, `startAt` (UTC ISO), `startLocal` (`Europe/Warsaw` z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`. `raw_payload` nie jest udostępniany.
+
+### 3.9. `GET /api/admin/events`
+
+Wymaga zalogowania i Discord ID z `ADMIN_DISCORD_IDS`. Zwraca wszystkie rekordy (także soft-deleted), stan synchronizacji i listę do przypisania.
+
+### 3.10. `PUT /api/admin/events/{id}/category`
+
+Wymaga administratora i poprawnego `Origin`.
+
+```json
+{ "category": "live" }
+```
+
+Dozwolone: `live`, `consultation`, `unassigned`. Ręczne przypisanie (`manual_category`) ma pierwszeństwo przed regułami i przetrwa kolejne synchronizacje.
+
 ## 4. Bezpieczeństwo
 
 - brak haseł użytkowników; tylko Discord OAuth2,
