@@ -18,6 +18,7 @@
 - `scripts/sync-docs.mjs` — generowanie `public/docs` ze źródeł.
 - `tests/docs.test.mjs` — test linków, kodowania i spójności dokumentacji.
 - `config/discord_event_rules.example.json` — przykład reguł klasyfikacji.
+- `monitor-production.yml` — monitoring health i synchronizacji co 15 min; `/api/health` zwraca skrót `sync`.
 
 ### Zmienione
 - Deploy synchronizuje katalog `config/`, bez nadpisywania aktywnego `discord_event_rules.json`.

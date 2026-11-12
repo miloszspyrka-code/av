@@ -1,0 +1,46 @@
+name: Monitor production
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor-production
+  cancel-in-progress: true
+
+jobs:
+  health:
+    name: Health + Discord sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check public health
+        run: |
+          set -euo pipefail
+          body="$(curl -fsS --max-time 25 https://alphavault.pl/api/health)"
+          echo "$body" | jq .
+
+          echo "$body" | jq -e '
+            .ok == true and
+            .db.ok == true and
+            .discordConfigured == true and
+            .roleCheckConfigured == true and
+            .eventsConfigured == true and
+            .demoAllowed == false and
+            .sync.status == "success" and
+            .sync.stale == false
+          ' >/dev/null
+
+          echo "Production health and Discord sync are OK."
+
+      - name: Check UI
+        run: |
+          set -euo pipefail
+          page="$(curl -fsS --max-time 25 https://alphavault.pl/)"
+          printf '%s' "$page" | grep -q 'Alpha Vault'
+          echo "UI responds with Alpha Vault."

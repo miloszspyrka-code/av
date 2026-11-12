@@ -199,3 +199,22 @@ Po deployu:
 - `rsync --delete` jest używany tylko w dedykowanych katalogach `alphavault.pl` i `.app`; przed nim wykonywany jest backup.
 - Testy Discord wymagają interaktywnego logowania użytkownika z wymaganą rolą.
 - GitHub Actions może być zablokowane przez billing — wtedy deploy nie startuje mimo poprawnych sekretów.
+
+## 10. Monitoring
+
+Workflow `.github/workflows/monitor-production.yml`:
+
+- uruchamiany co 15 minut (`*/15 * * * *`) i ręcznie (`workflow_dispatch`),
+- sprawdza `https://alphavault.pl/api/health`,
+- wymaga: `ok`, `db.ok`, `discordConfigured`, `roleCheckConfigured`, `eventsConfigured`, `demoAllowed=false`,
+- wymaga `sync.status=success` i `sync.stale=false`,
+- sprawdza, że `/` zwraca UI Alpha Vault,
+- nie używa sekretów; `/api/health` jest publiczny.
+
+Ręcznie:
+
+```powershell
+gh workflow run monitor-production.yml --repo miloszspyrka-code/av
+```
+
+Błąd workflow oznacza powiadomienie GitHub do obserwujących repozytorium. Monitoring nie zastępuje LH Cron — tylko wykrywa zatrzymany sync lub awarię health.

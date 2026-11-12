@@ -416,7 +416,13 @@ Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/al
 
 - `/api/events` → `sync.stale=true` po 900 s od sukcesu,
 - `sync.status='error'` → UI pokazuje „błąd synchronizacji”,
-- health check deployu nie sprawdza wieku sync (tylko konfigurację).
+- `/api/health` → publiczny skrót `sync` (`status`, `lastSuccessAt`, `eventsCount`, `stale`),
+- `.github/workflows/monitor-production.yml` → co 15 min sprawdza health, flagi konfiguracji i `sync.status=success` oraz `sync.stale=false`,
+- `workflow_dispatch`: `gh workflow run monitor-production.yml`,
+- błąd workflow = powiadomienie GitHub do obserwujących repo,
+- health check deployu nadal sprawdza tylko konfigurację, nie wiek sync — deploy nie może zależeć od harmonogramu Cron.
+
+Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępnia wyłącznie metadane operacyjne.
 
 ## 10. Baza danych i transakcje
 
@@ -637,6 +643,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
 | Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | 3/3, bez duplikatów |
 | Prod Cron | LH Cron | logi `18:05:05`, `18:10:02` | co 5 min, PASS |
+| Prod monitor | `monitor-production.yml` | health + `sync.status`, `sync.stale` | co 15 min |
 | Prod UI read-only | Playwright + sesja testowa | live, harmonogram, puste konsultacje | 10/10 PASS |
 
 Komendy:

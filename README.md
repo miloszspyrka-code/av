@@ -106,6 +106,7 @@ Ręcznie: `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app
 ## CI/CD
 
 - `ci.yml`: dokumentacja, PHP lint, MySQL 8.4, migracja, Discord DB/sync, API e2e, UI e2e, empty-state.
+- `monitor-production.yml`: co 15 min health + `sync.status`/`stale`.
 - `deploy-alphavault.yml`: lint, SSH, backup, rsync, migracja, health check.
 - `main` jest chroniony: wymagany PR i check `PHP + API + UI`, linear history, `enforce_admins`, bez force push/delete.
 - `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje. Environment `alphavault-production` dopuszcza tylko `main`.

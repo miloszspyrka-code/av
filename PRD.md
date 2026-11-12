@@ -207,6 +207,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | Idempotencja | ponowny sync nie tworzy duplikatów (`UNIQUE discord_event_id`) |
 | Retencja | historia synchronizacji 30 dni; wydarzenia soft-delete bez fizycznego kasowania |
 | Dostępność | awaria Discord nie blokuje panelu; UI korzysta z ostatniego dobrego stanu |
+| Monitoring | workflow co 15 min sprawdza `/api/health`, flagi konfiguracji i `sync`; błąd = powiadomienie GitHub |
 | Bezpieczeństwo | OWASP: sesje, CSRF, CSP, HSTS, rate limit, brak sekretów w kliencie |
 | Rozmiar stanu | `MAX_STATE_BYTES` = 12 MiB |
 | Przeglądarki | aktualne Chrome/Edge/Firefox/Safari; UI responsywne |
@@ -268,6 +269,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | LH Cron | **działa** — co 5 min, logi 18:05:05 i 18:10:02 |
+| Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | niezweryfikowany |
 | OAuth Discord w przeglądarce | nieprzetestowany interaktywnie |
 
