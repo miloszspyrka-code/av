@@ -206,6 +206,7 @@ jobs:
             const fs = require("node:fs");
             const config = JSON.parse(fs.readFileSync("tests/config.test.json", "utf8"));
             Object.assign(config, {
+              APP_URL: "http://127.0.0.1:4175",
               INTEGRATIONS_KEY: "ci-integrations-key-0123456789abcdef0123456789abcdef",
               METAAPI_TOKEN: "ci-metaapi-token",
               OKX_BASE: "http://127.0.0.1:4191/okx",
