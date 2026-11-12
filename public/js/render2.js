@@ -404,15 +404,20 @@
     const s = AV.state, t = AV.taxData(s);
     AV.setText('#taxRevenue', AV.fmt(t.revenue, 2) + ' zł');
     AV.setText('#taxCosts', AV.fmt(t.costs, 2) + ' zł');
+    AV.setText('#taxCostsYear', t.year);
     AV.setText('#taxLoss', AV.fmt(t.carry, 2) + ' zł');
+    AV.setText('#taxLossYear', t.year - 1);
+    AV.setText('#taxLossHint', 'przeniesiona z zeznania za ' + (t.year - 1) + ' · zmień, jeśli masz inną kwotę');
     AV.setText('#taxDue', '≈ ' + AV.fmt(t.due, 0) + ' zł');
     AV.setText('#taxDueHint', 'od dochodu ' + AV.fmt(t.income, 2) + ' zł');
-    AV.setText('#taxYearEyebrow', 'Podatki · rok ' + s.tax.year);
-    AV.setHTML('#taxBody', t.ev.map((e) => '<tr><td class="mono dim">' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td><span class="pill ' + (e.kind === 'cost' ? 'k' : 'p') + '">' + (e.kind === 'cost' ? 'koszt' : 'przychód') + '</span></td><td class="mono">' + e.currency + '</td><td class="mono" style="text-align:right">' + AV.fmt(e.amount, 2) + '</td><td class="mono ' + (e.fx === 1 ? 'dim' : '') + '" style="text-align:right">' + (e.fx === 1 ? '–' : AV.fmt(e.fx, 4)) + '</td><td class="mono" style="text-align:right">' + AV.fmt(e.pln, 2) + '</td></tr>').join('') || '<tr><td colspan="7" class="dim" style="text-align:center;padding:24px">Brak zdarzeń podatkowych. Dodaj wpłatę lub wypłatę w Koncie.</td></tr>');
-    AV.setText('#taxNeutral', AV.closedTrades(s).length + ' transakcji');
-    const mt = AV.closedTrades(s).filter((x) => x.source === 'MT5' || x.source === 'MT4').length;
-    AV.setText('#taxForex', mt ? mt + ' transakcji' : 'brak w ' + s.tax.year);
-    AV.setText('#taxCarry', (t.income > 0 ? '0,00 zł' : AV.fmt(Math.max(0, t.costs + t.carry - t.revenue), 2) + ' zł'));
+    AV.setText('#taxYearEyebrow', 'Podatki · rok ' + t.year);
+    AV.setText('#taxYear', t.year);
+    AV.setText('#taxDeadline', '30 kwietnia ' + (t.year + 1));
+    AV.setHTML('#taxBody', t.ev.map((e) => '<tr><td class="mono dim">' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td><span class="pill ' + (e.kind === 'cost' ? 'k' : 'p') + '">' + (e.kind === 'cost' ? 'koszt' : 'przychód') + '</span></td><td class="mono">' + e.currency + '</td><td class="mono" style="text-align:right">' + AV.fmt(e.amount, 2) + '</td><td class="mono ' + (e.fx === 1 ? 'dim' : '') + '" style="text-align:right">' + (e.fx === 1 ? '–' : AV.fmt(e.fx, 4)) + '</td><td class="mono" style="text-align:right">' + AV.fmt(e.pln, 2) + '</td></tr>').join('') || '<tr><td colspan="7" class="dim" style="text-align:center;padding:24px">Dodaj wpłatę lub wypłatę w Koncie, żeby zobaczyć zdarzenia podatkowe.</td></tr>');
+    AV.setText('#taxNeutral', t.neutral + ' ' + AV.plural(t.neutral, 'transakcja', 'transakcje', 'transakcji'));
+    AV.setText('#taxForex', t.forex + ' ' + AV.plural(t.forex, 'transakcja', 'transakcje', 'transakcji'));
+    AV.setText('#taxCarry', AV.fmt(t.carryForward, 2) + ' zł');
+    AV.setText('#taxCarryYear', t.year + 1);
   };
 
   /* ---------- kalendarz ---------- */

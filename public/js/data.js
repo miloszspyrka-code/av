@@ -405,7 +405,7 @@
         { id: 'f3', date: '2026-08-18', account: 'OKX', type: 'Wypłata', op: 'sprzedaż USDT za EUR', amount: 560, currency: 'EUR', fiat: 520, fx: 4.265, tax: 'income' },
         { id: 'f4', date: '2026-10-30', account: 'WEEX', type: 'Wypłata', op: 'sprzedaż USDT za PLN (P2P)', amount: 1402.1, currency: 'PLN', fiat: 5202.94, fx: 1, tax: 'income' }
       ],
-      tax: { carryLoss: 380, year: 2026 },
+      tax: { version: 2, carryLoss: 380, year: 2026 },
       checkins,
       chat: [],
       overrides: [],

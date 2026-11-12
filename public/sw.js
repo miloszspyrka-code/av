@@ -2,7 +2,7 @@
    Po zmianie plików JS podnieś VERSION, żeby wyczyścić stare cache. */
 'use strict';
 
-const VERSION = 'av-2026-11-12-2';
+const VERSION = 'av-2026-11-12-3';
 const SHELL = [
   '/manifest.webmanifest',
   '/assets/pwa/icon-192.png',
