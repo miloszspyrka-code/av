@@ -51,7 +51,7 @@ npm run test:ui:empty
 
 Test przywraca poprzedni stan demo po zakończeniu.
 
-## Urządzenia zdrowotne — 42 scenariusze + 4 testy konfiguracji
+## Urządzenia zdrowotne — 42 scenariusze + 6 testów konfiguracji
 
 `npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
 
@@ -74,7 +74,7 @@ Zakres:
 - UI: puste pola bez urządzenia, check-in 80/100, połączenie i metryki dla Oura/Whoop, Garmin OAuth bez danych push, odłączenie czyści pola, Apple przez kod parowania, brak błędów JS,
 - brak tokenów dostawców w odpowiedziach API i logach serwera.
 
-`tests/wearables-config.test.php` (4/4) sprawdza, że brak `WEARABLES_ENCRYPTION_KEY` nie jest maskowany przez `SESSION_SECRET`, Apple działa bez OAuth, start OAuth zwraca 503, a po ustawieniu klucza integracja jest gotowa.
+`tests/wearables-config.test.php` (6/6) sprawdza, że brak `WEARABLES_ENCRYPTION_KEY` nie jest maskowany przez `SESSION_SECRET`, Apple działa bez OAuth, start OAuth zwraca 503, a po ustawieniu klucza integracja jest gotowa; Garmin bez planu ma zablokowane połączenie (Starter je otwiera).
 
 Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przechodzi, a część UI jest jawnie pominięta.
 

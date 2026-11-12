@@ -255,7 +255,7 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 | AC-05 | Zmiany i usunięcia są obsługiwane | test UPSERT + soft delete |
 | AC-06 | Panel pokazuje rzeczywiste wydarzenia | UI E2E |
 | AC-07 | Konsultacje i live'y trafiają do właściwych modułów | UI E2E + klasyfikacja |
-| AC-08 | Puste dane = puste pola | `ui-empty.e2e.mjs` 10/10 |
+| AC-08 | Puste dane = puste pola | `ui-empty.e2e.mjs` 12/12 |
 | AC-09 | Godziny poprawne w `Europe/Warsaw` | testy DST + UI |
 | AC-10 | Przejście czasu letni/zimowy przetestowane | 4 przypadki DST |
 | AC-11 | Token bota pozostaje bezpieczny | audyt sekretów i logów |
@@ -297,7 +297,7 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 | Synchronizacja Discord | gotowa, test realny 3/3 VOICE |
 | Testy DB/sync | PASS |
 | API / UI / empty-state | PASS |
-| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 21/21`, `UI 51/51`; deploy po merge |
+| Prop challenge (frontend) | gotowy, `prop 27/27`, `API 23/23`, `UI 53/53`; deploy po merge |
 | Baza `serwer445119_alphavault` | istnieje, tabele utworzone |
 | Deploy na `alphavault.pl` | **200** — wdrożony |
 | App path | `~/public_html/alphavault.pl/.app` (open_basedir, deny) |
