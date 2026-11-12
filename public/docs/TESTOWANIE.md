@@ -78,7 +78,7 @@ npm run test:ui:empty
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 23 scenariusze
+## UI — 35 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -91,6 +91,7 @@ npm run test:ui:empty
 - plan dnia, filtry dziennika, szczegóły transakcji,
 - kalkulator, statystyki, mentor, akademia,
 - kalendarz, check-in, profil,
+- 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,
 - przywrócenie stanu demo,
 - wylogowanie.
