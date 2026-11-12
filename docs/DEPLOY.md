@@ -53,10 +53,14 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `DISCORD_REDIRECT_URI` | `https://alphavault.pl/auth/discord/callback` |
 | `DISCORD_GUILD_ID` | ID serwera Alpha Moves |
 | `DISCORD_REQUIRED_ROLE_ID` | ID roli Alpha |
+| `DISCORD_BOT_TOKEN` | token bota read-only do scheduled events |
+| `ADMIN_DISCORD_IDS` | opcjonalna lista Discord ID administratorów (po przecinku) |
 
 Zmienne repozytorium:
 
 - `APP_URL=https://alphavault.pl`
+- `DEPLOY_ENABLED=false` (ustaw `true` po utworzeniu bazy)
+- `ADMIN_DISCORD_IDS` (opcjonalnie, zamiast sekretu)
 
 ## 4. Discord
 

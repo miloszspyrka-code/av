@@ -146,6 +146,9 @@
       AV.api.me = me.user || null;
       AV.api.isAdmin = !!me.isAdmin;
       if (!me.authenticated) {
+        AV.api.events = null;
+        AV.api.eventsSync = null;
+        AV.api.eventsLoaded = false;
         AV.api.ready = true;
         return { authenticated: false, me };
       }
@@ -334,6 +337,10 @@
 
   AV.serverLogout = async () => {
     try { await AV.apiFetch('/auth/logout', { method: 'POST' }); } catch {}
+    AV.api.events = null;
+    AV.api.eventsSync = null;
+    AV.api.eventsLoaded = false;
+    AV.api.isAdmin = false;
   };
 
   AV.serverDeleteAccount = async () => {
