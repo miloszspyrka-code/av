@@ -235,7 +235,7 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 | Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
 | 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
-| Aplikacja na telefonie | ⚪ | instrukcja PWA; manifest nie jest jeszcze dodany |
+| Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
 
@@ -262,3 +262,18 @@ Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 - po powrocie serwera i zalogowaniu stan z MySQL zastępuje lokalny.
 
 To celowy fallback, nie drugi równoległy backend.
+
+---
+
+## 17. Aplikacja na telefonie (PWA)
+
+| Element | Stan | Opis |
+|---|---|---|
+| Manifest | ✅ | `/manifest.webmanifest`: `display: standalone`, ikony 192/512/maskable, skrót `/?qa=1` |
+| Instalacja bez App Store | ✅ | Chrome/Edge: `beforeinstallprompt`; iPhone: Safari → Udostępnij → Do ekranu początkowego |
+| Service worker | ✅ | `/sw.js`: cache powłoki, offline fallback, `notificationclick` → `/?qa=<id>` |
+| Powiadomienie po zamknięciu | ✅ | po zamknięciu pozycji w panelu i zapisie stanu; treść: para, kierunek, wynik; klik otwiera szybkie dodanie |
+| Szybkie dodanie | ✅ | emocja + ocena + zdjęcie wykresu (`capture="environment"`), zapis do stanu i MySQL; E2E 0,6–0,7 s |
+| Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
+
+Powiadomienie o zamknięciu powstaje po stronie klienta, więc działa, gdy panel jest otwarty albo gdy transakcję zamyka się w panelu. Powiadomienie „po zamknięciu na giełdzie” przy zamkniętej aplikacji wymaga workera giełdowego i Web Push z VAPID — to osobny zakres.

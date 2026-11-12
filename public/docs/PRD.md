@@ -82,7 +82,7 @@ W wersji 3.0 backend został zmigrowany z Express/Node.js na PHP 8.3, a harmonog
 - płatności Stripe (modal zakupu jest demonstracyjny),
 - wysyłka e-mail/SMS przypomnień poza aplikacją,
 - generowanie kolejnych wystąpień wydarzeń cyklicznych (przechowujemy `recurrence_rule`, ale nie tworzymy fikcyjnych wystąpień),
-- aplikacja mobilna.
+- natywna aplikacja mobilna w App Store/Google Play; PWA jest w zakresie (FR-17).
 
 ## 5. Model dostępu i konta
 
@@ -198,6 +198,10 @@ Panel administratora i `/api/events` pokazują: ostatnią próbę, ostatni sukce
 
 Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują na siebie i są weryfikowane automatycznie (`npm run test:docs`).
 
+### FR-17 — Aplikacja na telefonie (PWA)
+
+Panel jest instalowalny z przeglądarki bez App Store i Google Play (`manifest.webmanifest`, service worker, ikony 192/512/maskable). Po zamknięciu transakcji w panelu użytkownik dostaje powiadomienie z deep linkiem do szybkiego dodania, gdzie w ≤ 10 s zapisuje emocję, ocenę i zdjęcie wykresu. Powłoka aplikacji działa offline; `/api/` i `/auth/` nie są cache'owane. Powiadomienia o transakcjach zamkniętych na giełdzie przy zamkniętej aplikacji wymagają serwerowego workera giełdowego i Web Push — poza zakresem do czasu auto-importu.
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -231,6 +235,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | AC-11 | Token bota pozostaje bezpieczny | audyt sekretów i logów |
 | AC-12 | Produkcyjne E2E przechodzi | health + events + login + sync na `alphavault.pl` |
 | AC-13 | Dokumentacja spójna i aktualna | `npm run test:docs` |
+| AC-14 | PWA jest instalowalna, a szybkie dodanie z powiadomienia zajmuje ≤ 10 s | `tests/pwa.e2e.mjs` 20/20 |
 
 ## 9. Metryki sukcesu
 
