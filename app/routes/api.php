@@ -100,6 +100,11 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             Http::json([...$base, 'user' => $auth->publicUser($user)]);
         }
 
+        if ($path === '/api/quotes' && $method === 'GET') {
+            $quotes = new Quotes($config->quotesCacheFile, $config->quotesBase, $config->quotesTtl);
+            Http::json($quotes->get());
+        }
+
         if ($path === '/api/state' && $method === 'GET') {
             $current = $auth->requireAuth($user);
             $row = $db->queryOne('SELECT state, revision, bytes, updated_at FROM user_states WHERE user_id = ?', [$current['id']]);
@@ -357,6 +362,12 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             $auth->requireAuth($user);
             $events = new DiscordEvents($config, $db);
             Http::json($events->listForApi(false));
+        }
+
+        if ($path === '/api/macro-events' && $method === 'GET') {
+            $auth->requireAuth($user);
+            $macro = new MacroEvents($config, $db);
+            Http::json($macro->listForApi());
         }
 
         if ($path === '/api/admin/events' && $method === 'GET') {

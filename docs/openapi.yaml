@@ -402,6 +402,18 @@ paths:
         '401':
           description: Zły kod lub token
 
+  /api/quotes:
+    get:
+      tags: [API]
+      summary: Notowania rynkowe z cache i fallbackiem
+      responses:
+        '200':
+          description: Zawsze 200; pole stale mowi o pochodzeniu danych
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quotes'
+
 components:
   securitySchemes:
     cookieAuth:
@@ -445,6 +457,21 @@ components:
             ok: { type: boolean }
             version: { type: string }
             latencyMs: { type: integer }
+    Quotes:
+      type: object
+      required: [quotes, updatedAt, stale]
+      properties:
+        quotes:
+          type: array
+          items:
+            type: object
+            required: [symbol, price, changePercent]
+            properties:
+              symbol: { type: string }
+              price: { type: number }
+              changePercent: { type: [number, 'null'] }
+        updatedAt: { type: [string, 'null'], format: date-time }
+        stale: { type: boolean }
     Subscription:
       type: object
       properties:

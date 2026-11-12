@@ -64,6 +64,10 @@ async function main() {
   assert.equal(eventsAnon.res.status, 401);
   log('events bez sesji = 401', true);
 
+  const macroAnon = await req('/api/macro-events');
+  assert.equal(macroAnon.res.status, 401);
+  log('macro-events bez sesji = 401', true);
+
   const demo = await req('/auth/demo', {
     method: 'POST',
     body: JSON.stringify({ remember: true }),
@@ -107,6 +111,18 @@ async function main() {
     assert.match(event.url || '', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/);
   }
   log('events z sesją', true, events.json.events.length + ' wydarzeń · ' + events.json.events.filter((e) => e.url).length + ' z linkiem');
+
+  const macro = await req('/api/macro-events');
+  assert.equal(macro.res.status, 200, macro.text);
+  assert.ok(Array.isArray(macro.json.events));
+  assert.ok(macro.json.sync && typeof macro.json.sync.status === 'string');
+  assert.equal(typeof macro.json.sync.stale, 'boolean');
+  for (const event of macro.json.events) {
+    assert.ok(event.id && event.name && event.currency, 'macro event shape');
+    assert.match(event.startAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    assert.ok(event.impact === 2 || event.impact === 3, 'macro impact 2/3');
+  }
+  log('macro-events z sesją', true, macro.json.events.length + ' publikacji · sync=' + macro.json.sync.status);
 
   const adminEvents = await req('/api/admin/events');
   assert.equal(adminEvents.res.status, 403);

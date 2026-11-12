@@ -227,10 +227,10 @@
     const weekEvents = events.filter((e) => e.imp === 3 && new Date(e.date) >= AV.monday(new Date()) && new Date(e.date) <= AV.addDays(AV.monday(new Date()), 7));
     const base = AV.INST.crypto.find((x) => x[0].startsWith(inst)) || AV.INST.crypto[0];
     AV.setHTML('#marketAnalysis',
-      '<h2 style="font-size:24px;margin-top:8px;letter-spacing:-.5px">' + (next ? AV.esc(next.name) : 'Spokojny tydzień bez ★★★') + '</h2>' +
-      '<p class="mut" style="margin-top:12px;line-height:1.65">' + (next ? 'Najbliższa publikacja: ' + AV.esc(next.name) + ', ' + AV.eventStatus(next.date)[1] + ' o ' + AV.timeFmt(next.date, s) + '. W minutach publikacji zmienność skacze, a spready się rozszerzają. W takie dni wygrywa ten, kto robi mniej.' : 'W kalendarzu nie ma w najbliższych dniach publikacji ★★★. To dobry moment na spokojne trzymanie się planu.') + '</p>' +
+      '<h2 style="font-size:24px;margin-top:8px;letter-spacing:-.5px">' + (next ? AV.esc(next.name) : '') + '</h2>' +
+      '<p class="mut" style="margin-top:12px;line-height:1.65">' + (next ? 'Najbliższa publikacja: ' + AV.esc(next.name) + ', ' + AV.eventStatus(next.date)[1] + ' o ' + AV.timeFmt(next.date, s) + '. W minutach publikacji zmienność skacze, a spready się rozszerzają. W takie dni wygrywa ten, kto robi mniej.' : '') + '</p>' +
       '<h3 style="margin-top:20px">Na co patrzeć</h3><ul class="steps" style="margin-top:4px">' +
-      '<li><span class="n">1</span><span><b>' + (next ? AV.esc(next.name) + ' — ' + AV.esc(next.desc) + '.' : 'Brak wydarzeń ★★★.') + '</b> ' + (next ? '15 minut przed i po to strefa losowych knotów.' : 'Skup się na swoich poziomach z planu.') + '</span></li>' +
+      '<li><span class="n">1</span><span><b>' + (next ? AV.esc(next.name) + ' — ' + AV.esc(next.desc) + '.' : '') + '</b> ' + (next ? '15 minut przed i po to strefa losowych knotów.' : '') + '</span></li>' +
       '<li><span class="n">2</span><span><b>Dolar i rentowności.</b> Mocny dolar zwykle ciąży BTC i Nasdaqowi. Patrz na DXY przed wejściem.</span></li>' +
       '<li><span class="n">3</span><span><b>Fundament ' + AV.esc(inst) + '.</b> Zmienność 7D jest podwyższona. Zmniejsz pozycję, jeśli nie masz potwierdzenia.</span></li></ul>' +
       '<div class="step"><b>Dla Ciebie:</b> w dni z danymi makro masz ' + AV.mentorData(s).macroWynik + ' na ' + trades.length + ' transakcjach w tym instrumencie. ' + (next ? 'Najbliższe okno: ' + AV.eventStatus(next.date)[1] + ' ' + AV.timeFmt(next.date, s) + '.' : '') + '</div>' +
@@ -433,14 +433,14 @@
       if (dl !== day) { h += '<div class="dayh">' + dl + '</div>'; day = dl; }
       h += '<div class="ev ' + (st[0] === 'done' ? 'past' : '') + '"><div class="t"><b>' + AV.timeFmt(e.date, s) + '</b>' + d.toLocaleDateString('pl-PL', { weekday: 'short', day: '2-digit', month: '2-digit' }) + '</div><div class="flag"><b>' + (AV.SYM[e.cur] || e.cur) + '</b>' + e.cur + '</div><div class="n">' + AV.esc(e.name) + '<small>' + AV.esc(e.desc) + ' · ' + AV.stars(e.imp) + '</small></div><span class="st ' + st[0] + '">' + st[1] + '</span></div>';
     });
-    h += '<p class="dim" style="font-size:12px;margin-top:16px">Godziny w strefie: ' + AV.esc(s.user.timezone) + '. W podglądzie dane są lokalne; w wersji produkcyjnej kalendarz pobiera się sam.</p>';
-    AV.setHTML('#evFull', h || '<div class="dim" style="padding:20px">Brak wydarzeń w tym tygodniu dla wybranego filtra.</div>');
+    h += '<p class="dim" style="font-size:12px;margin-top:16px">Godziny w strefie: ' + AV.esc(s.user.timezone) + '.</p>';
+    AV.setHTML('#evFull', h);
     const next = events.filter((e) => e.imp === 3 && new Date(e.date) > new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
     if (next) {
       const d = new Date(next.date), st = AV.eventStatus(next.date);
       AV.setHTML('#evNext', '<h2 style="font-size:22px;margin-top:10px;letter-spacing:-.4px">' + AV.esc(next.name) + '</h2><div class="mono al" style="margin-top:8px">' + d.toLocaleDateString('pl-PL', { weekday: 'long', timeZone: AV.tzMap[s.user.timezone] || 'Europe/Warsaw' }) + ' · ' + AV.timeFmt(next.date, s) + '</div><div class="hint">' + AV.esc(next.desc) + ' · ' + st[1] + '</div>');
     } else {
-      AV.setHTML('#evNext', '<h2 style="font-size:22px;margin-top:10px">Brak ważnych publikacji</h2><div class="hint">spokojnie do końca tygodnia</div>');
+      AV.setHTML('#evNext', '');
     }
     AV.renderMacroStats();
     AV.renderMacroWidget(events);
@@ -458,8 +458,8 @@
     const net = trades.reduce((a, t) => a + t.result, 0);
     const wr = trades.length ? trades.filter((t) => t.result > 0).length / trades.length * 100 : 0;
     const noSL = trades.filter((t) => t.sl === 'brak').length;
-    AV.setText('#macroStats', AV.signed(net, 2, ''));
-    AV.setText('#macroStatsHint', events.length + ' dni z danymi ★★★ · skuteczność ' + Math.round(wr) + '% · ' + noSL + ' transakcje bez SL');
+    AV.setText('#macroStats', events.length ? AV.signed(net, 2, '') : '');
+    AV.setText('#macroStatsHint', events.length ? days.size + ' dni z danymi ★★★ · skuteczność ' + Math.round(wr) + '% · ' + noSL + ' transakcje bez SL' : '');
   };
 
   AV.renderMacroWidget = (events) => {
@@ -470,7 +470,7 @@
     AV.setHTML('#mwList', list.map((e) => {
       const d = new Date(e.date), st = AV.eventStatus(e.date);
       return '<div class="mev ' + (st[0] === 'done' ? 'past' : '') + '"><span class="cur">' + (AV.SYM[e.cur] || e.cur) + '</span><div class="t"><b>' + AV.timeFmt(e.date, s) + '</b>' + d.toLocaleDateString('pl-PL', { weekday: 'short' }) + '</div><div class="n">' + AV.esc(e.name) + '<small>' + e.cur + ' · ' + AV.stars(e.imp) + '</small></div><span class="st ' + st[0] + '">' + st[1] + '</span></div>';
-    }).join('') || '<div class="dim" style="padding:12px">Brak wydarzeń.</div>');
+    }).join('') || '');
     const n = list[0];
     const dot = $('#mwDot');
     if (n) {
@@ -478,7 +478,7 @@
       AV.setText('#mwTxt', n.name.split(':')[0] + ' · ' + st[1] + (st[0] === 'done' || st[0] === 'live' ? '' : ', ' + AV.timeFmt(n.date, s)));
       if (dot) dot.className = m <= 15 ? 'pulse rd' : m < 120 ? 'pulse am' : 'pulse';
     } else {
-      AV.setText('#mwTxt', 'spokojnie do końca tygodnia');
+      AV.setText('#mwTxt', '');
       if (dot) dot.className = 'pulse';
     }
   };

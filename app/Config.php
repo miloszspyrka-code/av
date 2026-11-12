@@ -30,6 +30,9 @@ final class Config
         public readonly bool $integrationsConfigured,
         public readonly string $metaApiToken,
         public readonly array $integrationBases,
+        public readonly string $quotesBase,
+        public readonly int $quotesTtl,
+        public readonly string $quotesCacheFile,
         public readonly string $version,
     ) {
     }
@@ -205,6 +208,9 @@ final class Config
             integrationsConfigured: strlen($integrationsKey) >= 32,
             metaApiToken: $metaApiToken,
             integrationBases: $integrationBases,
+            quotesBase: rtrim((string) $env('QUOTES_BASE', 'https://query1.finance.yahoo.com'), '/'),
+            quotesTtl: max(0, min(3600, $parseInt($env('QUOTES_TTL'), 60))),
+            quotesCacheFile: (string) $env('QUOTES_CACHE', $root . '/cache/quotes.json'),
             version: '3.4.0',
         );
     }

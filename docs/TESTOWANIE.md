@@ -52,7 +52,11 @@ Zakres:
 
 Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przechodzi, a część UI jest jawnie pominięta.
 
-## Discord DB/sync — 24 scenariusze
+## Notowania rynkowe - 14 scenariuszy
+
+`tests/quotes.test.php` (`npm run test:quotes`) testuje `app/Quotes.php` bez sieci i bez bazy: świeży zestaw, cache w TTL, fallback po błędzie dostawcy, pusty payload bez cache, cząstkowe pobranie, wygasanie pojedynczego notowania (900 s) i uszkodzony plik cache.
+
+## Discord DB/sync - 24 scenariusze
 
 `tests/discord-events.test.php` sprawdza:
 

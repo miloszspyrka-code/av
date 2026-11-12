@@ -9,6 +9,7 @@ legacy/node_modules/
 node_modules/
 vendor/
 .runtime/
+cache/
 dist/
 *.log
 *.tmp

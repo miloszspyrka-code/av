@@ -31,11 +31,6 @@
     ]
   };
 
-  AV.TICKER = [
-    ['BTC', 69120, 1.8], ['ETH', 3410, -0.6], ['SOL', 164.9, -2.1], ['NAS100', 21480, 0.4],
-    ['US500', 6215, 0.2], ['XAUUSD', 2742, 0.7], ['EUR/USD', 1.0842, -0.1], ['OIL', 71.6, 1.2]
-  ];
-
   AV.SYM = { USD: '$', EUR: '€', GBP: '£', JPY: '¥', AUD: 'A$', CAD: 'C$', CHF: '₣', NZD: 'NZ$', CNY: '¥', PLN: 'zł' };
 
   AV.TIPS = [
@@ -129,43 +124,9 @@
   ];
 
   /* ---------- kalendarz ---------- */
-  AV.buildEvents = (base = new Date()) => {
-    const monday = AV.monday(base);
-    const defs = [
-      // tydzień 0
-      { w: 0, d: 0, h: 11, m: 0, cur: 'EUR', n: 'Indeks Sentix', desc: 'Nastroje inwestorów w strefie euro', imp: 2 },
-      { w: 0, d: 1, h: 11, m: 0, cur: 'EUR', n: 'ZEW — nastroje w Niemczech', desc: 'Oczekiwania gospodarcze', imp: 2 },
-      { w: 0, d: 2, h: 14, m: 30, cur: 'USD', n: 'Inflacja CPI w USA', desc: 'Najważniejsza publikacja tygodnia dla dolara', imp: 3 },
-      { w: 0, d: 2, h: 16, m: 30, cur: 'USD', n: 'Zapasy ropy EIA', desc: 'Ropa i surowce', imp: 2 },
-      { w: 0, d: 3, h: 14, m: 30, cur: 'USD', n: 'Wnioski o zasiłek dla bezrobotnych', desc: 'Cotygodniowy obraz rynku pracy', imp: 2 },
-      { w: 0, d: 3, h: 16, m: 0, cur: 'USD', n: 'Nastroje konsumentów UoM', desc: 'Oczekiwania inflacyjne konsumentów', imp: 3 },
-      { w: 0, d: 4, h: 14, m: 30, cur: 'USD', n: 'Inflacja PPI w USA', desc: 'Ceny producentów — zapowiedź CPI', imp: 2 },
-      { w: 0, d: 4, h: 16, m: 0, cur: 'USD', n: 'Oczekiwania inflacyjne Michigan', desc: 'Długoterminowe oczekiwania cenowe', imp: 3 },
-      // tydzień 1
-      { w: 1, d: 0, h: 4, m: 0, cur: 'CNY', n: 'Produkcja przemysłowa w Chinach', desc: 'Dane z drugiej gospodarki świata', imp: 2 },
-      { w: 1, d: 0, h: 14, m: 0, cur: 'EUR', n: 'Wystąpienie Christine Lagarde', desc: 'Prezes EBC o polityce pieniężnej', imp: 2 },
-      { w: 1, d: 1, h: 14, m: 30, cur: 'USD', n: 'Sprzedaż detaliczna w USA', desc: 'Siła konsumenta — klucz dla indeksów', imp: 3 },
-      { w: 1, d: 1, h: 15, m: 15, cur: 'USD', n: 'Produkcja przemysłowa w USA', desc: 'Kondycja przemysłu', imp: 2 },
-      { w: 1, d: 2, h: 14, m: 30, cur: 'USD', n: 'Pozwolenia na budowę domów', desc: 'Rynek nieruchomości w USA', imp: 2 },
-      { w: 1, d: 2, h: 20, m: 0, cur: 'USD', n: 'Protokół FOMC', desc: 'Szczegóły ostatniego posiedzenia Fed', imp: 3 },
-      { w: 1, d: 3, h: 14, m: 30, cur: 'USD', n: 'Indeks Philly Fed', desc: 'Aktywność przemysłowa w regionie', imp: 2 },
-      { w: 1, d: 3, h: 16, m: 0, cur: 'USD', n: 'Sprzedaż domów na rynku wtórnym', desc: 'Popyt na nieruchomości', imp: 2 },
-      { w: 1, d: 4, h: 9, m: 30, cur: 'EUR', n: 'Wstępne PMI dla strefy euro', desc: 'Pierwszy odczyt aktywności gospodarczej', imp: 2 },
-      { w: 1, d: 4, h: 14, m: 30, cur: 'CAD', n: 'Inflacja CPI w Kanadzie', desc: 'Dane przed posiedzeniem Bank of Canada', imp: 2 }
-    ];
-    return defs.map((x, i) => {
-      const d = AV.addDays(monday, x.w * 7 + x.d);
-      d.setHours(x.h, x.m, 0, 0);
-      return {
-        id: 'ev' + i,
-        date: d.toISOString(),
-        cur: x.cur,
-        name: x.n,
-        desc: x.desc,
-        imp: x.imp
-      };
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
+  // Dane pochodzą z /api/macro-events (MySQL, sync z feedu makro).
+  // Pusta lista jest poprawnym stanem: widok zostaje pusty, bez tekstów zastępczych.
+  AV.buildEvents = () => (AV.api && Array.isArray(AV.api.macroEvents) ? AV.api.macroEvents : []);
 
   AV.eventStatus = (date, now = Date.now()) => {
     const d = new Date(date);

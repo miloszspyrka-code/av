@@ -305,7 +305,9 @@ try {
   await page.click('#calSeg [data-w="1"]');
   const ev1 = await page.locator('#evFull .ev').count();
   await page.click('#calSeg [data-w="0"]');
+  const widget = await page.locator('#mwList .mev').count();
   log('kalendarz: tygodnie', ev1 > 0, `${ev0} → ${ev1}`);
+  log('makro: widget z API', widget > 0, `${widget} wydarzeń`);
 
   // ciało: check-in
   await page.click('.navg button[data-v="cialo"]');
