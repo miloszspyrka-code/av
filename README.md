@@ -61,6 +61,7 @@ npm run test:quotes      # notowania rynkowe: 14 scenariuszy
 npm run test:roles       # rola: login + cron recheck: 18 scenariuszy
 npm run test:wearables   # urządzenia zdrowotne API + UI: 42 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
+npm run test:encoding    # UTF-8, brak mojibake w kodzie i testach
 ```
 
 Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL`, `DB_*`, `DISCORD_*`, `SESSION_SECRET`, `ALLOW_DEMO_LOGIN`. Plik `config.json` jest ignorowany przez Git.

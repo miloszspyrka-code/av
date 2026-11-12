@@ -197,6 +197,7 @@ npm run test:macro       # kalendarz makro DB/sync
 npm run test:quotes      # notowania rynkowe 14/14 (bez sieci i bazy)
 npm run test:wearables   # urządzenia zdrowotne API + UI 42/42
 npm run test:docs        # linki i spójność dokumentacji
+npm run test:encoding    # UTF-8 i brak mojibake
 ```
 
 UI wymaga uruchomionego serwera PHP i `APP_URL`. PWA używa tego samego serwera i Chrome/Edge. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
@@ -250,7 +251,7 @@ npm run test:docs
 2. PHP lint i JS syntax check przechodzą.
 3. Testy jednostkowe/API/UI zielone.
 4. Nowe zachowanie ma test (albo jawne uzasadnienie, dlaczego nie).
-5. Dokumentacja zaktualizowana i `npm run test:docs` zielone.
+5. Dokumentacja zaktualizowana i `npm run test:docs` oraz `npm run test:encoding` zielone.
 6. `public/docs` zsynchronizowane (`npm run docs:sync`).
 7. PR opisuje zmianę, ryzyko i sposób weryfikacji.
 8. CI zielone **lub** blokada CI jawnie opisana (billing, środowisko).
