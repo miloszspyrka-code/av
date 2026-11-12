@@ -6,20 +6,23 @@ namespace AlphaVault;
 /**
  * Integracje urządzeń zdrowotnych.
  *
- * Garmin / Oura / Whoop: OAuth2 + pobieranie danych po stronie serwera.
+ * Oura: OAuth2 + pobieranie danych po stronie serwera.
  * Apple Watch: most Alpha Vault na iPhone — jednorazowy kod parowania,
  * a następnie ingest danych z tokenem urządzenia (bez OAuth).
+ *
+ * Garmin i Whoop są wyłączone na razie: implementacja i konfiguracja
+ * pozostają w kodzie, ale nie są wystawiane w API ani UI.
  *
  * Tokeny dostawców są szyfrowane (AES-256-GCM) i nigdy nie trafiają do API.
  * Dane o zdrowiu są usuwane po odłączeniu urządzenia.
  */
 final class Wearables
 {
-    public const PROVIDERS = ['garmin', 'apple', 'oura', 'whoop'];
+    public const PROVIDERS = ['apple', 'oura'];
 
-    private const OAUTH_PROVIDERS = ['garmin', 'oura', 'whoop'];
+    private const OAUTH_PROVIDERS = ['oura'];
 
-    private const PKCE_PROVIDERS = ['garmin', 'oura'];
+    private const PKCE_PROVIDERS = ['oura'];
 
     private const MAX_DAYS = 90;
 
@@ -466,8 +469,11 @@ final class Wearables
 
     public function syncAll(): array
     {
+        $providers = array_values(array_diff(self::PROVIDERS, ['apple']));
+        $placeholders = implode(', ', array_fill(0, count($providers), '?'));
         $rows = $this->db->query(
-            'SELECT user_id, provider FROM wearable_connections WHERE status = \'connected\' AND provider <> \'apple\' ORDER BY user_id, provider'
+            'SELECT user_id, provider FROM wearable_connections WHERE status = \'connected\' AND provider IN (' . $placeholders . ') ORDER BY user_id, provider',
+            $providers
         );
         $ok = 0;
         $failed = 0;

@@ -19,7 +19,7 @@ Apache + PHP 8.3 (LH.pl)
    LH Cron → bin/sync-discord-events.php → Discord REST API
    LH Cron → bin/sync-macro-events.php → ForexFactory / TradingView
    LH Cron → bin/check-discord-roles.php → Discord guild member (recheck roli)
-   LH Cron → bin/sync-wearables.php → Oura / Whoop API (Garmin: tylko tokeny; dane push pending)
+   LH Cron → bin/sync-wearables.php → Oura API (Garmin/Whoop wyłączone)
 ```
 
 Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request. Szczegółowe przepływy: [DOCUMENTATION.md](../DOCUMENTATION.md). Wymagania: [PRD.md](../PRD.md).

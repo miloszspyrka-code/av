@@ -230,15 +230,15 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na gotowość oraz podpowiedzi mentora |
-| Garmin Connect | 🟡 | OAuth2 PKCE, User ID i uprawnienia; dostarczanie danych push zależy od zatwierdzonego planu i specyfikacji Garmin Developer Portal. Starter nie ma historii, więc kafelek nie udaje danych pull |
 | Apple Watch · Zdrowie | ✅ | kod parowania + `POST /api/wearables/apple/ingest` z tokenem urządzenia; aplikacja iPhone poza repo |
 | Oura Ring | ✅ | OAuth2 + PKCE, `daily_readiness` + `sleep` (scope `daily`), rotacja refresh tokenów |
-| Whoop | ✅ | OAuth2, API v2 `recovery` + `activity/sleep`, scope `read:recovery read:sleep offline` |
+| Garmin Connect | ⏸️ | wyłączony na razie — kod i konfiguracja zachowane, brak wpisu w UI/API |
+| Whoop | ⏸️ | wyłączony na razie — kod i konfiguracja zachowane, brak wpisu w UI/API |
 | Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
 | Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
 | Odłączenie urządzenia | ✅ | wycofuje dostęp u dostawcy (jeśli API to wspiera), usuwa tokeny i metryki z bazy |
 
-Pełny E2E: `npm run test:wearables` (42 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych) oraz `tests/wearables-config.test.php` (6/6, brak fallbacku klucza i blokada Garmina bez planu).
+Pełny E2E: `npm run test:wearables` (35 scenariuszy API + UI dla Oura i Apple, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych) oraz `tests/wearables-config.test.php` (5/5, lista dostawców i wymóg klucza szyfrowania).
 
 ---
 

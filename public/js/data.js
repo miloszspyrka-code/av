@@ -377,7 +377,7 @@
         maxLosses: 2, maxDailyLoss: 3, block: 'midnight',
         maxRisk: 1, rules: ['Max 1% ryzyka na transakcję', 'Zawsze stop loss', 'Po 2 stratach koniec dnia'],
         checklist: ['Trend wyższego TF', 'Poziom z planu', 'Potwierdzenie', 'SL przed wejściem', 'R:R ≥ 2', 'Brak makro 15 min', 'Spokojna głowa'],
-        devices: { garmin: false, apple: false, oura: false, whoop: false },
+        devices: { apple: false, oura: false },
         connections: {
           weex: { connected: true, lastSync: new Date().toISOString(), imported: 41, masked: 'wx_live_••••7f2a', perms: 'any' },
           okx: { connected: false }, bingx: { connected: false },
