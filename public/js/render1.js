@@ -38,7 +38,7 @@
     const planUntil = s.subscription.until ? new Date(s.subscription.until).toLocaleDateString('pl-PL') : '';
     AV.setText('#sidePlan', planUntil ? planLabel + ' · do ' + planUntil : planLabel);
     AV.setText('#planName', (s.subscription.plan === 'full' ? 'Akademia Alpha + Vault · 168 $ / mies.' : 'Alpha Vault · 49 $ / mies.'));
-    AV.setText('#planUntil', planUntil);
+    AV.setText('#planValidUntil', planUntil);
     AV.show('#planUntilRow', Boolean(planUntil));
     AV.setText('#planRole', (u.email || 'kasia.trades') + ' · rola ' + (s.subscription.role || 'Alpha') + ' ✓');
     AV.setText('#roleCheck', 'dziś, ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
