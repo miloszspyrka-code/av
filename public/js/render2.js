@@ -688,16 +688,13 @@
     AV.setVal('#nameIn', u.name);
     AV.setVal('#currencyIn', u.currency);
     AV.setVal('#goalIn', u.goal);
-    AV.setVal('#mottoIn', u.motto);
     AV.setVal('#tzIn', u.timezone);
     AV.setVal('#hoursIn', u.hour12 ? '12h · 2:30 PM' : '24h · 14:30');
-    $$('#styleChips .chip').forEach((c) => c.classList.toggle('on', c.textContent === u.style));
     $$('#marketChips .chip').forEach((c) => c.classList.toggle('on', (u.markets || []).includes(c.textContent)));
     $$('#accents .sw').forEach((w) => w.classList.toggle('on', w.dataset.a === u.accent.a));
     $$('[data-setting]').forEach((el) => {
       const k = el.dataset.setting;
       let v = s.settings[k];
-      if (k === 'greeting') v = u.greeting;
       if (k === 'remember') v = s.settings.remember;
       el.classList.toggle('on', !!v);
     });

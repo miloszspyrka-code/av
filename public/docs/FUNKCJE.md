@@ -35,7 +35,6 @@ Legenda:
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Powitanie z porą dnia | ✅ | ustawienie „Powitanie” |
 | Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie; bez sekcji gotowości i bez integracji ze sprzętem |
 | Wynik dnia | ✅ | z transakcji dzisiejszych, przeliczony na walutę wyników |
 | Limity strat/transakcji/ryzyka | ✅ | z planu dnia i ustawień |
@@ -138,7 +137,6 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Funkcja | Stan | Opis |
 |---|---|---|
 | 5 tematów rozmowy | ✅ | gotowe odpowiedzi (bez API LLM) |
-| Forma żeńska/męska | ✅ | |
 | Uwagi mentora | ✅ | generowane z danych (limit strat, odgrywanie, MFE, ocena A, sesja) |
 | Analiza rynku | ✅ | najbliższe ★★★, instrument, ryzyko tygodnia |
 | Raport tygodnia | ✅ | z ostatnich 7 dni |
@@ -228,8 +226,8 @@ Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera �
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Profil (imię, waluta, cel, motto) | ✅ | |
-| Personalizacja (płeć mentora, styl, rynki, akcent, strefa, godziny) | ✅ | |
+| Profil (imię, waluta, cel) | ✅ | |
+| Personalizacja (rynki, akcent, strefa, godziny) | ✅ | |
 | Wyłącznik bezpieczeństwa | ✅ | limit strat, limit dzienny, czas blokady, wymóg powodu |
 | 3 zasady + punkty checklisty | ✅ | własny punkt checklisty |
 | Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |

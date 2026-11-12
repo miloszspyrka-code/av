@@ -679,13 +679,6 @@
       const b = e.target.closest('[data-ask]');
       if (b) AV.ask(+b.dataset.ask);
     });
-    $('#gender')?.addEventListener('click', (e) => {
-      const c = e.target.closest('.chip'); if (!c) return;
-      AV.state.user.gender = c.dataset.g;
-      $$('#gender .chip').forEach((x) => x.classList.toggle('on', x === c));
-      AV.saveNow(); AV.renderQ(); AV.renderMentor();
-      AV.toast(AV.state.user.gender === 'f' ? 'Mentor zwraca siÄ™ w formie ĹĽeĹ„skiej' : 'Mentor zwraca siÄ™ w formie mÄ™skiej');
-    });
     $('#mktInst')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
       AV.ui.mktInst = c.dataset.i;
@@ -818,19 +811,12 @@
     $('#goalIn')?.addEventListener('input', AV.debounce((e) => {
       AV.state.user.goal = e.target.value; AV.save(); AV.setText('#goalTxt', e.target.value || 'â€”');
     }, 250));
-    $('#mottoIn')?.addEventListener('input', AV.debounce((e) => { AV.state.user.motto = e.target.value; AV.save(); }, 250));
     $('#currencyIn')?.addEventListener('change', (e) => {
       AV.state.user.currency = e.target.value; AV.saveNow(); AV.renderDashboard(); AV.renderStats(); AV.renderJournal(); AV.renderNewTradeForm();
       AV.toast('Waluta wynikĂłw: ' + e.target.value);
     });
     $('#tzIn')?.addEventListener('change', (e) => { AV.state.user.timezone = e.target.value; AV.saveNow(); AV.renderCalendar(); AV.renderAcademy(); AV.renderMentor(); AV.toast('Strefa czasowa: ' + e.target.value); });
     $('#hoursIn')?.addEventListener('change', (e) => { AV.state.user.hour12 = e.target.value.startsWith('12'); AV.saveNow(); AV.renderCalendar(); AV.renderAcademy(); AV.toast('Format godzin zapisany'); });
-    $('#styleChips')?.addEventListener('click', (e) => {
-      const c = e.target.closest('.chip'); if (!c) return;
-      AV.state.user.style = c.textContent;
-      $$('#styleChips .chip').forEach((x) => x.classList.toggle('on', x === c));
-      AV.saveNow(); AV.renderUser(); AV.toast('Styl: ' + c.textContent);
-    });
     $('#marketChips')?.addEventListener('click', (e) => {
       const c = e.target.closest('.chip'); if (!c) return;
       c.classList.toggle('on');
@@ -963,11 +949,9 @@
     const k = el.dataset.setting;
     el.classList.toggle('on');
     const on = el.classList.contains('on');
-    if (k === 'greeting') AV.state.user.greeting = on;
-    else AV.state.settings[k] = on;
+    AV.state.settings[k] = on;
     if (k === 'macroBefore' || k === 'pushLimit') { if (on) AV.ensurePermission(); }
     AV.saveNow();
-    if (k === 'greeting') AV.renderUser();
     if (k === 'remember') AV.toast(on ? 'Zostaniesz zalogowana na tym urzÄ…dzeniu' : 'Sesja wygaĹ›nie po zamkniÄ™ciu karty');
     if (k === 'macroTwo') AV.renderCalendar();
     if (k === 'safetyEnabled') AV.renderLock();
