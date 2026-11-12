@@ -26,8 +26,11 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
 | `wearable_oauth_states` | jednorazowe stany OAuth2 dla Oura (10 min) wraz z `code_verifier` dla PKCE; Garmin/Whoop wyłączone |
 | `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
+| `mcp_tokens` | tokeny MCP (hash, zakresy, TTL 90 dni, unieważnienie) |
+| `mcp_proposals` | propozycje zmian od agenta oczekujące na decyzję użytkownika |
+| `mcp_audit` | audyt operacji MCP |
 | `schema_migrations` | wersje migracji |
-| `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu |
+| `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu; kod EA ważny 15 min przed pierwszym użyciem i 90 dni od ostatniej synchronizacji |
 | `exchange_imports` | deduplikacja transakcji po `(user_id, provider, external_id)` |
 | `exchange_sync_runs` | historia synchronizacji integracji (fetched/imported/error) |
 | `exchange_sync_state` | stan schedulera integracji (ostatnia próba/sukces, liczniki) |
@@ -69,10 +72,11 @@ Dokument zawiera m.in. `prop.challenges` (konfiguracje challenge'ów) i `prop.se
 ## Migracje
 
 1. Odczytaj schemat przez MySQL MCP / `SHOW CREATE TABLE`.
-2. Dodaj nowy plik w `db/migrations/` (jeśli projekt go używa) lub zmień `db/schema.sql` tylko dla nowych tabel.
+2. Dodaj nowy plik `db/migrations/RRRRMMDD_nazwa.sql` (idempotentny) i, dla nowych instalacji, uzupełnij `db/schema.sql`.
 3. Przed destrukcyjną zmianą: backup i zgoda.
-4. Zastosuj `php app/db/migrate.php` (idempotentne `CREATE TABLE IF NOT EXISTS` + `ensureColumn`/`ensureIndex` dla nowych kolumn istniejących tabel).
-5. Zweryfikuj `/api/health` (`roleRecheck`) i testy.
+4. Zastosuj `php app/db/migrate.php`. Runner najpierw wykonuje `db/schema.sql` (z `ensureColumn`/`ensureIndex` dla nowych kolumn istniejących tabel), a potem wszystkie nieaplikowane pliki z `db/migrations/` i zapisuje wersje w `schema_migrations`.
+5. Ponowne uruchomienie jest bezpieczne — zastosowane wersje są pomijane.
+6. Zweryfikuj `/api/health` (`roleRecheck`) i testy.
 
 Nie przechowuj dumpów produkcyjnych ani danych klientów w repo.
 

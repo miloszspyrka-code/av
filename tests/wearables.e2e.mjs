@@ -31,6 +31,7 @@ const php = process.env.PHP_BIN || (fs.existsSync('C:/Users/milos/.local/php83/p
 const results = [];
 const serverLogs = [];
 let cookie = '';
+let demoCookie = '';
 let appServer = null;
 let fakeServer = null;
 
@@ -124,6 +125,15 @@ function db(args) {
   return JSON.parse(raw.trim() || '{}');
 }
 
+function demoCookieFrom(res) {
+  const list = res.headers.getSetCookie ? res.headers.getSetCookie() : [res.headers.get('set-cookie') || ''];
+  for (const c of list) {
+    const m = /^av_demo=([^;]+)/.exec(c || '');
+    if (m) return m[1];
+  }
+  return '';
+}
+
 async function clearCheckins() {
   const state = await req('/api/state');
   assert.equal(state.res.status, 200, state.text);
@@ -182,6 +192,7 @@ async function runUiChecks() {
   }
   const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
   const context = await browser.newContext({ baseURL: BASE, viewport: { width: 1440, height: 1000 } });
+  await context.addCookies([{ name: 'av_demo', value: demoCookie, url: BASE }]);
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (err) => errors.push(err.message));
@@ -293,7 +304,9 @@ async function main() {
   });
   assert.equal(demo.res.status, 200, demo.text);
   cookie = cookieFrom(demo.res);
+  demoCookie = demoCookieFrom(demo.res);
   assert.ok(cookie);
+  assert.ok(demoCookie, 'brak cookie av_demo');
   log('logowanie demo', true);
 
   await clearCheckins();

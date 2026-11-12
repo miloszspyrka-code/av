@@ -1,8 +1,8 @@
 # Alpha Vault — API i logowanie
 
-Wersja: **3.1.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord, Oura**
+Wersja: **3.9.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord, Oura**
 
-Aplikacja jest serwowana z tego samego originu co API. Frontend zapisuje cały stan użytkownika przez `PUT /api/state`; `localStorage` jest tylko fallbackiem offline.
+Aplikacja jest serwowana z tego samego originu co API. Frontend zapisuje cały stan użytkownika przez `PUT /api/state`; `localStorage` jest tylko fallbackiem offline i jest namespace'owany po `user.id` (`alphavault.state.v3.<id>.*`).
 
 ## 1. Adresy
 
@@ -62,6 +62,8 @@ Content-Type: application/json
 {"remember": true}
 ```
 
+Każda przeglądarka dostaje **własne** konto demo. Identyfikator jest trzymany w cookie `av_demo` (HttpOnly, SameSite=Lax, 30 dni), a w bazie jako `users.discord_id = demo-<24 hex>`. Dzięki temu dwie osoby na tym samym serwerze nie widzą swoich dzienników, a powrót w tej samej przeglądarce zachowuje dane.
+
 Produkcja: `ALLOW_DEMO_LOGIN=false`, endpoint zwraca 403.
 
 ### 2.4. Wylogowanie
@@ -85,6 +87,8 @@ Usuwa sesję z MySQL i czyści cookie. GET przekierowuje na `/`.
 | Max-Age | 30 dni |
 | Path | `/` |
 
+Cookie demo (tylko `ALLOW_DEMO_LOGIN=true`): `av_demo` — losowy identyfikator 24 hex, HttpOnly, SameSite=Lax, 30 dni. Wiąże przeglądarkę z jej kontem demo; nie zawiera danych użytkownika.
+
 ## 3. Endpointy API
 
 Wszystkie odpowiedzi API są JSON. Błędy:
@@ -101,7 +105,7 @@ Publiczny. Sprawdza MySQL i konfigurację.
 {
   "ok": true,
   "service": "alpha-vault",
-  "version": "3.8.0",
+  "version": "3.9.0",
   "db": { "ok": true, "version": "11.8.6-MariaDB", "latencyMs": 1 },
   "uptime": 123,
   "now": "2026-11-12T14:30:00Z",
@@ -178,11 +182,12 @@ Wymaga sesji (`401` bez). Zwraca stan JSON i rewizję.
   "state": { "version": 2, "user": {}, "trades": [], "...": "..." },
   "revision": 12,
   "bytes": 41487,
-  "updatedAt": "2026-11-12 14:30:00"
+  "updatedAt": "2026-11-12 14:30:00",
+  "userId": 42
 }
 ```
 
-Nowe konto Discord: `state=null`. Konto demo bez stanu: seed z `db/demo-state.json`.
+Nowe konto Discord: `state=null`. Konto demo bez stanu: seed z `db/demo-state.json`. Pole `userId` wiąże odpowiedź z sesją; klient odrzuca stan, jeśli nie należy do zalogowanego konta.
 
 ### 3.4. `PUT /api/state`
 
@@ -191,14 +196,17 @@ Wymaga sesji i poprawnego `Origin`.
 ```json
 {
   "state": { "...": "..." },
-  "baseRevision": 12
+  "baseRevision": 12,
+  "ownerId": 42
 }
 ```
+
+`ownerId` jest opcjonalny dla zgodności, ale klient zawsze go wysyła. Jeśli `ownerId` nie zgadza się z sesją (np. w karcie zalogowano inne konto), serwer zwraca `409 session_changed` i nie zapisuje stanu.
 
 Odpowiedź:
 
 ```json
-{ "ok": true, "revision": 13, "bytes": 41500, "updatedAt": "2026-11-12T14:31:00Z" }
+{ "ok": true, "revision": 13, "bytes": 41500, "updatedAt": "2026-11-12T14:31:00Z", "userId": 42 }
 ```
 
 | Kod | Znaczenie |
@@ -207,7 +215,7 @@ Odpowiedź:
 | 400 | `state` nie jest obiektem |
 | 401 | brak sesji |
 | 403 | złe `Origin` |
-| 409 | nieaktualne `baseRevision` |
+| 409 | nieaktualne `baseRevision` albo `session_changed` |
 | 413 | przekroczony `MAX_STATE_BYTES` |
 | 429 | limit 180 zapisów/min |
 
@@ -522,6 +530,7 @@ Symbole: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
 | `DISCORD_DEFAULT_PLAN` | `solo` lub `full` |
 | `DISCORD_TRIAL_DAYS` | 0 = bez daty końca |
 | `ALLOW_DEMO_LOGIN` | `false` na produkcji |
+| `TRUST_PROXY` | `true` tylko za zaufanym reverse proxy; wtedy rate limit używa `X-Forwarded-For`. Domyślnie `false` (bezpieczne `REMOTE_ADDR`). |
 | `MAX_STATE_BYTES` | limit stanu (12 MiB) |
 | `QUOTES_BASE` | bazowy URL dostawcy notowań (domyślnie Yahoo Finance) |
 | `QUOTES_TTL` | TTL cache notowań w sekundach, 0–3600 (domyślnie 60) |

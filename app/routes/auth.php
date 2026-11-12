@@ -8,6 +8,45 @@ function av_auth_error(int $status, string $title, string $text, string $detail 
     Http::errorPage($status, $title, $text, $detail);
 }
 
+/**
+ * Zwraca stabilny identyfikator demo dla tej przeglądarki.
+ * Dzięki temu dwie osoby nie trafiają do jednego wspólnego konta demo.
+ *
+ * @return array{0:string,1:bool} [klucz, czy nowy]
+ */
+function av_demo_identity(Config $config, Auth $auth): array
+{
+    $cookies = $auth->parseCookies((string) ($_SERVER['HTTP_COOKIE'] ?? ''));
+    $key = strtolower(trim((string) ($cookies[$config->demoCookie] ?? '')));
+    $fresh = preg_match('/^[a-f0-9]{24}$/', $key) !== 1;
+    if ($fresh) {
+        $key = bin2hex(random_bytes(12));
+        $auth->setCookie($config->demoCookie, $key, [
+            'maxAge' => 30 * 86400,
+            'expires' => time() + 30 * 86400,
+        ]);
+    }
+    return [$key, $fresh];
+}
+
+function av_cleanup_demo_users(Db $db, int $keepId): void
+{
+    try {
+        $db->execute(
+            "DELETE u FROM users u
+             LEFT JOIN sessions s ON s.user_id = u.id AND s.expires_at > UTC_TIMESTAMP()
+             WHERE u.is_demo = 1 AND u.id <> ?
+               AND u.discord_id LIKE 'demo-%'
+               AND s.id IS NULL
+               AND (u.last_login_at IS NULL OR u.last_login_at < UTC_TIMESTAMP() - INTERVAL 7 DAY)",
+            [$keepId]
+        );
+    } catch (\Throwable $err) {
+        // Sprzątanie nie może blokować logowania demo.
+        error_log('[auth] demo cleanup: ' . $err->getMessage());
+    }
+}
+
 function av_upsert_discord_user(Config $config, Db $db, array $profile, bool $roleVerified): array
 {
     $existing = $db->queryOne('SELECT * FROM users WHERE discord_id = ? LIMIT 1', [(string) $profile['id']]);
@@ -159,20 +198,30 @@ function av_handle_auth(Config $config, Db $db, Auth $auth, Discord $discord, ?a
             $auth->requireSameOrigin();
             $auth->rateLimit('demo-login', 20, 60000);
             $body = Http::readJsonBody(65536);
-            $demo = $db->queryOne("SELECT * FROM users WHERE discord_id = 'demo-local' LIMIT 1");
+            [$demoKey] = av_demo_identity($config, $auth);
+            $discordId = 'demo-' . $demoKey;
+            $demo = $db->queryOne('SELECT * FROM users WHERE discord_id = ? LIMIT 1', [$discordId]);
             if ($demo === null) {
                 $db->execute(
-                    "INSERT INTO users (discord_id, username, global_name, avatar_url, email, is_demo, plan, access_until, role_verified, last_login_at)
-                     VALUES ('demo-local', 'Kasia (demo)', 'Kasia', NULL, 'kasia@example.com', 1, 'full', '2099-12-31', 1, CURRENT_TIMESTAMP)"
+                    'INSERT INTO users (discord_id, username, global_name, avatar_url, email, is_demo, plan, access_until, role_verified, last_login_at)
+                     VALUES (?, ?, ?, NULL, NULL, 1, ?, ?, 1, CURRENT_TIMESTAMP)',
+                    [$discordId, 'Kasia (demo)', 'Kasia', 'full', '2099-12-31']
                 );
                 $demo = $db->queryOne('SELECT * FROM users WHERE id = ?', [$db->lastInsertId()]);
             } else {
                 $db->execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', [(int) $demo['id']]);
             }
+            if ($demo === null || empty($demo['id'])) {
+                Http::json(['error' => 'demo_failed', 'message' => 'Nie udało się utworzyć konta demo.'], 500);
+            }
+            // Jedna przeglądarka = jedno konto demo; poprzednia sesja nie może
+            // pozostać aktywna po ponownym logowaniu.
+            $auth->destroySession();
             $remember = ($body['remember'] ?? true) !== false;
             $session = $auth->createSession((int) $demo['id'], $remember);
             $auth->setSessionCookie($session);
             $auth->audit((int) $demo['id'], 'login.demo', ['remember' => $remember]);
+            av_cleanup_demo_users($db, (int) $demo['id']);
             Http::json([
                 'ok' => true,
                 'user' => [

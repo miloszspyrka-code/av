@@ -69,8 +69,17 @@ final class Auth
 
     public function clientIp(): string
     {
-        $forwarded = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
-        $ip = $forwarded !== '' ? explode(',', $forwarded)[0] : (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $ip = $remote;
+        if ($this->config->trustProxy) {
+            $forwarded = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
+            if ($forwarded !== '') {
+                $candidate = trim(explode(',', $forwarded)[0]);
+                if (filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+                    $ip = $candidate;
+                }
+            }
+        }
         return substr(trim($ip), 0, 64);
     }
 
@@ -124,6 +133,16 @@ final class Auth
             'expires' => $session['expires'],
         ]);
         header('Set-Cookie: ' . $cookie, false);
+    }
+
+    public function setCookie(string $name, string $value, array $opts = []): void
+    {
+        header('Set-Cookie: ' . $this->serializeCookie($name, $value, $opts), false);
+    }
+
+    public function clearCookie(string $name): void
+    {
+        $this->setCookie($name, '', ['maxAge' => 0, 'expires' => time() - 3600]);
     }
 
     public function clearSessionCookie(): void

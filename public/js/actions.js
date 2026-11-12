@@ -509,7 +509,7 @@
     $('#saveTrade')?.addEventListener('click', () => AV.saveTrade());
     $('#cancelEdit')?.addEventListener('click', () => {
       AV.ui.editId = null; AV.ui.ntScreens = {}; AV.ui.ntChecks = {}; AV.ui.ntGradeManual = false;
-      AV.safeDel(AV.DRAFT_KEY);
+      AV.safeDel(AV.draftKey());
       AV.renderNewTradeForm(); AV.showView('trans'); AV.toast('Edycja anulowana');
     });
     $('#pastTrade')?.addEventListener('click', () => {
@@ -578,7 +578,7 @@
       });
       AV.toast('Transakcja zapisana' + (AV.lockInfo(s).active ? ' — limit strat osiągnięty' : ''));
     }
-    AV.ui.editId = null; AV.ui.ntScreens = {}; AV.saveNow(); AV.safeDel(AV.DRAFT_KEY);
+    AV.ui.editId = null; AV.ui.ntScreens = {}; AV.saveNow(); AV.safeDel(AV.draftKey());
     AV.renderAll(); AV.showView('trans');
   };
 
