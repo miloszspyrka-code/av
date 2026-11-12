@@ -19,7 +19,13 @@ final class Wearables
 
     private const OAUTH_PROVIDERS = ['garmin', 'oura', 'whoop'];
 
+    private const PKCE_PROVIDERS = ['garmin', 'oura'];
+
     private const MAX_DAYS = 90;
+
+    private const TOKEN_REFRESH_MARGIN = 120;
+
+    private const OUTBOUND_USER_AGENT = 'AlphaVault/3.4 (wearables)';
 
     private const METRIC_RANGE = [
         'sleepMinutes' => [0, 1440],
@@ -41,6 +47,9 @@ final class Wearables
         if ($provider === 'apple') {
             return true;
         }
+        if (!$this->encryptionConfigured()) {
+            return false;
+        }
         $cfg = $this->providerConfig($provider);
         if ($cfg === null) {
             return false;
@@ -50,6 +59,74 @@ final class Wearables
             && (string) ($cfg['authorizeUrl'] ?? '') !== ''
             && (string) ($cfg['tokenUrl'] ?? '') !== ''
             && (string) ($cfg['apiBase'] ?? '') !== '';
+    }
+
+    /**
+     * Garmin wymaga zatwierdzonego planu Business. Personal API nie jest
+     * przeznaczone dla aplikacji obsługujących wielu użytkowników.
+     */
+    public function garminAccessReady(): bool
+    {
+        $plan = (string) ($this->config->wearables['garmin']['accessPlan'] ?? '');
+        return in_array($plan, ['starter', 'enterprise'], true);
+    }
+
+    /**
+     * Adapter dostarczania danych Garmina nie jest jeszcze zaimplementowany.
+     * Szczegółowe schematy push są dostępne dopiero w Garmin Developer Portal.
+     */
+    public function garminDataDeliveryReady(): bool
+    {
+        $cfg = $this->config->wearables['garmin'] ?? [];
+        return (string) ($cfg['dataDelivery'] ?? 'none') === 'push'
+            && (bool) ($cfg['pushReady'] ?? false);
+    }
+
+    public function providerCanConnect(string $provider): bool
+    {
+        if (!$this->providerConfigured($provider)) {
+            return false;
+        }
+        if ($provider === 'garmin' && !$this->garminAccessReady()) {
+            return false;
+        }
+        return true;
+    }
+
+    private function deviceStatus(string $provider, ?array $row, bool $configured, bool $pendingAuth): string
+    {
+        if ($provider === 'garmin') {
+            if (!$configured) {
+                return 'not_configured';
+            }
+            if (!$this->garminAccessReady()) {
+                return 'awaiting_provider_access';
+            }
+        } elseif (!$configured) {
+            return 'not_configured';
+        }
+
+        if ($row === null || (string) $row['status'] !== 'connected') {
+            if ($row !== null && (string) $row['status'] === 'revoked') {
+                return 'revoked';
+            }
+            return $pendingAuth ? 'pending_authorization' : 'ready_to_connect';
+        }
+
+        $sync = (string) ($row['last_sync_status'] ?? '');
+        if ($sync === 'syncing') {
+            return 'syncing';
+        }
+        if ($sync === 'token_expired') {
+            return 'token_expired';
+        }
+        if ($sync === 'error') {
+            return 'sync_error';
+        }
+        if ($provider === 'garmin' && !$this->garminDataDeliveryReady()) {
+            return 'awaiting_provider_spec';
+        }
+        return 'connected';
     }
 
     public function providerLabel(string $provider): string
@@ -79,16 +156,39 @@ final class Wearables
         foreach ($rows as $row) {
             $byProvider[(string) $row['provider']] = $row;
         }
+        $pending = [];
+        try {
+            $states = $this->db->query(
+                'SELECT DISTINCT provider FROM wearable_oauth_states WHERE user_id = ? AND expires_at > UTC_TIMESTAMP()',
+                [$userId]
+            );
+            foreach ($states as $state) {
+                $pending[(string) $state['provider']] = true;
+            }
+        } catch (\Throwable $err) {
+            error_log('[wearables] pending states: ' . $err->getMessage());
+        }
 
         $devices = [];
         foreach (self::PROVIDERS as $provider) {
             $row = $byProvider[$provider] ?? null;
             $connected = $row !== null && (string) $row['status'] === 'connected';
+            $configured = $provider === 'apple' ? true : $this->providerConfigured($provider);
+            $status = $this->deviceStatus(
+                $provider,
+                $row,
+                $configured,
+                isset($pending[$provider])
+            );
             $devices[$provider] = [
                 'provider' => $provider,
                 'label' => $this->providerLabel($provider),
-                'configured' => $provider === 'apple' ? true : $this->providerConfigured($provider),
+                'configured' => $configured,
+                'canConnect' => $provider === 'apple' ? true : $this->providerCanConnect($provider),
                 'connected' => $connected,
+                'oauthConnected' => $connected,
+                'dataReady' => $provider === 'garmin' ? $this->garminDataDeliveryReady() : $connected,
+                'status' => $status,
                 'deviceName' => $row['device_name'] ?? null,
                 'lastSyncAt' => $this->utcIso($row['last_sync_at'] ?? null),
                 'lastSyncStatus' => $row['last_sync_status'] ?? null,
@@ -138,15 +238,16 @@ final class Wearables
     public function startUrl(int $userId, string $provider): string
     {
         $this->assertOauthProvider($provider);
-        if (!$this->providerConfigured($provider)) {
+        if (!$this->providerCanConnect($provider)) {
             throw new HttpException(503, 'provider_not_configured', 'Ta integracja nie jest jeszcze skonfigurowana na serwerze.');
         }
         $cfg = $this->providerConfig($provider);
         $state = $this->auth->randomToken(24);
+        $verifier = in_array($provider, self::PKCE_PROVIDERS, true) ? $this->codeVerifier() : null;
         $this->db->execute('DELETE FROM wearable_oauth_states WHERE expires_at < UTC_TIMESTAMP()');
         $this->db->execute(
-            'INSERT INTO wearable_oauth_states (state, user_id, provider, expires_at) VALUES (?, ?, ?, ?)',
-            [$state, $userId, $provider, gmdate('Y-m-d H:i:s', time() + 600)]
+            'INSERT INTO wearable_oauth_states (state, user_id, provider, code_verifier, expires_at) VALUES (?, ?, ?, ?, ?)',
+            [$state, $userId, $provider, $verifier, gmdate('Y-m-d H:i:s', time() + 600)]
         );
         $params = [
             'response_type' => 'code',
@@ -156,6 +257,10 @@ final class Wearables
         ];
         if ((string) ($cfg['scopes'] ?? '') !== '') {
             $params['scope'] = (string) $cfg['scopes'];
+        }
+        if ($verifier !== null) {
+            $params['code_challenge'] = $this->codeChallenge($verifier);
+            $params['code_challenge_method'] = 'S256';
         }
         $joiner = str_contains((string) $cfg['authorizeUrl'], '?') ? '&' : '?';
         return (string) $cfg['authorizeUrl'] . $joiner . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
@@ -180,8 +285,21 @@ final class Wearables
             'grant_type' => 'authorization_code',
             'code' => $code,
             'redirect_uri' => (string) $this->providerConfig($provider)['redirectUri'],
-        ]);
+        ], (string) ($row['code_verifier'] ?? ''));
         $this->storeConnection($userId, $provider, $token);
+
+        if ($provider === 'garmin') {
+            // OAuth jest zakończony, ale dostarczanie danych wymaga adaptera
+            // push i specyfikacji udostępnianej w Garmin Developer Portal.
+            try {
+                $this->hydrateGarmin($userId, (string) $token['accessToken']);
+            } catch (\Throwable $err) {
+                error_log('[wearables] garmin profile: ' . $this->safeError($err));
+            }
+            $this->touchSync($userId, $provider, 'provider_spec');
+            $this->auth->audit($userId, 'wearables.connect', ['provider' => $provider, 'dataDelivery' => 'pending']);
+            return ['provider' => $provider, 'syncError' => null, 'dataDelivery' => 'pending'];
+        }
 
         $syncError = null;
         try {
@@ -208,15 +326,25 @@ final class Wearables
             $this->touchSync($userId, $provider, 'ok');
             return ['provider' => $provider, 'days' => 0];
         }
+        if ($provider === 'garmin' && !$this->garminDataDeliveryReady()) {
+            $this->touchSync($userId, $provider, 'provider_spec');
+            return ['provider' => $provider, 'days' => 0, 'pending' => 'provider_spec'];
+        }
         try {
+            $this->touchSync($userId, $provider, 'syncing');
             $token = $this->validToken($userId, $provider, $row);
             $days = $this->fetchAndStore($userId, $provider, $token);
             $this->touchSync($userId, $provider, 'ok');
             $this->auth->audit($userId, 'wearables.sync', ['provider' => $provider, 'days' => $days]);
             return ['provider' => $provider, 'days' => $days];
+        } catch (HttpException $err) {
+            $status = in_array($err->status, [401, 403], true) ? 'token_expired' : 'error';
+            $this->markError($userId, $provider, $err->getMessage(), $status);
+            $this->auth->audit($userId, 'wearables.sync_failed', ['provider' => $provider, 'error' => $err->errorCode]);
+            throw $err;
         } catch (\Throwable $err) {
             $message = $this->safeError($err);
-            $this->markError($userId, $provider, $message);
+            $this->markError($userId, $provider, $message, 'error');
             $this->auth->audit($userId, 'wearables.sync_failed', ['provider' => $provider, 'error' => $message]);
             throw new HttpException(502, 'sync_failed', 'Nie udało się pobrać danych z urządzenia.', ['detail' => $message]);
         }
@@ -232,13 +360,21 @@ final class Wearables
         if ($row === null) {
             throw new HttpException(404, 'not_connected', 'To urządzenie nie jest połączone.');
         }
-        $this->db->withTransaction(function (Db $db) use ($userId, $provider, $row): void {
+        $revoked = false;
+        if ($provider !== 'apple' && (string) $row['status'] === 'connected') {
+            $revoked = $this->revokeProviderAccess($provider, $row);
+        }
+        $this->db->withTransaction(function (Db $db) use ($userId, $provider): void {
             $db->execute('DELETE FROM wearable_daily_metrics WHERE user_id = ? AND provider = ?', [$userId, $provider]);
             $db->execute('DELETE FROM wearable_connections WHERE user_id = ? AND provider = ?', [$userId, $provider]);
             $db->execute('DELETE FROM wearable_pair_codes WHERE user_id = ?', [$userId]);
             $db->execute('DELETE FROM wearable_oauth_states WHERE user_id = ? AND provider = ?', [$userId, $provider]);
         });
-        $this->auth->audit($userId, 'wearables.disconnect', ['provider' => $provider, 'hadConnection' => (bool) $row]);
+        $this->auth->audit($userId, 'wearables.disconnect', [
+            'provider' => $provider,
+            'hadConnection' => true,
+            'providerRevoked' => $revoked,
+        ]);
     }
 
     public function applePairCode(int $userId): array
@@ -538,17 +674,49 @@ final class Wearables
     /* OAuth i pobieranie danych                                           */
     /* ------------------------------------------------------------------ */
 
-    private function exchangeToken(string $provider, array $form): array
+    private function codeVerifier(): string
     {
+        // 48 losowych bajtów daje 64 znaki Base64URL: mieszczą się w zakresie
+        // 43–128 znaków wymaganym przez Oura i Garmin.
+        return $this->auth->randomToken(48);
+    }
+
+    private function codeChallenge(string $verifier): string
+    {
+        return rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+    }
+
+    private function exchangeToken(string $provider, array $form, string $codeVerifier = ''): array
+    {
+        if (!$this->providerConfigured($provider)) {
+            throw new HttpException(503, 'provider_not_configured', 'Ta integracja nie jest jeszcze skonfigurowana na serwerze.');
+        }
         $cfg = $this->providerConfig($provider);
+        $isRefresh = (string) ($form['grant_type'] ?? '') === 'refresh_token';
         $form['client_id'] = (string) $cfg['clientId'];
         $form['client_secret'] = (string) $cfg['clientSecret'];
+        if ($codeVerifier !== '') {
+            $form['code_verifier'] = $codeVerifier;
+        }
         $res = $this->http('POST', (string) $cfg['tokenUrl'], [
             'Accept: application/json',
             'Content-Type: application/x-www-form-urlencoded',
         ], http_build_query($form, '', '&', PHP_QUERY_RFC3986));
-        if ($res['status'] < 200 || $res['status'] >= 300 || !is_array($res['json'])) {
+        if ($res['status'] < 200 || $res['status'] >= 300) {
+            $error = strtolower((string) ($res['json']['error'] ?? ''));
+            if ($res['status'] === 429) {
+                throw new HttpException(503, 'provider_rate_limited', 'Dostawca ograniczył liczbę żądań. Spróbuj później.');
+            }
+            if ($isRefresh && in_array($error, ['invalid_grant', 'invalid_token', 'expired_token'], true)) {
+                throw new HttpException(401, 'reauth_required', 'Token wygasł. Połącz urządzenie ponownie.');
+            }
+            if (in_array($res['status'], [401, 403], true)) {
+                throw new HttpException(401, 'reauth_required', 'Dostawca odrzucił token. Połącz urządzenie ponownie.');
+            }
             throw new HttpException(502, 'token_exchange_failed', 'Dostawca odrzucił autoryzację.', ['status' => $res['status']]);
+        }
+        if (!is_array($res['json'])) {
+            throw new HttpException(502, 'token_exchange_failed', 'Dostawca nie zwrócił poprawnej odpowiedzi tokenu.');
         }
         $access = (string) ($res['json']['access_token'] ?? '');
         if ($access === '') {
@@ -558,21 +726,33 @@ final class Wearables
             'accessToken' => $access,
             'refreshToken' => (string) ($res['json']['refresh_token'] ?? ''),
             'expiresIn' => (int) ($res['json']['expires_in'] ?? 0),
+            'refreshExpiresIn' => (int) ($res['json']['refresh_token_expires_in'] ?? 0),
             'scopes' => (string) ($res['json']['scope'] ?? ''),
-            'externalUserId' => (string) ($res['json']['user_id'] ?? $res['json']['athlete']['id'] ?? ''),
+            'externalUserId' => (string) ($res['json']['user_id'] ?? ''),
         ];
     }
 
     private function storeConnection(int $userId, string $provider, array $token): void
     {
-        $expiresAt = (int) $token['expiresIn'] > 0 ? gmdate('Y-m-d H:i:s', time() + (int) $token['expiresIn']) : null;
+        $expiresAt = (int) $token['expiresIn'] > 0
+            ? gmdate('Y-m-d H:i:s', time() + (int) $token['expiresIn'])
+            : null;
+        $refreshExpiresAt = (int) ($token['refreshExpiresIn'] ?? 0) > 0
+            ? gmdate('Y-m-d H:i:s', time() + (int) $token['refreshExpiresIn'])
+            : null;
         $this->db->execute(
             'INSERT INTO wearable_connections
-                (user_id, provider, status, external_user_id, scopes, access_token_enc, refresh_token_enc, token_expires_at, last_sync_status, consent_at)
-             VALUES (?, ?, \'connected\', ?, ?, ?, ?, ?, \'pending\', UTC_TIMESTAMP())
-             ON DUPLICATE KEY UPDATE status = \'connected\', external_user_id = VALUES(external_user_id), scopes = VALUES(scopes),
-               access_token_enc = VALUES(access_token_enc), refresh_token_enc = VALUES(refresh_token_enc),
-               token_expires_at = VALUES(token_expires_at), revoked_at = NULL, last_error = NULL, consent_at = UTC_TIMESTAMP()',
+                (user_id, provider, status, external_user_id, scopes, access_token_enc, refresh_token_enc, token_expires_at, refresh_token_expires_at, last_sync_status, consent_at)
+             VALUES (?, ?, \'connected\', ?, ?, ?, ?, ?, ?, \'pending\', UTC_TIMESTAMP())
+             ON DUPLICATE KEY UPDATE
+               status = \'connected\',
+               external_user_id = COALESCE(VALUES(external_user_id), external_user_id),
+               scopes = COALESCE(VALUES(scopes), scopes),
+               access_token_enc = VALUES(access_token_enc),
+               refresh_token_enc = COALESCE(VALUES(refresh_token_enc), refresh_token_enc),
+               token_expires_at = VALUES(token_expires_at),
+               refresh_token_expires_at = COALESCE(VALUES(refresh_token_expires_at), refresh_token_expires_at),
+               revoked_at = NULL, last_error = NULL, last_sync_status = \'pending\', consent_at = UTC_TIMESTAMP()',
             [
                 $userId,
                 $provider,
@@ -581,31 +761,130 @@ final class Wearables
                 $this->encrypt((string) $token['accessToken']),
                 $token['refreshToken'] !== '' ? $this->encrypt((string) $token['refreshToken']) : null,
                 $expiresAt,
+                $refreshExpiresAt,
             ]
         );
     }
 
+    private function storeRefreshedTokens(int $userId, string $provider, array $token): void
+    {
+        $expiresAt = (int) $token['expiresIn'] > 0
+            ? gmdate('Y-m-d H:i:s', time() + (int) $token['expiresIn'])
+            : null;
+        $refreshExpiresAt = (int) ($token['refreshExpiresIn'] ?? 0) > 0
+            ? gmdate('Y-m-d H:i:s', time() + (int) $token['refreshExpiresIn'])
+            : null;
+        $accessEnc = $this->encrypt((string) $token['accessToken']);
+        $refreshEnc = $token['refreshToken'] !== '' ? $this->encrypt((string) $token['refreshToken']) : null;
+        $scopes = $token['scopes'] !== '' ? (string) $token['scopes'] : null;
+
+        $this->db->withTransaction(function (Db $db) use (
+            $userId,
+            $provider,
+            $accessEnc,
+            $refreshEnc,
+            $expiresAt,
+            $refreshExpiresAt,
+            $scopes
+        ): void {
+            $current = $db->queryOne(
+                'SELECT refresh_token_enc FROM wearable_connections WHERE user_id = ? AND provider = ? AND status = \'connected\' FOR UPDATE',
+                [$userId, $provider]
+            );
+            if ($current === null) {
+                throw new HttpException(401, 'reauth_required', 'Połączenie wygasło. Połącz urządzenie ponownie.');
+            }
+            $refreshToStore = $refreshEnc ?? (string) ($current['refresh_token_enc'] ?? '');
+            if ($refreshToStore === '') {
+                throw new HttpException(401, 'reauth_required', 'Brak tokenu odświeżania. Połącz urządzenie ponownie.');
+            }
+            $db->execute(
+                'UPDATE wearable_connections
+                    SET access_token_enc = ?, refresh_token_enc = ?, token_expires_at = ?, refresh_token_expires_at = ?,
+                        scopes = COALESCE(?, scopes), last_error = NULL
+                  WHERE user_id = ? AND provider = ? AND status = \'connected\'',
+                [$accessEnc, $refreshToStore, $expiresAt, $refreshExpiresAt, $scopes, $userId, $provider]
+            );
+        });
+    }
+
+    private function tokenUsable(array $row): bool
+    {
+        if ((string) ($row['access_token_enc'] ?? '') === '') {
+            return false;
+        }
+        $expires = $row['token_expires_at'] !== null
+            ? strtotime((string) $row['token_expires_at'] . ' UTC')
+            : null;
+        return $expires === null || $expires > time() + self::TOKEN_REFRESH_MARGIN;
+    }
+
     private function validToken(int $userId, string $provider, array $row): string
     {
-        $expires = $row['token_expires_at'] !== null ? strtotime((string) $row['token_expires_at'] . ' UTC') : null;
-        if ($expires === null || $expires > time() + 120) {
+        if ($this->tokenUsable($row)) {
             $token = $this->decrypt((string) ($row['access_token_enc'] ?? ''));
-            if ($token === '') {
-                throw new \RuntimeException('Brak tokenu dostępu.');
+            if ($token !== '') {
+                return $token;
             }
-            return $token;
         }
-        $refresh = $this->decrypt((string) ($row['refresh_token_enc'] ?? ''));
-        if ($refresh === '') {
-            throw new \RuntimeException('Token wygasł. Połącz urządzenie ponownie.');
+
+        $lock = $this->acquireRefreshLock($userId, $provider);
+        try {
+            // Inny proces mógł odświeżyć token, zanim zdobyliśmy blokadę.
+            $fresh = $this->db->queryOne(
+                'SELECT * FROM wearable_connections WHERE user_id = ? AND provider = ? AND status = \'connected\' LIMIT 1',
+                [$userId, $provider]
+            );
+            if ($fresh === null) {
+                throw new HttpException(401, 'reauth_required', 'Połączenie wygasło. Połącz urządzenie ponownie.');
+            }
+            if ($this->tokenUsable($fresh)) {
+                $token = $this->decrypt((string) ($fresh['access_token_enc'] ?? ''));
+                if ($token !== '') {
+                    return $token;
+                }
+            }
+
+            $refreshExpires = $fresh['refresh_token_expires_at'] !== null
+                ? strtotime((string) $fresh['refresh_token_expires_at'] . ' UTC')
+                : null;
+            if ($refreshExpires !== null && $refreshExpires <= time()) {
+                $this->markError($userId, $provider, 'Refresh token wygasł.', 'token_expired');
+                throw new HttpException(401, 'reauth_required', 'Token odświeżania wygasł. Połącz urządzenie ponownie.');
+            }
+            $refresh = $this->decrypt((string) ($fresh['refresh_token_enc'] ?? ''));
+            if ($refresh === '') {
+                $this->markError($userId, $provider, 'Brak refresh tokenu.', 'token_expired');
+                throw new HttpException(401, 'reauth_required', 'Brak tokenu odświeżania. Połącz urządzenie ponownie.');
+            }
+            $token = $this->exchangeToken($provider, [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $refresh,
+            ]);
+            $this->storeRefreshedTokens($userId, $provider, $token);
+            return (string) $token['accessToken'];
+        } finally {
+            $this->releaseRefreshLock($lock);
         }
-        $cfg = $this->providerConfig($provider);
-        $token = $this->exchangeToken($provider, [
-            'grant_type' => 'refresh_token',
-            'refresh_token' => $refresh,
-        ]);
-        $this->storeConnection($userId, $provider, $token);
-        return (string) $token['accessToken'];
+    }
+
+    private function acquireRefreshLock(int $userId, string $provider): string
+    {
+        $name = 'av:wear:' . $userId . ':' . $provider;
+        $row = $this->db->queryOne('SELECT GET_LOCK(?, 10) AS ok', [$name]);
+        if ((int) ($row['ok'] ?? 0) !== 1) {
+            throw new HttpException(503, 'refresh_busy', 'Trwa odświeżanie tokenu. Spróbuj ponownie za chwilę.');
+        }
+        return $name;
+    }
+
+    private function releaseRefreshLock(string $name): void
+    {
+        try {
+            $this->db->queryOne('SELECT RELEASE_LOCK(?) AS released', [$name]);
+        } catch (\Throwable $err) {
+            error_log('[wearables] release lock: ' . $err->getMessage());
+        }
     }
 
     private function fetchAndStore(int $userId, string $provider, string $accessToken): int
@@ -613,7 +892,6 @@ final class Wearables
         $days = match ($provider) {
             'oura' => $this->fetchOura($userId, $accessToken),
             'whoop' => $this->fetchWhoop($userId, $accessToken),
-            'garmin' => $this->fetchGarmin($userId, $accessToken),
             default => [],
         };
         $stored = 0;
@@ -633,13 +911,10 @@ final class Wearables
         $end = $this->todayKey();
         $start = gmdate('Y-m-d', strtotime($end . ' -29 days'));
         $query = '?start_date=' . rawurlencode($start) . '&end_date=' . rawurlencode($end);
-        $readiness = $this->apiGet('oura', '/v2/usercollection/daily_readiness' . $query, $accessToken);
-        $sleeps = $this->apiGet('oura', '/v2/usercollection/sleep' . $query, $accessToken);
+        $readiness = $this->pagedOura('/v2/usercollection/daily_readiness', $query, $accessToken);
+        $sleeps = $this->pagedOura('/v2/usercollection/sleep', $query, $accessToken);
         $days = [];
-        foreach (($readiness['data'] ?? []) as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
+        foreach ($readiness as $row) {
             $date = $this->dateOnly($row['day'] ?? '');
             if ($date === null) {
                 continue;
@@ -647,10 +922,7 @@ final class Wearables
             $days[$date]['date'] = $date;
             $days[$date]['providerScore'] = isset($row['score']) ? (int) $row['score'] : null;
         }
-        foreach (($sleeps['data'] ?? []) as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
+        foreach ($sleeps as $row) {
             $date = $this->dateOnly($row['day'] ?? ($row['bedtime_start'] ?? ''));
             if ($date === null) {
                 continue;
@@ -675,7 +947,7 @@ final class Wearables
         $start = gmdate('Y-m-d\TH:i:s\Z', strtotime('-29 days'));
         $query = '?start=' . rawurlencode($start) . '&end=' . rawurlencode($end) . '&limit=25';
         $days = [];
-        foreach ($this->pagedApi('whoop', '/developer/v1/recovery' . $query, $accessToken) as $row) {
+        foreach ($this->pagedApi('whoop', '/developer/v2/recovery' . $query, $accessToken) as $row) {
             $date = $this->dateOnly($row['created_at'] ?? '');
             if ($date === null) {
                 continue;
@@ -686,7 +958,7 @@ final class Wearables
             $days[$date]['hrvMs'] = isset($score['hrv_rmssd_milli']) ? (float) $score['hrv_rmssd_milli'] : null;
             $days[$date]['restingHr'] = isset($score['resting_heart_rate']) ? (int) round((float) $score['resting_heart_rate']) : null;
         }
-        foreach ($this->pagedApi('whoop', '/developer/v1/activity/sleep' . $query, $accessToken) as $row) {
+        foreach ($this->pagedApi('whoop', '/developer/v2/activity/sleep' . $query, $accessToken) as $row) {
             $date = $this->dateOnly($row['end'] ?? ($row['start'] ?? ''));
             if ($date === null) {
                 continue;
@@ -706,48 +978,61 @@ final class Wearables
         return array_values($days);
     }
 
-    private function fetchGarmin(int $userId, string $accessToken): array
+    private function hydrateGarmin(int $userId, string $accessToken): void
     {
-        $end = time();
-        $start = $end - (30 * 86400);
-        $range = '?uploadStartTimeInSeconds=' . $start . '&uploadEndTimeInSeconds=' . $end;
-        $dailies = $this->apiGet('garmin', '/wellness-api/rest/dailies' . $range, $accessToken);
-        $sleeps = $this->apiGet('garmin', '/wellness-api/rest/sleeps' . $range, $accessToken);
-        $hrv = $this->apiGet('garmin', '/wellness-api/rest/hrv' . $range, $accessToken);
-        $days = [];
-        foreach ($this->listFrom($dailies) as $row) {
-            $date = $this->dateOnly($row['calendarDate'] ?? ($row['summaryId'] ?? ''));
-            if ($date === null) {
-                continue;
+        $identity = $this->apiGet('garmin', '/wellness-api/rest/user/id', $accessToken);
+        $externalId = trim((string) ($identity['userId'] ?? ''));
+        $permissions = $this->apiGet('garmin', '/wellness-api/rest/user/permissions', $accessToken);
+        $granted = [];
+        foreach ($permissions as $permission) {
+            if (is_string($permission) && $permission !== '') {
+                $granted[] = $permission;
             }
-            $days[$date]['date'] = $date;
-            $days[$date]['restingHr'] = isset($row['restingHeartRateInBeatsPerMinute']) ? (int) $row['restingHeartRateInBeatsPerMinute'] : null;
-            $days[$date]['bodyBattery'] = isset($row['bodyBatteryMostRecentValue']) ? self::clamp((int) $row['bodyBatteryMostRecentValue'], 0, 100) : null;
         }
-        foreach ($this->listFrom($sleeps) as $row) {
-            $date = $this->dateOnly($row['calendarDate'] ?? ($row['summaryId'] ?? ''));
-            if ($date === null) {
-                continue;
-            }
-            $seconds = (int) ($row['sleepTimeInSeconds'] ?? 0);
-            $awake = (int) ($row['awakeDurationInSeconds'] ?? 0);
-            if (!isset($days[$date])) {
-                $days[$date] = ['date' => $date];
-            }
-            $days[$date]['sleepMinutes'] = $seconds > 0 ? (int) round(max(0, $seconds - $awake) / 60) : null;
+        $this->db->execute(
+            'UPDATE wearable_connections
+                SET external_user_id = COALESCE(?, external_user_id), scopes = ?
+              WHERE user_id = ? AND provider = \'garmin\'',
+            [$externalId !== '' ? $externalId : null, $granted !== [] ? implode(' ', $granted) : null, $userId]
+        );
+        $this->auth->audit($userId, 'wearables.garmin_permissions', ['permissions' => $granted]);
+    }
+
+    private function revokeProviderAccess(string $provider, array $row): bool
+    {
+        $access = $this->decrypt((string) ($row['access_token_enc'] ?? ''));
+        if ($access === '') {
+            return false;
         }
-        foreach ($this->listFrom($hrv) as $row) {
-            $date = $this->dateOnly($row['calendarDate'] ?? ($row['summaryId'] ?? ''));
-            if ($date === null) {
-                continue;
+        $cfg = $this->providerConfig($provider);
+        try {
+            if ($provider === 'oura') {
+                $url = (string) ($cfg['revokeUrl'] ?? '');
+                if ($url === '') {
+                    return false;
+                }
+                $separator = str_contains($url, '?') ? '&' : '?';
+                $res = $this->http('GET', $url . $separator . 'access_token=' . rawurlencode($access), [
+                    'Accept: application/json',
+                ]);
+            } elseif ($provider === 'whoop') {
+                $res = $this->http('DELETE', (string) ($cfg['revokeUrl'] ?? ''), [
+                    'Accept: application/json',
+                    'Authorization: Bearer ' . $access,
+                ]);
+            } elseif ($provider === 'garmin') {
+                $res = $this->http('DELETE', (string) ($cfg['revokeUrl'] ?? ''), [
+                    'Accept: application/json',
+                    'Authorization: Bearer ' . $access,
+                ]);
+            } else {
+                return false;
             }
-            $value = $row['lastNightAvg'] ?? ($row['hrvSummary']['lastNightAvg'] ?? null);
-            if (!isset($days[$date])) {
-                $days[$date] = ['date' => $date];
-            }
-            $days[$date]['hrvMs'] = $value !== null ? (float) $value : null;
+            return $res['status'] >= 200 && $res['status'] < 300;
+        } catch (\Throwable $err) {
+            error_log('[wearables] revoke ' . $provider . ': ' . $this->safeError($err));
+            return false;
         }
-        return array_values($days);
     }
 
     private function apiGet(string $provider, string $path, string $accessToken): array
@@ -757,17 +1042,49 @@ final class Wearables
             'Accept: application/json',
             'Authorization: Bearer ' . $accessToken,
         ]);
-        if ($res['status'] < 200 || $res['status'] >= 300 || !is_array($res['json'])) {
-            throw new \RuntimeException('Dostawca zwrócił HTTP ' . $res['status'] . '.');
+        if ($res['status'] === 204) {
+            return [];
+        }
+        if (in_array($res['status'], [401, 403], true)) {
+            throw new HttpException(401, 'provider_unauthorized', 'Dostawca odrzucił token. Połącz urządzenie ponownie.');
+        }
+        if ($res['status'] === 429) {
+            throw new HttpException(503, 'provider_rate_limited', 'Dostawca ograniczył liczbę żądań. Spróbuj później.');
+        }
+        if ($res['status'] < 200 || $res['status'] >= 300) {
+            throw new HttpException(502, 'provider_error', 'Dostawca zwrócił HTTP ' . $res['status'] . '.', ['status' => $res['status']]);
+        }
+        if (!is_array($res['json'])) {
+            throw new HttpException(502, 'provider_bad_response', 'Dostawca zwrócił niepoprawną odpowiedź.');
         }
         return $res['json'];
+    }
+
+    private function pagedOura(string $path, string $query, string $accessToken): array
+    {
+        $rows = [];
+        $url = $path . $query;
+        for ($page = 0; $page < 8; $page++) {
+            $json = $this->apiGet('oura', $url, $accessToken);
+            foreach (($json['data'] ?? []) as $row) {
+                if (is_array($row)) {
+                    $rows[] = $row;
+                }
+            }
+            $next = $json['next_token'] ?? null;
+            if (!is_string($next) || $next === '') {
+                break;
+            }
+            $url = $path . $query . '&next_token=' . rawurlencode($next);
+        }
+        return $rows;
     }
 
     private function pagedApi(string $provider, string $path, string $accessToken): array
     {
         $rows = [];
         $url = $path;
-        for ($page = 0; $page < 5; $page++) {
+        for ($page = 0; $page < 8; $page++) {
             $json = $this->apiGet($provider, $url, $accessToken);
             foreach (($json['records'] ?? []) as $row) {
                 if (is_array($row)) {
@@ -781,16 +1098,6 @@ final class Wearables
             $url = $path . '&nextToken=' . rawurlencode($next);
         }
         return $rows;
-    }
-
-    private function listFrom(array $json): array
-    {
-        foreach (['dailies', 'sleeps', 'hrv', 'data', 'records'] as $key) {
-            if (isset($json[$key]) && is_array($json[$key])) {
-                return array_values(array_filter($json[$key], 'is_array'));
-            }
-        }
-        return array_is_list($json) ? array_values(array_filter($json, 'is_array')) : [];
     }
 
     private function normalizeDay(array $day, string $provider): ?array
@@ -858,11 +1165,11 @@ final class Wearables
         );
     }
 
-    private function markError(int $userId, string $provider, string $message): void
+    private function markError(int $userId, string $provider, string $message, string $status = 'error'): void
     {
         $this->db->execute(
-            'UPDATE wearable_connections SET last_sync_at = UTC_TIMESTAMP(), last_sync_status = \'error\', last_error = ? WHERE user_id = ? AND provider = ?',
-            [substr($message, 0, 300), $userId, $provider]
+            'UPDATE wearable_connections SET last_sync_at = UTC_TIMESTAMP(), last_sync_status = ?, last_error = ? WHERE user_id = ? AND provider = ?',
+            [$status, substr($message, 0, 300), $userId, $provider]
         );
     }
 
@@ -890,6 +1197,16 @@ final class Wearables
         if ($payload === '' || !str_starts_with($payload, 'v1:')) {
             return '';
         }
+        $plain = $this->decryptWithKey($payload, $this->encryptionKey());
+        if ($plain !== '') {
+            return $plain;
+        }
+        $previous = $this->encryptionKey(true);
+        return $previous !== '' ? $this->decryptWithKey($payload, $previous) : '';
+    }
+
+    private function decryptWithKey(string $payload, string $key): string
+    {
         $binary = base64_decode(substr($payload, 3), true);
         if ($binary === false || strlen($binary) < 29) {
             return '';
@@ -897,18 +1214,27 @@ final class Wearables
         $iv = substr($binary, 0, 12);
         $tag = substr($binary, 12, 16);
         $cipher = substr($binary, 28);
-        $plain = openssl_decrypt($cipher, 'aes-256-gcm', $this->encryptionKey(), OPENSSL_RAW_DATA, $iv, $tag);
+        $plain = openssl_decrypt($cipher, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
         return $plain === false ? '' : $plain;
     }
 
-    private function encryptionKey(): string
+    private function encryptionConfigured(): bool
     {
-        $secret = (string) ($this->config->wearables['encryptionKey'] ?? '');
+        return (string) ($this->config->wearables['encryptionKey'] ?? '') !== '';
+    }
+
+    private function encryptionKey(bool $previous = false): string
+    {
+        $secret = (string) ($this->config->wearables[$previous ? 'encryptionKeyPrevious' : 'encryptionKey'] ?? '');
         if ($secret === '') {
-            $secret = $this->config->sessionSecret;
-        }
-        if ($secret === '') {
-            throw new \RuntimeException('Brak klucza szyfrowania integracji.');
+            if ($previous) {
+                return '';
+            }
+            throw new HttpException(
+                503,
+                'wearables_encryption_missing',
+                'Integracje urządzeń nie mają ustawionego klucza szyfrowania.'
+            );
         }
         return hash('sha256', $secret . '|alpha-vault-wearables', true);
     }
@@ -925,7 +1251,7 @@ final class Wearables
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_CONNECTTIMEOUT => 8,
             CURLOPT_TIMEOUT => 20,
-            CURLOPT_HTTPHEADER => array_merge($headers, ['User-Agent: AlphaVault/3.1']),
+            CURLOPT_HTTPHEADER => array_merge($headers, ['User-Agent: ' . self::OUTBOUND_USER_AGENT]),
             CURLOPT_MAXREDIRS => 0,
             CURLOPT_ENCODING => '',
         ]);
@@ -957,7 +1283,7 @@ final class Wearables
     private function safeError(\Throwable $err): string
     {
         $message = trim($err->getMessage());
-        $message = preg_replace('/(access_token|refresh_token|token|code)=([^&\s]+)/i', '$1=[redacted]', $message) ?? $message;
+        $message = preg_replace('/(access_token|refresh_token|token|code|client_secret)=([^&\s]+)/i', '$1=[redacted]', $message) ?? $message;
         return substr($message !== '' ? $message : 'Nieznany błąd integracji.', 0, 300);
     }
 

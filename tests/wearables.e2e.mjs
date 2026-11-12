@@ -11,6 +11,7 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -21,6 +22,7 @@ const FAKE_PORT = Number(process.env.WEARABLES_FAKE_PORT || 4180);
 const BASE = `http://127.0.0.1:${APP_PORT}`;
 const FAKE = `http://127.0.0.1:${FAKE_PORT}`;
 const ORIGIN = new URL(BASE).origin;
+const FAKE_STATE = path.join(os.tmpdir(), 'av-wearables-fake-state.json');
 const php = process.env.PHP_BIN || (fs.existsSync('C:/Users/milos/.local/php83/php.exe')
   ? 'C:/Users/milos/.local/php83/php.exe'
   : 'php');
@@ -48,16 +50,22 @@ function baseEnv() {
     GARMIN_AUTHORIZE_URL: `${FAKE}/oauth/garmin/authorize`,
     GARMIN_TOKEN_URL: `${FAKE}/oauth/garmin/token`,
     GARMIN_API_BASE: `${FAKE}/garmin`,
+    GARMIN_REVOKE_URL: `${FAKE}/garmin/wellness-api/rest/user/registration`,
+    GARMIN_ACCESS_PLAN: 'starter',
+    GARMIN_DATA_DELIVERY: 'none',
     OURA_CLIENT_ID: 'fake-oura-client',
     OURA_CLIENT_SECRET: 'fake-oura-secret',
     OURA_AUTHORIZE_URL: `${FAKE}/oauth/oura/authorize`,
     OURA_TOKEN_URL: `${FAKE}/oauth/oura/token`,
     OURA_API_BASE: `${FAKE}/oura`,
+    OURA_REVOKE_URL: `${FAKE}/oura/oauth/revoke`,
     WHOOP_CLIENT_ID: 'fake-whoop-client',
     WHOOP_CLIENT_SECRET: 'fake-whoop-secret',
     WHOOP_AUTHORIZE_URL: `${FAKE}/oauth/whoop/authorize`,
     WHOOP_TOKEN_URL: `${FAKE}/oauth/whoop/token`,
-    WHOOP_API_BASE: `${FAKE}/whoop`
+    WHOOP_API_BASE: `${FAKE}/whoop`,
+    WHOOP_REVOKE_URL: `${FAKE}/whoop/developer/v2/user/access`,
+    FAKE_HEALTH_STATE: FAKE_STATE
   };
 }
 
@@ -117,6 +125,15 @@ function cookieFrom(res) {
   return '';
 }
 
+function db(args) {
+  const raw = execFileSync(php, [path.join(ROOT, 'tests', 'wearables-db.php'), ...args], {
+    cwd: ROOT,
+    env: baseEnv(),
+    encoding: 'utf8'
+  });
+  return JSON.parse(raw.trim() || '{}');
+}
+
 async function clearCheckins() {
   const state = await req('/api/state');
   assert.equal(state.res.status, 200, state.text);
@@ -130,7 +147,7 @@ async function clearCheckins() {
   assert.equal(put.res.status, 200, put.text);
 }
 
-async function connect(provider) {
+async function startFlow(provider) {
   const start = await req(`/auth/wearables/${provider}/start`);
   assert.equal(start.res.status, 302, 'start ' + provider + ': ' + start.text);
   const authorize = start.res.headers.get('location') || '';
@@ -139,6 +156,11 @@ async function connect(provider) {
   assert.equal(providerRes.status, 302, 'provider authorize');
   const callback = providerRes.headers.get('location') || '';
   assert.ok(callback.startsWith(BASE + '/auth/wearables/' + provider + '/callback'), 'callback URL: ' + callback);
+  return { authorize, callback };
+}
+
+async function connect(provider) {
+  const { callback } = await startFlow(provider);
   const done = await req(callback);
   assert.equal(done.res.status, 302, 'callback: ' + done.text);
   assert.match(done.res.headers.get('location') || '', new RegExp('connected=' + provider));
@@ -207,12 +229,23 @@ async function runUiChecks() {
       log('UI: odłączenie i puste metryki · ' + provider, true);
     };
 
-    await uiConnect('garmin', 70);
-    await uiDisconnect('garmin');
     await uiConnect('oura', 72);
     await uiDisconnect('oura');
     await uiConnect('whoop', 72);
     await uiDisconnect('whoop');
+
+    // Garmin: OAuth działa, ale danych push jeszcze nie ma.
+    await page.locator('[data-provider="garmin"] [data-dev]').click();
+    await page.waitForFunction(() => window.AV?.api?.wearables?.devices?.garmin?.connected, null, { timeout: 15000 });
+    const garminStatus = await page.evaluate(() => window.AV.api.wearables.devices.garmin.status);
+    assert.equal(garminStatus, 'awaiting_provider_spec');
+    assert.equal((await page.locator('#metricSleep').innerText()).trim(), '');
+    assert.equal((await page.locator('#bodyReady').innerText()).trim(), '80');
+    await page.locator('[data-provider="garmin"] [data-dev]').click();
+    await page.waitForSelector('#gModal.on');
+    await page.click('#gConfirmOk');
+    await page.waitForFunction(() => !window.AV?.api?.wearables?.devices?.garmin?.connected, null, { timeout: 10000 });
+    log('UI: Garmin OAuth bez danych push', true, 'status=awaiting_provider_spec');
 
     const pair = await req('/api/wearables/apple/pair', { method: 'POST', headers: { Origin: ORIGIN }, body: '{}' });
     assert.equal(pair.res.status, 200, pair.text);
@@ -248,6 +281,7 @@ async function runUiChecks() {
 
 async function main() {
   console.log('Alpha Vault wearables E2E ·', BASE, '· fake', FAKE);
+  fs.rmSync(FAKE_STATE, { force: true });
   const env = baseEnv();
   execFileSync(php, ['app/db/migrate.php'], { cwd: ROOT, env, stdio: 'pipe' });
 
@@ -285,6 +319,19 @@ async function main() {
   assert.equal(badCallback.res.status, 400);
   log('callback z błędnym state = 400', true);
 
+  const expiredFlow = await startFlow('oura');
+  const expiredState = new URL(expiredFlow.callback).searchParams.get('state');
+  db(['expire-state', expiredState]);
+  const expiredCallback = await req(expiredFlow.callback);
+  assert.equal(expiredCallback.res.status, 400);
+  log('wygasły state = 400', true);
+
+  const pkceFlow = await startFlow('oura');
+  const badCodeCallback = pkceFlow.callback.replace(/code=[^&]+/, 'code=fake-code-oura-WRONGCHALLENGEVALUE');
+  const pkceFailure = await req(badCodeCallback);
+  assert.equal(pkceFailure.res.status, 502);
+  log('PKCE: błędny code_verifier = 502', true);
+
   const badOrigin = await req('/api/wearables/oura/sync', {
     method: 'POST',
     headers: { Origin: 'https://evil.example' },
@@ -293,16 +340,56 @@ async function main() {
   assert.equal(badOrigin.res.status, 403);
   log('sync z obcym Origin = 403', true);
 
+  const garmin = await connect('garmin');
+  {
+    const device = garmin.devices.garmin;
+    assert.equal(device.connected, true, 'garmin connected');
+    assert.equal(device.oauthConnected, true, 'garmin oauthConnected');
+    assert.equal(device.dataReady, false, 'garmin dataReady');
+    assert.equal(device.status, 'awaiting_provider_spec', 'garmin status');
+    assert.equal(device.canConnect, true, 'garmin canConnect');
+    assert.equal(garmin.today, null, 'garmin bez danych przed adapterem push');
+    assert.equal(garmin.series.length, 0, 'garmin bez serii przed adapterem push');
+    assert.equal(device.lastSyncStatus, 'provider_spec', 'garmin sync status');
+    const garminConnection = db(['connection', 'garmin']).connection;
+    assert.equal(garminConnection.external_user_id, 'fake-garmin-user');
+    assert.match(String(garminConnection.scopes), /HEALTH_EXPORT/);
+    const rawGarmin = JSON.stringify(garmin);
+    assert.ok(!rawGarmin.includes('fake-access'), 'garmin nie ujawnia access tokenu');
+    assert.ok(!rawGarmin.includes('fake-refresh'), 'garmin nie ujawnia refresh tokenu');
+    log('Garmin: OAuth2 PKCE bez danych (push pending)', true, 'status=awaiting_provider_spec');
+
+    const sync = await req('/api/wearables/garmin/sync', {
+      method: 'POST',
+      headers: { Origin: ORIGIN },
+      body: '{}'
+    });
+    assert.equal(sync.res.status, 200, sync.text);
+    assert.equal(sync.json.pending, 'provider_spec');
+    assert.equal(sync.json.days, 0);
+    log('Garmin: sync nie udaje danych pull', true, 'pending=provider_spec');
+
+    const del = await req('/api/wearables/garmin', { method: 'DELETE', headers: { Origin: ORIGIN } });
+    assert.equal(del.res.status, 200, del.text);
+    const after = await req('/api/wearables');
+    assert.equal(after.json.devices.garmin.connected, false);
+    assert.equal(after.json.today, null);
+    assert.equal(after.json.series.length, 0);
+    const revokeState = JSON.parse(fs.readFileSync(FAKE_STATE, 'utf8'));
+    assert.equal(revokeState.garmin_revoke_count, 1);
+    log('Garmin: odłączenie i rewokacja', true);
+  }
+
   const expectations = {
-    garmin: { score: 65, providerScore: null, battery: 34 },
     oura: { score: 69, providerScore: 70, battery: null },
     whoop: { score: 69, providerScore: 70, battery: null }
   };
 
-  for (const provider of ['garmin', 'oura', 'whoop']) {
+  for (const provider of ['oura', 'whoop']) {
     const data = await connect(provider);
     const device = data.devices[provider];
     assert.equal(device.connected, true, provider + ' connected');
+    assert.equal(device.status, 'connected', provider + ' status');
     assert.equal(device.lastSyncStatus, 'ok', provider + ' sync status');
     assert.ok(device.lastSyncAt, provider + ' lastSyncAt');
     const today = data.today;
@@ -341,6 +428,93 @@ async function main() {
     assert.equal(after.json.series.length, 0);
     log('odłączenie usuwa dane · ' + provider, true);
   }
+
+  // OAuth: state jest jednorazowy.
+  const replayFlow = await startFlow('oura');
+  const replayFirst = await req(replayFlow.callback);
+  assert.equal(replayFirst.res.status, 302, replayFirst.text);
+  const replaySecond = await req(replayFlow.callback);
+  assert.equal(replaySecond.res.status, 400);
+  log('state jednorazowy: powtórny callback = 400', true);
+
+  // Rotacja refresh tokenu: nowy token jest zapisywany, kolejny sync go nie zużywa.
+  const beforeRefresh = db(['refresh-hash', 'oura']).refreshHash;
+  db(['expire-token', 'oura']);
+  const rotated = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(rotated.res.status, 200, rotated.text);
+  assert.equal(rotated.json.days, 14);
+  const afterRefresh = db(['refresh-hash', 'oura']).refreshHash;
+  assert.notEqual(afterRefresh, beforeRefresh);
+  let fakeState = JSON.parse(fs.readFileSync(FAKE_STATE, 'utf8'));
+  assert.equal(fakeState.oura_refresh_count, 1);
+  await req('/api/wearables/oura/sync', { method: 'POST', headers: { Origin: ORIGIN }, body: '{}' });
+  fakeState = JSON.parse(fs.readFileSync(FAKE_STATE, 'utf8'));
+  assert.equal(fakeState.oura_refresh_count, 1);
+  log('rotacja refresh tokenu i blokada podwójnego odświeżenia', true);
+
+  // Błędy dostawcy mapują się na token_expired / sync_error, bez wycieku tokenu.
+  db(['set-access', 'oura', 'revoked']);
+  const unauthorized = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(unauthorized.res.status, 401, unauthorized.text);
+  assert.equal(unauthorized.json.error, 'provider_unauthorized');
+  let current = await req('/api/wearables');
+  assert.equal(current.json.devices.oura.status, 'token_expired');
+  assert.ok(!JSON.stringify(current.json).includes('fake-access'));
+
+  db(['set-access', 'oura', 'ratelimit']);
+  const limited = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(limited.res.status, 503, limited.text);
+  current = await req('/api/wearables');
+  assert.equal(current.json.devices.oura.status, 'sync_error');
+
+  db(['set-access', 'oura', 'badjson']);
+  const badJson = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(badJson.res.status, 502, badJson.text);
+  current = await req('/api/wearables');
+  assert.equal(current.json.devices.oura.status, 'sync_error');
+
+  db(['set-access', 'oura', 'ok']);
+  const recovered = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(recovered.res.status, 200, recovered.text);
+  current = await req('/api/wearables');
+  assert.equal(current.json.devices.oura.status, 'connected');
+  log('mapowanie 401/429/niepoprawnego JSON i powrót do connected', true);
+
+  await req('/api/wearables/oura', { method: 'DELETE', headers: { Origin: ORIGIN } });
+
+  // Izolacja użytkowników: cudze połączenie nie jest widoczne ani usuwalne.
+  const other = db(['create-other-user']);
+  const isolated = await req('/api/wearables');
+  assert.equal(isolated.json.devices.oura.connected, false);
+  assert.equal(isolated.json.today, null);
+  assert.equal(isolated.json.series.length, 0);
+  assert.equal(db(['count-connections', 'oura']).count, 1);
+  const foreignDelete = await req('/api/wearables/oura', { method: 'DELETE', headers: { Origin: ORIGIN } });
+  assert.equal(foreignDelete.res.status, 404);
+  assert.equal(db(['count-connections', 'oura']).count, 1);
+  db(['delete-user', other.userId]);
+  assert.equal(db(['count-connections', 'oura']).count, 0);
+  log('izolacja użytkowników: odczyt i DELETE nie dotykają cudzego połączenia', true);
 
   // Apple Health: parowanie i ingest bez OAuth.
   const pair = await req('/api/wearables/apple/pair', {

@@ -124,14 +124,18 @@ final class Config
 
         $wearables = [
             'encryptionKey' => (string) $env('WEARABLES_ENCRYPTION_KEY', ''),
+            'encryptionKeyPrevious' => (string) $env('WEARABLES_ENCRYPTION_KEY_PREVIOUS', ''),
             'garmin' => [
                 'clientId' => (string) $env('GARMIN_CLIENT_ID', ''),
                 'clientSecret' => (string) $env('GARMIN_CLIENT_SECRET', ''),
-                'authorizeUrl' => (string) $env('GARMIN_AUTHORIZE_URL', ''),
-                'tokenUrl' => (string) $env('GARMIN_TOKEN_URL', ''),
-                'apiBase' => rtrim((string) $env('GARMIN_API_BASE', ''), '/'),
-                'revokeUrl' => (string) $env('GARMIN_REVOKE_URL', ''),
+                'authorizeUrl' => (string) $env('GARMIN_AUTHORIZE_URL', 'https://connect.garmin.com/oauth2Confirm'),
+                'tokenUrl' => (string) $env('GARMIN_TOKEN_URL', 'https://diauth.garmin.com/di-oauth2-service/oauth/token'),
+                'apiBase' => rtrim((string) $env('GARMIN_API_BASE', 'https://apis.garmin.com'), '/'),
+                'revokeUrl' => (string) $env('GARMIN_REVOKE_URL', 'https://apis.garmin.com/wellness-api/rest/user/registration'),
                 'scopes' => (string) $env('GARMIN_SCOPES', ''),
+                'accessPlan' => strtolower((string) $env('GARMIN_ACCESS_PLAN', '')),
+                'dataDelivery' => strtolower((string) $env('GARMIN_DATA_DELIVERY', 'none')),
+                'pushReady' => $parseBool($env('GARMIN_PUSH_READY'), false),
                 'redirectUri' => $appUrl . '/auth/wearables/garmin/callback',
             ],
             'oura' => [
@@ -141,7 +145,7 @@ final class Config
                 'tokenUrl' => (string) $env('OURA_TOKEN_URL', 'https://api.ouraring.com/oauth/token'),
                 'apiBase' => rtrim((string) $env('OURA_API_BASE', 'https://api.ouraring.com'), '/'),
                 'revokeUrl' => (string) $env('OURA_REVOKE_URL', 'https://api.ouraring.com/oauth/revoke'),
-                'scopes' => (string) $env('OURA_SCOPES', 'daily sleep heartrate personal'),
+                'scopes' => (string) $env('OURA_SCOPES', 'daily'),
                 'redirectUri' => $appUrl . '/auth/wearables/oura/callback',
             ],
             'whoop' => [
@@ -150,8 +154,8 @@ final class Config
                 'authorizeUrl' => (string) $env('WHOOP_AUTHORIZE_URL', 'https://api.prod.whoop.com/oauth/oauth2/auth'),
                 'tokenUrl' => (string) $env('WHOOP_TOKEN_URL', 'https://api.prod.whoop.com/oauth/oauth2/token'),
                 'apiBase' => rtrim((string) $env('WHOOP_API_BASE', 'https://api.prod.whoop.com'), '/'),
-                'revokeUrl' => (string) $env('WHOOP_REVOKE_URL', 'https://api.prod.whoop.com/oauth/oauth2/revoke'),
-                'scopes' => (string) $env('WHOOP_SCOPES', 'read:recovery read:sleep read:profile offline'),
+                'revokeUrl' => (string) $env('WHOOP_REVOKE_URL', 'https://api.prod.whoop.com/developer/v2/user/access'),
+                'scopes' => (string) $env('WHOOP_SCOPES', 'read:recovery read:sleep offline'),
                 'redirectUri' => $appUrl . '/auth/wearables/whoop/callback',
             ],
             'apple' => [

@@ -98,9 +98,46 @@ final class Db
             $this->pdo->exec($statement);
         }
 
+        $this->applyAdditiveMigrations();
+
         $this->execute(
             'INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version = VALUES(version)',
             ['003_php']
+        );
+    }
+
+    /**
+     * Kolumny dodane po pierwszym wdrożeniu. CREATE TABLE IF NOT EXISTS nie
+     * zmienia istniejących tabel, a MySQL 8 nie obsługuje ADD COLUMN IF NOT
+     * EXISTS. Sprawdzamy information_schema i wykonujemy ALTER tylko raz.
+     */
+    private function applyAdditiveMigrations(): void
+    {
+        $this->ensureColumn(
+            'wearable_oauth_states',
+            'code_verifier',
+            'VARCHAR(128) NULL AFTER `provider`'
+        );
+        $this->ensureColumn(
+            'wearable_connections',
+            'refresh_token_expires_at',
+            'DATETIME NULL AFTER `token_expires_at`'
+        );
+    }
+
+    private function ensureColumn(string $table, string $column, string $definition): void
+    {
+        $row = $this->queryOne(
+            'SELECT COUNT(*) AS c
+               FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?',
+            [$table, $column]
+        );
+        if ((int) ($row['c'] ?? 0) > 0) {
+            return;
+        }
+        $this->pdo->exec(
+            'ALTER TABLE `' . $table . '` ADD COLUMN `' . $column . '` ' . $definition
         );
     }
 
