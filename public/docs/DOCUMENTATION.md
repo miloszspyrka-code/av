@@ -404,7 +404,7 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-Wrapper uruchamia kolejno `bin/sync-discord-events.php`, `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu: `.app/.runtime/*.stamp`, więc kolejny wpis w panelu LH nie jest potrzebny.
+To jedyny wpis w LH Cron. Wrapper uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min), `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu: `.app/.runtime/*.stamp`.
 
 Ręcznie (bez panelu):
 
@@ -416,7 +416,7 @@ Ręcznie (bez panelu):
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
-**Stan 2026-11-12:** wpis Cron jest aktywny; logi `18:05:05` i `18:10:02` potwierdzają uruchomienie co 5 minut. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`.
+**Stan 2026-11-12:** jedyny wpis Cron jest aktywny; `/api/health` potwierdza `sync.lastSuccessAt=22:00:02 UTC`, `roleRecheck.lastSuccessAt=22:00:02 UTC`, `stale=false`. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`, który od wersji 3.9.1 uruchamia też makro (co 15 min) i urządzenia (co 30 min).
 
 ### 9.2. Blokada
 

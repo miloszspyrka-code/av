@@ -5,7 +5,7 @@
 ### Zmienione
 - Jeden wpis LH Cron `*/5` uruchamia teraz także sync makro (co 15 min) i sync urządzeń (co 30 min) przez throttle `.runtime/*.stamp`; osobne wpisy w panelu nie są potrzebne.
 
-## 3.9.0 — 2026-11-13
+## 3.9.0 - 2026-11-13
 
 ### Naprawione
 - Demo: każda przeglądarka ma osobne konto `demo-<hash>` (cookie `av_demo`), koniec współdzielonego `demo-local` i wycieku dziennika między osobami.
@@ -23,8 +23,6 @@
 ### Testy
 - Nowy `tests/isolation.e2e.mjs` — 9/9 scenariuszy izolacji dwóch kont i blokady stanu z obcej karty.
 - API 23/23, UI 53/53, integracje 20/20, wearables 42/42, PWA 20/20, MCP 17/17.
-
-## 3.8.0 - 2026-11-12
 
 ## 3.8.1 — 2026-11-12
 
