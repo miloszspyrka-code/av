@@ -21,6 +21,20 @@
 
 ## 3.8.0 - 2026-11-12
 
+## 3.8.1 — 2026-11-12
+
+### Zmienione
+- Urządzenia: Garmin Connect i Whoop wyłączone na razie — brak kafelków w „Ciało”, brak wpisów w `GET /api/wearables`, endpointy OAuth/sync/DELETE zwracają 404. Pozostają Apple Watch i Oura Ring.
+- Implementacja i konfiguracja Garmin/Whoop zachowane w kodzie (`app/Wearables.php`, `app/Config.php`, zmienne env) do szybkiego przywrócenia.
+- Testy urządzeń przepisane na Oura + Apple z asercją braku Garmin/Whoop w API i UI.
+- Dokumentacja: API, architektura, baza, funkcje, testy, PRD.
+
+### Testy
+- `npm run test:wearables` — OAuth2/PKCE Oura, Apple, rotacja tokenów i klucza, wyłączenie Garmin/Whoop, UI.
+- `tests/wearables-config.test.php` — lista dostawców i wymóg klucza szyfrowania.
+
+## 3.8.0 — 2026-11-12
+
 ### Dodane
 - Cykliczna weryfikacja roli Alpha: cron co 5 minut (`bin/check-discord-roles.php`) sprawdza aktywne sesje botem (`GET /guilds/{id}/members/{user_id}`) i usuwa wszystkie sesje przy braku roli lub członkostwa (`access.role_revoked`).
 - `users.role_checked_at`, `role_check_status`, `role_check_error` oraz tabela `role_check_state` z blokadą cronu i licznikami; stan w `/api/health.roleRecheck`.

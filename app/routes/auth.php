@@ -239,7 +239,7 @@ function av_handle_auth(Config $config, Db $db, Auth $auth, Discord $discord, ?a
             ]);
         }
 
-        if (preg_match('#^/auth/wearables/(garmin|oura|whoop)/start$#', $path, $matches) && $method === 'GET') {
+        if (preg_match('#^/auth/wearables/(oura)/start$#', $path, $matches) && $method === 'GET') {
             $current = $user;
             if ($current === null) {
                 av_auth_error(401, 'Zaloguj się', 'Połączenie urządzenia wymaga zalogowania do Alpha Vault.');
@@ -257,7 +257,7 @@ function av_handle_auth(Config $config, Db $db, Auth $auth, Discord $discord, ?a
             Http::redirect($url);
         }
 
-        if (preg_match('#^/auth/wearables/(garmin|oura|whoop)/callback$#', $path, $matches) && $method === 'GET') {
+        if (preg_match('#^/auth/wearables/(oura)/callback$#', $path, $matches) && $method === 'GET') {
             $current = $user;
             if ($current === null) {
                 av_auth_error(401, 'Sesja wygasła', 'Zaloguj się ponownie i połącz urządzenie.');

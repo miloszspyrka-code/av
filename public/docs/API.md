@@ -2,7 +2,7 @@
 
 # Alpha Vault — API i logowanie
 
-Wersja: **3.9.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord, Garmin, Oura, Whoop**
+Wersja: **3.9.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord, Oura**
 
 Aplikacja jest serwowana z tego samego originu co API. Frontend zapisuje cały stan użytkownika przez `PUT /api/state`; `localStorage` jest tylko fallbackiem offline i jest namespace'owany po `user.id` (`alphavault.state.v3.<id>.*`).
 
@@ -311,7 +311,7 @@ Wszystkie endpointy poza ingestem Apple wymagają sesji. Tokeny dostawców są s
 
 ```text
 GET    /api/wearables                       lista urządzeń, dzisiejsze metryki, baseline, seria 90 dni, gotowość
-POST   /api/wearables/{provider}/sync       ręczna synchronizacja (Garmin/Oura/Whoop/Apple)
+POST   /api/wearables/{provider}/sync       ręczna synchronizacja (Oura/Apple)
 DELETE /api/wearables/{provider}            odłączenie + usunięcie danych zdrowotnych
 POST   /api/wearables/apple/pair            jednorazowy kod parowania dla iPhone (15 min)
 POST   /api/wearables/apple/ingest          ingest z iPhone: kod parowania albo Bearer <deviceToken>
@@ -322,10 +322,8 @@ POST   /api/wearables/apple/ingest          ingest z iPhone: kod parowania albo 
 ```json
 {
   "devices": {
-    "garmin": { "provider": "garmin", "label": "Garmin Connect", "configured": true, "canConnect": true, "connected": true, "oauthConnected": true, "dataReady": false, "status": "awaiting_provider_spec", "lastSyncAt": "2026-11-12T19:48:00Z", "lastSyncStatus": "provider_spec", "lastError": null },
     "apple": { "provider": "apple", "label": "Apple Watch · Zdrowie", "configured": true, "canConnect": true, "connected": false, "status": "ready_to_connect" },
-    "oura": { "provider": "oura", "label": "Oura Ring", "configured": true, "canConnect": true, "connected": false, "status": "ready_to_connect" },
-    "whoop": { "provider": "whoop", "label": "Whoop", "configured": true, "canConnect": true, "connected": false, "status": "ready_to_connect" }
+    "oura": { "provider": "oura", "label": "Oura Ring", "configured": true, "canConnect": true, "connected": false, "status": "ready_to_connect" }
   },
   "today": {
     "date": "2026-11-12", "sleepMinutes": 312, "hrvMs": 38, "restingHr": 61,
@@ -340,7 +338,7 @@ POST   /api/wearables/apple/ingest          ingest z iPhone: kod parowania albo 
 }
 ```
 
-`status` przyjmuje: `not_configured`, `ready_to_connect`, `pending_authorization`, `connected`, `syncing`, `sync_error`, `token_expired`, `revoked`, `awaiting_provider_access` (Garmin bez zatwierdzonego planu) i `awaiting_provider_spec` (Garmin po OAuth, ale bez adaptera push). `connected` oznacza rzeczywiste połączenie użytkownika, nie samo posiadanie credentials. `dataReady` odróżnia OAuth od gotowości danych.
+`status` przyjmuje: `not_configured`, `ready_to_connect`, `pending_authorization`, `connected`, `syncing`, `sync_error`, `token_expired`, `revoked`. `connected` oznacza rzeczywiste połączenie użytkownika, nie samo posiadanie credentials. `dataReady` odróżnia OAuth od gotowości danych. Integracje Garmin i Whoop są wyłączone na razie — nie występują w `devices`, a ich endpointy zwracają 404.
 
 Gotowość urządzenia to ważona średnia dostępnych składników: sen 40%, HRV 25%, tętno 10%, wynik regeneracji dostawcy 15%, Body Battery 10%. Wagi są renormalizowane do dostępnych danych. Check-in (jeśli istnieje) wnosi 30%: `0,7 × urządzenie + 0,3 × check-in`.
 
@@ -358,11 +356,11 @@ Pierwsze żądanie zawiera `"code":"AV-XXXX-XXXX"` zamiast Bearer. Odpowiedź za
 Synchronizacja OAuth2:
 
 ```text
-GET /auth/wearables/{garmin|oura|whoop}/start
-GET /auth/wearables/{garmin|oura|whoop}/callback?code=...&state=...
+GET /auth/wearables/oura/start
+GET /auth/wearables/oura/callback?code=...&state=...
 ```
 
-`state` jest jednorazowy (10 min), powiązany z użytkownikiem i dostawcą. Oura i Garmin używają PKCE S256 (`code_verifier` w `wearable_oauth_states`); Whoop wymaga `state` i scope `offline`. Po sukcesie redirect na `/?connected={provider}#cialo`; błąd synchronizacji nie blokuje połączenia i jest widoczny w `lastError`. Odświeżanie tokenów jest serializowane blokadą `GET_LOCK` na `(user_id, provider)`; nowy refresh token jest zapisywany atomowo, a wygasły refresh token zwraca `reauth_required`.
+`state` jest jednorazowy (10 min), powiązany z użytkownikiem i dostawcą. Oura używa PKCE S256 (`code_verifier` w `wearable_oauth_states`). Po sukcesie redirect na `/?connected={provider}#cialo`; błąd synchronizacji nie blokuje połączenia i jest widoczny w `lastError`. Odświeżanie tokenów jest serializowane blokadą `GET_LOCK` na `(user_id, provider)`; nowy refresh token jest zapisywany atomowo, a wygasły refresh token zwraca `reauth_required`.
 
 ### 3.12. `GET /api/connections`
 
@@ -541,11 +539,6 @@ Symbole: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
 | `QUOTES_CACHE` | ścieżka pliku cache (domyślnie `cache/quotes.json`) |
 | `WEARABLES_ENCRYPTION_KEY` | wymagany klucz AES dla tokenów urządzeń; brak fallbacku na `SESSION_SECRET` |
 | `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja Oura; scope `daily`, PKCE S256 |
-| `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja Whoop; scope `read:recovery read:sleep offline` |
-| `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja Garmin Connect Developer Program |
-| `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | domyślnie `https://connect.garmin.com/oauth2Confirm`, `https://diauth.garmin.com/di-oauth2-service/oauth/token`, `https://apis.garmin.com` |
-| `GARMIN_REVOKE_URL` | endpoint wyrejestrowania Garmin |
-| `GARMIN_ACCESS_PLAN`, `GARMIN_DATA_DELIVERY`, `GARMIN_PUSH_READY` | plan dostępu (`starter`/`enterprise`) i tryb dostarczania danych Garmin |
 | `WEARABLES_ENCRYPTION_KEY_PREVIOUS` | poprzedni klucz AES dla rotacji tokenów urządzeń |
 | `OURA_AUTHORIZE_URL`, `OURA_TOKEN_URL`, `OURA_API_BASE` | opcjonalne nadpisania endpointów Oura |
-| `WHOOP_AUTHORIZE_URL`, `WHOOP_TOKEN_URL`, `WHOOP_API_BASE` | opcjonalne nadpisania endpointów Whoop |
+| `WHOOP_*`, `GARMIN_*` | nieaktywne — integracje Whoop i Garmin są wyłączone; zmienne pozostają dla szybkiego przywrócenia |

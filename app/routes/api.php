@@ -440,7 +440,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             Http::json($wearables->listForUser((int) $current['id']));
         }
 
-        if (preg_match('#^/api/wearables/(garmin|apple|oura|whoop)/sync$#', $path, $matches) && $method === 'POST') {
+        if (preg_match('#^/api/wearables/(apple|oura)/sync$#', $path, $matches) && $method === 'POST') {
             $current = $auth->requireAuth($user);
             $auth->requireSameOrigin();
             $auth->rateLimit('wearables-sync', 20, 60000);
@@ -449,7 +449,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             Http::json(['ok' => true, ...$result]);
         }
 
-        if (preg_match('#^/api/wearables/(garmin|apple|oura|whoop)$#', $path, $matches) && $method === 'DELETE') {
+        if (preg_match('#^/api/wearables/(apple|oura)$#', $path, $matches) && $method === 'DELETE') {
             $current = $auth->requireAuth($user);
             $auth->requireSameOrigin();
             $wearables = new Wearables($config, $db, $auth);

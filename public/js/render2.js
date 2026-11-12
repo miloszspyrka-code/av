@@ -501,15 +501,11 @@
     const w = AV.api.wearables;
     const devices = w?.devices || {};
     const defaultDeviceText = {
-      garmin: 'sen, HRV, Body Battery',
       apple: 'przez aplikację Alpha Vault na iPhone',
-      oura: 'sen, HRV, gotowość',
-      whoop: 'regeneracja, obciążenie'
+      oura: 'sen, HRV, gotowość'
     };
     const statusText = {
       not_configured: 'integracja nieaktywna — brak konfiguracji serwera',
-      awaiting_provider_access: 'wymaga zatwierdzenia dostępu Garmin',
-      awaiting_provider_spec: 'wymaga dokumentacji dostarczania danych Garmina',
       pending_authorization: 'autoryzacja w toku…',
       token_expired: 'token wygasł — połącz ponownie',
       sync_error: 'błąd synchronizacji',
@@ -523,7 +519,7 @@
       const syncBtn = row.querySelector('[data-sync]');
       const stateEl = row.querySelector('[data-devstate]');
       const reconnect = d.status === 'token_expired' || d.status === 'revoked';
-      if (syncBtn) syncBtn.hidden = !d.connected || d.status === 'awaiting_provider_spec';
+      if (syncBtn) syncBtn.hidden = !d.connected;
       if (btn) {
         btn.textContent = d.connected && !reconnect ? 'Odłącz' : 'Połącz';
         btn.className = 'btn ' + (d.connected && !reconnect ? 'g' : 'p') + ' sm';
@@ -535,10 +531,9 @@
       if (stateEl) {
         if (d.connected && !reconnect) {
           const when = d.lastSyncAt ? new Date(d.lastSyncAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }) : '';
-          const pendingSpec = d.status === 'awaiting_provider_spec';
           const syncError = d.status === 'sync_error';
-          stateEl.className = (syncError || pendingSpec) ? 'warnc' : 'win';
-          stateEl.textContent = '● połączony' + (pendingSpec ? ' · dane czekają na specyfikację Garmina' : (syncError ? ' · błąd synchronizacji' : (when ? ' · sync ' + when : '')));
+          stateEl.className = syncError ? 'warnc' : 'win';
+          stateEl.textContent = '● połączony' + (syncError ? ' · błąd synchronizacji' : (when ? ' · sync ' + when : ''));
           stateEl.title = d.lastError || '';
         } else {
           stateEl.className = d.status === 'token_expired' || d.status === 'revoked' || d.status === 'sync_error' ? 'warnc' : '';
