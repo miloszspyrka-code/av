@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: alphavault-production
     timeout-minutes: 30
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == true)
+    if: github.ref == 'refs/heads/main' && (vars.DEPLOY_ENABLED == 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == true))
 
     steps:
       - name: Checkout repository

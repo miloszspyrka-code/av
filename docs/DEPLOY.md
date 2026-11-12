@@ -93,6 +93,14 @@ gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry
 gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry_run=false
 ```
 
+Automatyczny deploy przy pushu do `main` jest sterowany zmienną repozytorium `DEPLOY_ENABLED`. Ustaw ją na `true` po utworzeniu bazy i skonfigurowaniu sekretów:
+
+```powershell
+gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/alphavault --body true
+```
+
+Dopóki `DEPLOY_ENABLED` nie jest `true`, push do `main` nie uruchamia produkcyjnego zapisu; ręczny dry run nadal działa.
+
 Rollback:
 
 ```powershell
