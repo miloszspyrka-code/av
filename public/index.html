@@ -492,8 +492,8 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= PULPIT ================= -->
 <section class="view on" id="pulpit">
-  <div class="head"><div style="display:flex;gap:20px;align-items:center"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av" style="width:72px;height:72px;font-size:28px;box-shadow:0 0 0 4px rgba(var(--a),.15)">K</div><span class="ed"><svg class="i"><use href="#i-pen"/></svg></span></label><div><div class="eyebrow" id="today"></div><h1><span id="greet">Cześć</span>, <span class="serif">Kasia.</span></h1>
-<div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge">Day trader · <b>Krypto</b></span><span class="bdg">Trader Alpha · <b id="levelBadge">poziom 1</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
+  <div class="head"><div style="display:flex;gap:20px;align-items:center"><label class="avwrap" title="Zmień zdjęcie"><input type="file" accept="image/*" hidden class="avIn"><div class="av" style="width:72px;height:72px;font-size:28px;box-shadow:0 0 0 4px rgba(var(--a),.15)">K</div><span class="ed"><svg class="i"><use href="#i-pen"/></svg></span></label><div><div class="eyebrow" id="today"></div><h1><span class="serif">Kasia.</span></h1>
+<div class="badges"><span class="bdg">🎯 Cel listopada: <b id="goalTxt">+6% bez łamania zasad</b></span><span class="bdg">🔥 <b id="streakBadge">12 dni</b> z dziennikiem z rzędu</span><span class="bdg" id="profileBadge"><b>Krypto</b></span><span class="bdg">Trader Alpha · <b id="levelBadge">poziom 1</b></span></div></div></div><button class="btn g" data-go="stat">Pełne statystyki <svg class="i"><use href="#i-arrow"/></svg></button></div>
 
   <div class="lock lkb" id="lockBar"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Tryb ochronny włączony</b><p id="lockTxt">Dwie straty dziś, limit osiągnięty. Nowe pozycje w dzienniku są zablokowane do północy.</p></div><div class="cd cdt">--:--:--</div></div>
 
@@ -942,8 +942,6 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <div class="grid g2"><div><span class="label">Imię / nick</span><input class="input" id="nameIn" value="Kasia"></div><div><span class="label">Waluta wyników</span><select class="input" id="currencyIn"><option>USDT</option><option>USD</option><option>PLN</option></select></div></div></div>
       <div class="card"><h2>Personalizacja</h2><p class="mut" style="font-size:13.5px;margin-top:4px">Ustaw Alpha Vault pod siebie.</p>
         <span class="label">Cel na ten miesiąc (widać go na pulpicie)</span><input class="input" id="goalIn" value="+6% bez łamania zasad">
-        <span class="label">Twoje motto</span><input class="input" id="mottoIn" value="Plan. Cierpliwość. Bez odgrywania się.">
-        <span class="label">Styl tradingu</span><div class="chips sel" id="styleChips"><span class="chip">Scalper</span><span class="chip on">Day trader</span><span class="chip">Swing</span><span class="chip">Inwestor</span></div>
         <span class="label">Rynki</span><div class="chips multi" id="marketChips"><span class="chip on">Krypto</span><span class="chip">Forex</span><span class="chip">Indeksy</span><span class="chip">Surowce</span><span class="chip">Akcje</span></div>
         <span class="label">Kolor akcentu</span>
         <div style="display:flex;gap:14px" id="accents">
@@ -954,7 +952,6 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
           <div><div class="sw" data-a="200,200,205" data-b="#f2f2f4" style="background:linear-gradient(135deg,#f2f2f4,#8d8d94)"></div><div class="swl">Platyna</div></div>
         </div>
         <div class="grid g2"><div><span class="label">Strefa czasowa</span><select class="input" id="tzIn"><option>Polska (Warszawa)</option><option>Bali (Makassar)</option><option>Londyn</option><option>Dubaj</option></select></div><div><span class="label">Format godzin</span><select class="input" id="hoursIn"><option>24h · 14:30</option><option>12h · 2:30 PM</option></select></div></div>
-        <div class="row" style="margin-top:8px"><div><b>Powitanie z imieniem i porą dnia</b><span>„Dzień dobry, Kasia”</span></div><div class="toggle on" data-setting="greeting"></div></div>
       </div>
       <div class="card"><div class="sech" style="margin:0"><h2>Bezpieczeństwo i dane</h2><span class="tag praise"><svg class="i" style="width:11px;height:11px;stroke-width:2.4"><use href="#i-shield"/></svg>chronione</span></div>
         <div class="row"><div><b>Nie wylogowuj mnie</b><span>Sesja zostaje na tym urządzeniu do wylogowania.</span></div><div class="toggle on" data-setting="remember"></div></div>

@@ -403,16 +403,16 @@
       version: 2,
       user: {
         name: 'Kasia', email: 'kasia@example.com', joined: '2026-03-01',
-        avatar: null, style: 'Day trader', markets: ['Krypto'],
-        motto: 'Plan. Cierpliwość. Bez odgrywania się.', goal: '+6% bez łamania zasad',
+        avatar: null, markets: ['Krypto'],
+        goal: '+6% bez łamania zasad',
         currency: 'USDT', timezone: 'Polska (Warszawa)', hour12: false,
-        accent: { a: '217,178,95', b: '#f1d48e' }, greeting: true
+        accent: { a: '217,178,95', b: '#f1d48e' }
       },
       subscription: { plan: 'full', until: '2026-12-03', expired: false, role: 'Alpha', renewedAt: null },
       settings: {
         remember: true, apiCode: true, safetyEnabled: true, requireReason: true, pushLimit: true,
         macroBefore: true, macroChecklist: true, macroTwo: false,
-        remindDay: true, remindHour: true, greeting: true,
+        remindDay: true, remindHour: true,
         maxLosses: 2, maxDailyLoss: 3, block: 'midnight',
         maxRisk: 1, rules: ['Max 1% ryzyka na transakcję', 'Zawsze stop loss', 'Po 2 stratach koniec dnia'],
         checklist: ['Trend wyższego TF', 'Poziom z planu', 'Potwierdzenie', 'SL przed wejściem', 'R:R ≥ 2', 'Brak makro 15 min', 'Spokojna głowa'],

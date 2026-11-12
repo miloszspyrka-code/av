@@ -96,7 +96,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 38 scenariuszy
+## UI — 37 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
