@@ -42,6 +42,29 @@ const page = await context.newPage();
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
 page.on('pageerror', (err) => pageErrors.push(err.message));
 
+// Deterministyczne notowania: test nie zależy od sieci ani od dostawcy.
+const QUOTE_STUB = {
+  quotes: [
+    { symbol: 'BTC', price: 71411.5, changePercent: 1.2 },
+    { symbol: 'ETH', price: 3407.25, changePercent: -0.7 },
+    { symbol: 'SOL', price: 81.48, changePercent: -2.1 },
+    { symbol: 'NAS100', price: 21426, changePercent: 0.4 },
+    { symbol: 'US500', price: 6192, changePercent: 0.2 },
+    { symbol: 'XAUUSD', price: 3881.6, changePercent: 0.7 },
+    { symbol: 'EUR/USD', price: 1.1057, changePercent: -0.3 },
+    { symbol: 'OIL', price: 71.78, changePercent: 1.1 },
+    { symbol: 'BTC/USDT', price: 71411.5, changePercent: 1.2 },
+    { symbol: 'SOL/USDT', price: 81.48, changePercent: -2.1 }
+  ],
+  updatedAt: '2026-11-12T12:00:00Z',
+  stale: false
+};
+await context.route('**/api/quotes**', (route) => route.fulfill({
+  status: 200,
+  contentType: 'application/json; charset=utf-8',
+  body: JSON.stringify(QUOTE_STUB)
+}));
+
 try {
   await page.goto('/', { waitUntil: 'load' });
   await page.waitForFunction(() => window.AV && AV.ready);
@@ -52,7 +75,7 @@ try {
   log('modal logowania', await page.locator('#demoEnter').isVisible(), 'Discord niepodłączony → demo');
 
   await page.click('#demoEnter');
-  await page.waitForFunction(() => document.querySelector('#envBadge')?.textContent.includes('zapis automatyczny'), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector('#envBadge')?.textContent.includes('POŁĄCZONO Z MYSQL'), null, { timeout: 15000 });
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated);
   log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + sesja');
 
@@ -118,10 +141,25 @@ try {
 
   // kalkulator
   await page.click('.navg button[data-v="kalk"]');
+  await page.waitForFunction(() => document.querySelector('#rMain')?.textContent !== '—', null, { timeout: 15000 });
   const calc = await page.locator('#rMain').innerText();
   await page.click('#calcMode [data-m="fx"]');
   const calcFx = await page.locator('#rMainL').innerText();
   log('kalkulator krypto + FX', calc !== '—' && calcFx.includes('MT4'), calc + ' / ' + calcFx);
+
+  // cena live z API: bez etykiety demo i bez adnotacji planu w nagłówku
+  await page.click('#calcMode [data-m="crypto"]');
+  await page.selectOption('#cInst', { label: 'SOL/USDT' });
+  await page.waitForFunction(() => document.querySelector('#cPrice b')?.textContent === '81,48', null, { timeout: 15000 });
+  const liveCalc = await page.evaluate(() => ({
+    shown: document.querySelector('#cPrice b').textContent,
+    label: document.querySelector('#cPrice').parentElement.querySelector('.label').textContent,
+    badge: document.querySelector('#envBadge').textContent
+  }));
+  assert.equal(liveCalc.shown, '81,48');
+  assert.ok(!/demo/i.test(liveCalc.label), 'etykieta bez demo: ' + liveCalc.label);
+  assert.ok(!/Alpha \+ Akademia|zapis automatyczny/i.test(liveCalc.badge), 'nagłówek bez planu: ' + liveCalc.badge);
+  log('cena live z API + czysty nagłówek', true, 'SOL/USDT ' + liveCalc.shown + ' · ' + liveCalc.badge);
 
   // statystyki
   await page.click('.navg button[data-v="stat"]');

@@ -107,7 +107,7 @@ Publiczny. Sprawdza MySQL i konfigurację.
 {
   "ok": true,
   "service": "alpha-vault",
-  "version": "3.9.0",
+  "version": "3.9.2",
   "db": { "ok": true, "version": "11.8.6-MariaDB", "latencyMs": 1 },
   "uptime": 123,
   "now": "2026-11-12T14:30:00Z",
@@ -480,9 +480,10 @@ Pole `integrations` zawiera:
 
 ### 3.20. `GET /api/quotes`
 
-Publiczny, read-only pasek notowań. Dane pochodzą z Yahoo Finance Chart API (bez klucza) i są cache'owane w pliku `cache/quotes.json`.
+Publiczny, read-only pasek notowań i ceny instrumentów w kalkulatorze. Dane pochodzą z Yahoo Finance Chart API (bez klucza) i są cache'owane w pliku `cache/quotes.json`.
 
 - `QUOTES_TTL` (domyślnie 60 s) ogranicza liczbę zapytań do dostawcy; `0` wymusza odświeżenie przy każdym żądaniu.
+- `symbols` (opcjonalnie): lista etykiet instrumentów po przecinku, np. `?symbols=SOL/USDT,EUR/USD`. Etykiety z UI są normalizowane (`NAS100 · Nasdaq 100` → `NAS100`). Bez parametru zwracany jest zestaw tickera.
 - Sukces: `{"quotes":[...],"updatedAt":"2026-11-12T20:00:00Z","stale":false}`.
 - `stale=true` oznacza odpowiedź z cache po błędzie dostawcy albo brak części symboli.
 - Notowanie starsze niż 15 min znika z odpowiedzi zamiast być pokazywane jako aktualne.
@@ -499,7 +500,8 @@ Publiczny, read-only pasek notowań. Dane pochodzą z Yahoo Finance Chart API (b
 }
 ```
 
-Symbole: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
+Symbole tickera: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
+Instrumenty kalkulatora: `BTC/USDT`, `ETH/USDT`, `SOL/USDT`, `XRP/USDT`, `BNB/USDT`, `DOGE/USDT`, `LINK/USDT`, `AVAX/USDT`, `GBP/USD`, `USD/JPY`, `AUD/USD`, `USD/CHF`, `USD/CAD`, `NZD/USD`, `EUR/GBP`, `US30`, `GER40`, `UK100`, `JPN225`, `XAGUSD`.
 
 ## 4. Bezpieczeństwo
 

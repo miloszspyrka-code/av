@@ -103,9 +103,10 @@ Import XLS/XLSX nie jest czytany — zapisz jako CSV (komunikat w UI).
 |---|---|---|
 | Krypto (dźwignia, depozyt, wartość) | ✅ | |
 | FX/indeksy/surowce (loty, pipsy) | ✅ | |
+| Cena instrumentu live | ✅ | `GET /api/quotes?symbols=…`, Yahoo Finance, odświeżanie co 60 s; brak notowań = `—`, bez wartości demo |
 | Long/Short | ✅ | walidacja SL/TP |
 | Szybkie kwoty | ✅ | saldo, dźwignia, ryzyko |
-| Auto SL/TP 1:3 | ✅ | |
+| Auto SL/TP 1:3 | ✅ | tylko z aktualnej ceny rynkowej |
 | Reset | ✅ | |
 | Kroki obliczeń | ✅ | |
 
