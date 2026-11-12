@@ -539,6 +539,39 @@ index.html
 
 Skrypty mają `defer`; kolejność jest istotna.
 
+### 11.1a. Routing i adresy podstron
+
+Routing jest po stronie przeglądarki: jeden `public/index.html`, widoki przełączane bez przeładowania, adres w `location.hash`.
+
+- `AV.showView(id)` — ustawia aktywny widok, renderuje go i zapisuje adres przez `history.replaceState` (bez wpisu w historii).
+- `AV.viewFromHash()` — tłumaczy hash na id widoku; nieznany adres sprowadza do `pulpit`.
+- `AV.viewSlugs` — mapa `id widoku → slug`; `AV.slugViews` — mapa odwrotna razem z aliasami starych, krótkich adresów.
+
+| Widok (`id`) | Adres | Nawigacja |
+| --- | --- | --- |
+| `pulpit` | `#/pulpit` | Pulpit |
+| `plan` | `#/plan` | Plan dnia |
+| `trans` | `#/dziennik` | Dziennik |
+| `play` | `#/playbook` | Playbook |
+| `nowa` | `#/nowa-transakcja` | Nowa transakcja |
+| `kalk` | `#/kalkulator` | Kalkulator Alpha |
+| `prop` | `#/prop-challenge` | Prop challenge |
+| `akad` | `#/akademia` | Akademia Alpha |
+| `stat` | `#/statystyki` | Statystyki |
+| `tax` | `#/podatki` | Podatki PIT-38 |
+| `mentor` | `#/mentor-ai` | Mentor AI |
+| `kal` | `#/kalendarz` | Kalendarz makro |
+| `cialo` | `#/cialo-i-glowa` | Ciało i głowa |
+| `gieldy` | `#/gieldy` | Giełdy i API |
+| `ust` | `#/konto` | Konto i zasady |
+
+Zasady:
+
+- Slugi są ASCII, małymi literami, bez diakrytyków; myślnik zamiast spacji.
+- Stare adresy (`#/akad`, `#/trans`, `#/ust`, …) nadal działają jako aliasy i są przepisywane na czytelny slug przy pierwszym `showView`.
+- Hash jest porównywany bez wielkości liter i z pominięciem końcowego `/`.
+- Id widoków pozostają wewnętrznym kontraktem (`data-v`, `data-go`, `#id` sekcji, `AV.showView('akad')`) — nie zmieniaj ich przy zmianie adresu; zmieniaj tylko `AV.viewSlugs`.
+
 ### 11.2. Bootstrap
 
 1. `AV.bootstrap()` → `GET /api/me`.
@@ -716,6 +749,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Makro DB/sync | `tests/macro-events.test.php` | normalizacja FF/TradingView, UTC, UPSERT, soft delete, okno źródła | 21/21 PASS |
 | Rola / cron | `tests/role-guard.test.php` + `tests/role-recheck.e2e.mjs` | decyzje login, fail-open, 404, 429, lock, revoke sesji | 18/18 PASS |
 | Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
+| Routing | `tests/router.unit.mjs` | slugi widoków, aliasy starych adresów, `viewFromHash`, `showView` | 18/18 PASS |
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, macro, admin, eksport, prop | 23/23 PASS |
 | UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak | 54/54 PASS |
@@ -742,6 +776,8 @@ npm run test:pwa
 npm run test:events
 npm run test:macro
 npm run test:quotes
+npm run test:prop
+npm run test:router
 npm run test:wearables
 npm run test:docs
 npm run test:encoding
