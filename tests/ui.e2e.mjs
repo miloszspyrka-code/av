@@ -188,6 +188,17 @@ try {
   });
   log('profil: bez daty bez adnotacji', planDates.none.side === 'Alpha + Akademia' && planDates.none.row === 'none', JSON.stringify(planDates.none));
   log('profil: data z API w miejscu daty', planDates.restored.until === planDates.expected && planDates.restored.side.endsWith(planDates.expected), planDates.restored.until + ' = ' + planDates.expected);
+  const removedFields = await page.evaluate(() => ({
+    motto: !!document.querySelector('#mottoIn'),
+    style: !!document.querySelector('#styleChips'),
+    greeting: !!document.querySelector('[data-setting="greeting"]'),
+    gender: !!document.querySelector('#gender'),
+    greet: !!document.querySelector('#greet'),
+    badge: document.querySelector('#profileBadge').textContent.trim()
+  }));
+  log('personalizacja: usunięte pola', !removedFields.motto && !removedFields.style && !removedFields.greeting && !removedFields.gender && !removedFields.greet && removedFields.badge === 'Krypto', JSON.stringify(removedFields));
+  const h1 = await page.locator('#pulpit .head h1').innerText();
+  log('pulpit: nazwa bez powitania', h1.trim() === 'E2E Tester.', h1);
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');

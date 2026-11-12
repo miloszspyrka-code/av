@@ -32,8 +32,9 @@
     AV.setText('#profileMeta', 'Trader Alpha od ' + (u.joined ? new Date(u.joined).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }) : '—') + ' · ' + AV.streak(s) + ' dni');
     AV.setText('#goalTxt', u.goal || '—');
     AV.setText('#streakBadge', AV.streak(s) + ' dni');
-    AV.setText('#profileBadge', (u.style || 'Day trader') + ' · <b>' + (u.markets && u.markets[0] || 'Krypto') + '</b>');
-    AV.$('#profileBadge').innerHTML = AV.esc(u.style || 'Day trader') + ' · <b>' + AV.esc((u.markets && u.markets[0]) || 'Krypto') + '</b>';
+    const market = (u.markets && u.markets[0]) || '';
+    AV.setHTML('#profileBadge', market ? '<b>' + AV.esc(market) + '</b>' : '');
+    AV.show('#profileBadge', Boolean(market));
     const planLabel = s.subscription.plan === 'full' ? 'Alpha + Akademia' : 'Alpha Vault';
     const planUntil = s.subscription.until ? new Date(s.subscription.until).toLocaleDateString('pl-PL') : '';
     AV.setText('#sidePlan', planUntil ? planLabel + ' · do ' + planUntil : planLabel);
@@ -43,10 +44,6 @@
     AV.setText('#planRole', (u.email || 'kasia.trades') + ' · rola ' + (s.subscription.role || 'Alpha') + ' ✓');
     AV.setText('#roleCheck', 'dziś, ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
 
-    const hr = new Date().getHours();
-    let greet = hr < 5 ? 'Dobranoc' : hr < 12 ? 'Dzień dobry' : hr < 18 ? 'Cześć' : 'Dobry wieczór';
-    if (!u.greeting) greet = 'Cześć';
-    AV.setText('#greet', greet);
     const big = AV.$('#pulpit .head h1 .serif');
     if (big) big.textContent = u.name + '.';
 
@@ -62,7 +59,6 @@
         av.textContent = (u.name || 'A').slice(0, 1).toUpperCase();
       }
     });
-    AV.$$('#mottoIn').forEach((el) => AV.setVal(el, u.motto));
     AV.setText('#courseTop', (s.meta.courseProgress || 0) + '%');
     AV.setText('#courseTxt', (s.meta.courseProgress || 0) + '% ukończone');
     AV.$('#courseBar').style.width = (s.meta.courseProgress || 0) + '%';
