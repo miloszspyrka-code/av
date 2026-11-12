@@ -202,6 +202,8 @@ Wykonane na `https://alphavault.pl`:
 | LH Cron | logi `18:05:05` i `18:10:02` — uruchomienie co 5 min |
 | Monitoring | `monitor-production.yml` — health + `sync.status`/`stale`, co 15 min |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
+| PWA manifest/SW/ikony | 200, `application/manifest+json`, ikony `/assets/pwa/*`, installability bez błędów |
+| PWA mobile E2E | 20/20 lokalnie i w CI; fizyczny telefon — do potwierdzenia |
 
 Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
 
