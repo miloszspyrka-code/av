@@ -501,29 +501,42 @@
       oura: 'sen, HRV, gotowość',
       whoop: 'regeneracja, obciążenie'
     };
+    const statusText = {
+      not_configured: 'integracja nieaktywna — brak konfiguracji serwera',
+      awaiting_provider_access: 'wymaga zatwierdzenia dostępu Garmin',
+      awaiting_provider_spec: 'wymaga dokumentacji dostarczania danych Garmina',
+      pending_authorization: 'autoryzacja w toku…',
+      token_expired: 'token wygasł — połącz ponownie',
+      sync_error: 'błąd synchronizacji',
+      revoked: 'dostęp cofnięty — połącz ponownie',
+      syncing: 'synchronizacja…'
+    };
     $$('#devList .dev').forEach((row) => {
       const key = row.dataset.provider;
-      const d = devices[key] || { configured: false, connected: false };
+      const d = devices[key] || { configured: false, canConnect: false, connected: false, status: 'not_configured' };
       const btn = row.querySelector('[data-dev]');
       const syncBtn = row.querySelector('[data-sync]');
       const stateEl = row.querySelector('[data-devstate]');
-      if (syncBtn) syncBtn.hidden = !d.connected;
+      const reconnect = d.status === 'token_expired' || d.status === 'revoked';
+      if (syncBtn) syncBtn.hidden = !d.connected || d.status === 'awaiting_provider_spec';
       if (btn) {
-        btn.textContent = d.connected ? 'Odłącz' : 'Połącz';
-        btn.className = 'btn ' + (d.connected ? 'g' : 'p') + ' sm';
-        btn.disabled = !d.connected && !d.configured;
-        btn.title = !d.connected && !d.configured ? 'Integracja wymaga konfiguracji po stronie serwera' : '';
-        btn.dataset.mode = d.connected ? 'disconnect' : 'connect';
+        btn.textContent = d.connected && !reconnect ? 'Odłącz' : 'Połącz';
+        btn.className = 'btn ' + (d.connected && !reconnect ? 'g' : 'p') + ' sm';
+        const canConnect = d.canConnect ?? d.configured;
+        btn.disabled = !d.connected && !canConnect;
+        btn.title = !d.connected && !canConnect ? 'Integracja wymaga konfiguracji po stronie serwera' : '';
+        btn.dataset.mode = d.connected && !reconnect ? 'disconnect' : 'connect';
       }
       if (stateEl) {
         if (d.connected) {
           const when = d.lastSyncAt ? new Date(d.lastSyncAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }) : '';
-          stateEl.className = d.lastSyncStatus === 'error' ? 'warnc' : 'win';
-          stateEl.textContent = '● połączony' + (when ? ' · sync ' + when : '');
+          const pendingSpec = d.status === 'awaiting_provider_spec';
+          stateEl.className = (d.lastSyncStatus === 'error' || d.status === 'token_expired' || pendingSpec) ? 'warnc' : 'win';
+          stateEl.textContent = '● połączony' + (pendingSpec ? ' · dane czekają na specyfikację Garmina' : (when ? ' · sync ' + when : ''));
           stateEl.title = d.lastError || '';
         } else {
-          stateEl.className = '';
-          stateEl.textContent = d.configured ? (defaultDeviceText[key] || '') : 'integracja nieaktywna — brak konfiguracji serwera';
+          stateEl.className = d.status === 'token_expired' || d.status === 'revoked' ? 'warnc' : '';
+          stateEl.textContent = statusText[d.status] || ((d.canConnect ?? d.configured) ? (defaultDeviceText[key] || '') : statusText.not_configured);
           stateEl.title = '';
         }
       }

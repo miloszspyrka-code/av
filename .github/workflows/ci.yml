@@ -141,7 +141,9 @@ jobs:
       - name: API E2E
         env:
           APP_URL: http://127.0.0.1:4173
-        run: node tests/api.e2e.mjs
+        run: |
+          ALPHA_VAULT_CONFIG=tests/config.test.json php tests/seed-macro-events.php
+          node tests/api.e2e.mjs
 
       - name: Seed Discord events for UI
         env:

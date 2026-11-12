@@ -219,7 +219,7 @@ Pełny kontrakt: [docs/API.md](API.md). Specyfikacja: [docs/openapi.yaml](openap
 
 ### 6.1. Urządzenia zdrowotne
 
-Garmin/Oura/Whoop używają OAuth2 z jednorazowym `state`; tokeny są szyfrowane AES-256-GCM. Apple Watch używa kodu parowania i tokenu urządzenia. Połączenie zapisuje metryki w `wearable_daily_metrics`, a `GET /api/wearables` liczy gotowość z dostępnych składników (sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%) i łączy ją z check-inem w proporcji 70/30. Odłączenie usuwa tokeny i metryki w transakcji.
+Garmin/Oura/Whoop używają OAuth2 z jednorazowym `state`; tokeny są szyfrowane AES-256-GCM. Apple Watch używa kodu parowania i tokenu urządzenia. Połączenie zapisuje metryki w `wearable_daily_metrics`, a `GET /api/wearables` liczy gotowość z dostępnych składników (sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%) i łączy ją z check-inem w proporcji 70/30. Odłączenie usuwa tokeny i metryki w transakcji. Autoryzacja używa PKCE (`code_verifier` w `wearable_oauth_states`), odświeżanie tokenów respektuje `refresh_token_expires_at`, a rotacja klucza AES korzysta z `WEARABLES_ENCRYPTION_KEY_PREVIOUS`.
 
 ## 7. Discord Scheduled Events — pełny przepływ
 
