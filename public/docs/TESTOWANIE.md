@@ -145,6 +145,23 @@ npm run test:ui:empty
 - UI e2e (systemowy Chrome),
 - empty-state na osobnym porcie.
 
+## Produkcja — 2026-11-12
+
+Wykonane na `https://alphavault.pl`:
+
+| Test | Wynik |
+| --- | --- |
+| `GET /` | 200, UI Alpha Vault |
+| `GET /api/health` | `ok=true`, DB 11.8.6-MariaDB, wszystkie flagi true |
+| `GET /docs/` | 200, indeks PRD/DOCUMENTATION/API |
+| `GET /.app/config.json` | 403 |
+| `GET /api/events` bez sesji | 401 |
+| Realny sync | 3 wydarzenia VOICE, 3 unikalne ID |
+| Baza | 3 rekordy `live`, `sync.status=success` |
+| Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
+
+Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
+
 ## Czego testy nie obejmują
 
 - prawdziwego logowania Discord (wymaga interakcji użytkownika),

@@ -284,23 +284,22 @@ npm run test:docs
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
 | Testy lokalne | API 20/20, UI 23/23, empty 10/10, events 24/24 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
-| Baza LH | istnieje, login OK, brak tabel |
-| `https://alphavault.pl` | **403** — brak wdrożenia |
-| GitHub Actions | **billing** — joby nie startują |
-| `DEPLOY_ENABLED` | `false` |
-| LH Cron | **nieskonfigurowany** |
+| Baza LH | tabele utworzone (10), login OK |
+| `https://alphavault.pl` | **200** — wdrożona |
+| GitHub Actions | działa |
+| `DEPLOY_ENABLED` | `true` |
+| Prod sync | success, 3 wydarzenia, 3 unikalne ID |
+| Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
+| LH Cron | **nieskonfigurowany** — wymaga panelu LH |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **nieprzetestowany interaktywnie** |
 
-**Kolejność odblokowania:**
+**Pozostałe czynności:**
 
-1. Napraw billing GitHub Actions **albo** użyj `scripts/local-deploy.sh` z pełnym `local.env` (Discord + DB).
-2. Ustaw `DEPLOY_ENABLED=true`.
-3. Uruchom deploy.
-4. Sprawdź `/api/health` i `/`.
-5. Skonfiguruj Cron w panelu LH.
-6. Wykonaj E2E: login z rolą, bez roli, `/api/events`, sync, puste pola, DST.
-7. Zaktualizuj §10 i [PRD.md §11](PRD.md#11-status-wdrożenia-2026-11-12).
+1. Dodaj wpis Cron w panelu LH (§9 [DOCUMENTATION.md](DOCUMENTATION.md#9-cron-i-niezawodność)).
+2. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
+3. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
+4. Zaktualizuj §10 i [PRD.md §11](PRD.md#11-status-wdrożenia-2026-11-12).
 
 ## 11. Format raportu końcowego
 
