@@ -772,7 +772,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Prod monitor | `monitor-production.yml` | health, sync, UI, docs, `.app` 403 | co 15 min |
 | Prod UI read-only | Playwright + sesja testowa | live, harmonogram, puste konsultacje | 10/10 PASS |
 
-Wszystkie suites uruchamia `.github/workflows/ci.yml` (MySQL 8.4, migracja, integracje na mockach, empty-state na osobnym porcie). Lokalne polecenia nie są dowodem i nie są częścią workflow AV-engineer.
+Wszystkie suites uruchamia `.github/workflows/ci.yml` (MySQL 8.4, migracja, integracje na mockach, empty-state na osobnym porcie; dodatkowo router, izolacja użytkowników i encoding guard). Lokalne polecenia nie są dowodem i nie są częścią workflow AV-engineer.
 
 **Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika; LH Cron jest skonfigurowany w panelu LH (SSH nie ma dostępu do `crontab`, więc zmiany harmonogramu tylko przez panel).
 

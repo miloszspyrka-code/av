@@ -17,6 +17,7 @@ CI używa MySQL 8.4, PHP 8.3, Node 24 i systemowego Chrome. Konfiguracja testowa
 | Krok CI | Co sprawdza |
 | --- | --- |
 | Documentation | `sync-docs --check` i `tests/docs.test.mjs` |
+| Encoding guard | `test:encoding` — UTF-8 i brak mojibake |
 | PHP syntax check | `php -l` wszystkich plików w `app/` i `public/` |
 | Apply database schema | migracja `app/db/migrate.php` na MySQL 8.4 |
 | Role recheck tests | decyzje login i cron recheck na mocku Discord |
@@ -45,7 +46,7 @@ CI używa MySQL 8.4, PHP 8.3, Node 24 i systemowego Chrome. Konfiguracja testowa
 
 Test przywraca poprzedni stan demo po zakończeniu.
 
-## Urządzenia zdrowotne — 42 scenariusze + 4 testy konfiguracji
+## Urządzenia zdrowotne — 42 scenariusze + 6 testów konfiguracji
 
 `npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
 
@@ -253,9 +254,15 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 - synchronizację `public/docs` z źródłami,
 - obecność wszystkich generowanych plików.
 
-## Skan kodowania (diagnostyka)
+## Kodowanie — test CI
 
-`node scripts/scan-encoding.mjs` wypisuje pliki z niepoprawnym UTF-8 lub mojibake. To narzędzie diagnostyczne, nie test CI. Nie deklaruj naprawy kodowania bez potwierdzenia w runie CI i w podglądzie pliku.
+`tests/encoding.test.mjs` + `scripts/check-encoding.mjs` (`npm run test:encoding`):
+
+- wykrywa niepoprawny UTF-8 i mojibake w kodzie, testach i dokumentacji,
+- blokuje regresje polskich znaków,
+- jest uruchamiany w CI jako krok `Encoding guard`.
+
+Naprawa istniejących plików: `node scripts/fix-mojibake.mjs --write <plik>`. Nie deklaruj naprawy kodowania bez zielonego runu CI.
 
 ## Live Discord
 

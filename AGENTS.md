@@ -270,7 +270,7 @@ Zakres CI:
 - dokumentacja: `sync-docs --check` + `tests/docs.test.mjs`,
 - PHP lint `app/` i `public/`,
 - migracja MySQL 8.4,
-- role, Discord DB/sync, makro, notowania, prop, urządzenia, API, UI, empty-state, PWA, podatki,
+- role, Discord DB/sync, makro, notowania, prop, router, izolacja, urządzenia, API, UI, empty-state, PWA, podatki, kodowanie,
 - integracje giełd/MetaTrader/API i ich UI na mockach.
 
 **Definition of Done:**
