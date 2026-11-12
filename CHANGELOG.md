@@ -21,7 +21,7 @@
 - Produkcja `https://alphavault.pl` → 200, health OK.
 - Realny sync Discord → 3 wydarzenia VOICE, bez duplikatów.
 - Prod UI read-only: live, harmonogram, puste konsultacje.
-- LH Cron pozostaje do dodania w panelu LH.
+- LH Cron działa co 5 min (logi 18:05:05, 18:10:02).
 
 ## 3.0.0 — 2026-11-12
 

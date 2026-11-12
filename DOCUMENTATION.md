@@ -378,6 +378,8 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
+**Stan 2026-11-12:** wpis Cron jest aktywny; logi `18:05:05` i `18:10:02` potwierdzają uruchomienie co 5 minut. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`.
+
 ### 9.2. Blokada
 
 - Jedna kolumna `lock_token` i `locked_until` w `discord_sync_state`.
@@ -622,6 +624,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
 | Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
 | Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | 3/3, bez duplikatów |
+| Prod Cron | LH Cron | logi `18:05:05`, `18:10:02` | co 5 min, PASS |
 | Prod UI read-only | Playwright + sesja testowa | live, harmonogram, puste konsultacje | 10/10 PASS |
 
 Komendy:
