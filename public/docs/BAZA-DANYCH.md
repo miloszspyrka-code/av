@@ -21,9 +21,9 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `discord_sync_runs` | historia synchronizacji (30 dni) |
 | `macro_events` | publikacje makro z feedów (UPSERT, soft delete, źródło FF/TradingView) |
 | `macro_sync_state` | ostatnia próba/sukces synchronizacji makro, licznik, błąd |
-| `wearable_connections` | jedno połączenie użytkownika z dostawcą; status, zaszyfrowane tokeny, token urządzenia Apple (hash), last sync |
+| `wearable_connections` | jedno połączenie użytkownika z dostawcą; status, zaszyfrowane tokeny, `token_expires_at`, `refresh_token_expires_at`, token urządzenia Apple (hash), last sync |
 | `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
-| `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) |
+| `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) wraz z `code_verifier` dla PKCE |
 | `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
 | `schema_migrations` | wersje migracji |
 | `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu |
@@ -51,8 +51,11 @@ Dokument zawiera m.in. `prop.challenges` (konfiguracje challenge'ów) i `prop.se
 - `wearable_connections` ma unikalny klucz `(user_id, provider)` i klucz obcy do `users` z `ON DELETE CASCADE`.
 - `wearable_daily_metrics` ma unikalny klucz `(user_id, provider, metric_date)`, więc ponowna synchronizacja robi UPSERT.
 - `access_token_enc` / `refresh_token_enc` to AES-256-GCM (`v1:` + nonce + tag + ciphertext); klucz nie jest w bazie.
+- Klucz pochodzi wyłącznie z `WEARABLES_ENCRYPTION_KEY`; brak fallbacku na `SESSION_SECRET`. `WEARABLES_ENCRYPTION_KEY_PREVIOUS` pozwala odczytać tokeny zaszyfrowane starym kluczem w czasie rotacji.
+- `code_verifier` w `wearable_oauth_states` jest usuwany razem ze `state` po callbacku; nie trafia do API ani logów.
+- `refresh_token_expires_at` jest sprawdzane przed odświeżeniem; wygasły refresh token wymaga ponownego połączenia.
 - `raw_payload` nie jest zwracany przez API.
-- `DELETE /api/wearables/{provider}` usuwa wiersze metryk i połączenia w jednej transakcji.
+- `DELETE /api/wearables/{provider}` najpierw próbuje wycofać dostęp u dostawcy, a potem usuwa wiersze metryk i połączenia w jednej transakcji.
 - Apple `device_token_hash` to SHA-256; sam token jest zwracany tylko przy parowaniu.
 
 ## MariaDB

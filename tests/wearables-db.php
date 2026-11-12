@@ -16,11 +16,11 @@ function out(array $data): never
     exit(0);
 }
 
-function enc(string $plain, \AlphaVault\Config $config): string
+function enc(string $plain, \AlphaVault\Config $config, bool $previous = false, ?string $overrideKey = null): string
 {
-    $secret = (string) ($config->wearables['encryptionKey'] ?? '');
+    $secret = $overrideKey ?? (string) ($config->wearables[$previous ? 'encryptionKeyPrevious' : 'encryptionKey'] ?? '');
     if ($secret === '') {
-        throw new RuntimeException('Brak WEARABLES_ENCRYPTION_KEY.');
+        throw new RuntimeException('Brak klucza szyfrowania.');
     }
     $key = hash('sha256', $secret . '|alpha-vault-wearables', true);
     $iv = random_bytes(12);
@@ -65,6 +65,37 @@ if ($command === 'set-access') {
                 last_sync_status = NULL, last_error = NULL
           WHERE provider = ?',
         [enc('fake-access-' . $provider . '-' . $suffix, $config), $provider]
+    );
+    out(['ok' => true]);
+}
+
+if ($command === 'set-access-key') {
+    $provider = (string) ($argv[2] ?? '');
+    $suffix = (string) ($argv[3] ?? '');
+    $keyName = (string) ($argv[4] ?? 'current');
+    $db->execute(
+        'UPDATE wearable_connections
+            SET access_token_enc = ?, token_expires_at = UTC_TIMESTAMP() + INTERVAL 1 HOUR,
+                last_sync_status = NULL, last_error = NULL
+          WHERE provider = ?',
+        [enc('fake-access-' . $provider . '-' . $suffix, $config, $keyName === 'previous'), $provider]
+    );
+    out(['ok' => true]);
+}
+
+if ($command === 'set-access-unknown-key') {
+    $provider = (string) ($argv[2] ?? '');
+    $unknown = bin2hex(random_bytes(32));
+    $db->execute(
+        'UPDATE wearable_connections
+            SET access_token_enc = ?, refresh_token_enc = ?, token_expires_at = UTC_TIMESTAMP() + INTERVAL 1 HOUR,
+                last_sync_status = NULL, last_error = NULL
+          WHERE provider = ?',
+        [
+            enc('fake-access-' . $provider . '-unknown', $config, false, $unknown),
+            enc('fake-refresh-' . $provider . '-unknown', $config, false, $unknown),
+            $provider,
+        ]
     );
     out(['ok' => true]);
 }

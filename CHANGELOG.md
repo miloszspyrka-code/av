@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.7.0 - 2026-11-12
+
+### Zmienione
+- Oura: OAuth2 Authorization Code + PKCE S256, scope `daily` zamiast nieistniejącego `sleep`, paginacja API v2 i wymagany `User-Agent`.
+- WHOOP: API v2 (`/developer/v2/recovery`, `/developer/v2/activity/sleep`), scope `read:recovery read:sleep offline`, obsługa rotacji refresh tokenów.
+- Garmin: OAuth2 PKCE S256 z tokenem `https://diauth.garmin.com/di-oauth2-service/oauth/token`, pobieranie User ID i uprawnień, wyrejestrowanie przez `DELETE /wellness-api/rest/user/registration`. Business Starter jest push-only; do czasu adaptera push status to `awaiting_provider_spec`, bez udawania pull.
+- Tokeny: wymagany `WEARABLES_ENCRYPTION_KEY` bez fallbacku na `SESSION_SECRET`, rotacja przez `WEARABLES_ENCRYPTION_KEY_PREVIOUS`, `refresh_token_expires_at`, blokada `GET_LOCK` i atomowy zapis nowego refresh tokenu.
+- Statusy urządzeń: `not_configured`, `ready_to_connect`, `pending_authorization`, `connected`, `syncing`, `sync_error`, `token_expired`, `revoked`, `awaiting_provider_access`, `awaiting_provider_spec`.
+- Odłączenie wycofuje dostęp u dostawcy, a potem usuwa tokeny i metryki.
+- Migracja addytywna: `wearable_oauth_states.code_verifier`, `wearable_connections.refresh_token_expires_at`.
+
+### Testy
+- `npm run test:wearables`: 42/42 PASS (PKCE, state, rotacja tokenów i klucza, błędy 401/429/JSON, izolacja użytkowników, Garmin push pending, UI).
+- `tests/wearables-config.test.php`: 4/4 PASS (brak fallbacku klucza, start OAuth 503).
+
 ## 3.6.0 - 2026-11-12
 
 ### Dodane

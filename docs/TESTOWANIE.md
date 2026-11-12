@@ -35,21 +35,30 @@ $env:APP_URL = "http://127.0.0.1:4174"
 npm run test:ui:empty
 ```
 
-## Urządzenia zdrowotne — 33 scenariusze
+## Urządzenia zdrowotne — 42 scenariusze + 4 testy konfiguracji
 
 `npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
 
 Zakres:
 
 - `GET /api/wearables` bez sesji = 401,
-- OAuth2 Garmin/Oura/Whoop: start → authorize → callback → token → dane → gotowość,
-- poprawność snu (312 min), HRV (38 ms), tętna (61), Body Battery (34) i baseline (HRV 52),
-- ręczna synchronizacja zwraca 14 dni,
-- odłączenie usuwa połączenie, metryki i baseline,
+- OAuth2 + PKCE: start → authorize → callback → token → dane → gotowość dla Oura i Garmin; Whoop bez PKCE,
+- scope Oura `daily`, Whoop `read:recovery read:sleep offline`, Garmin bez modyfikowalnego scope,
+- jednorazowy `state`, wygasły `state`, błędny `code_verifier` = 502,
+- rotacja refresh tokenów, brak podwójnego odświeżania, wygasły refresh token = 401,
+- mapowanie 401/429/niepoprawnego JSON, powrót do `connected`,
+- rotacja klucza AES z `WEARABLES_ENCRYPTION_KEY_PREVIOUS`, błędny klucz = `token_expired`,
+- izolacja użytkowników: odczyt i DELETE nie dotykają cudzego połączenia,
+- Garmin: OAuth2 PKCE, User ID, uprawnienia, brak danych pull, `status=awaiting_provider_spec`,
+- poprawność snu (312 min), HRV (38 ms), tętna (61) i baseline (HRV 52) dla Oura/Whoop,
+- ręczna synchronizacja zwraca 14 dni (paginacja Oura i Whoop v2),
+- odłączenie wycofuje dostęp u dostawcy i usuwa połączenie, metryki i baseline,
 - Apple: jednorazowy kod parowania, ingest dwóch dni, token urządzenia, odrzucenie powtórzonego kodu i złego tokenu,
 - gotowość łączy urządzenie i check-in (73/100),
-- UI: puste pola bez urządzenia, check-in 80/100, połączenie i metryki dla Garmin/Oura/Whoop, odłączenie czyści pola, Apple przez kod parowania, brak błędów JS,
-- brak tokenów dostawców w odpowiedziach API.
+- UI: puste pola bez urządzenia, check-in 80/100, połączenie i metryki dla Oura/Whoop, Garmin OAuth bez danych push, odłączenie czyści pola, Apple przez kod parowania, brak błędów JS,
+- brak tokenów dostawców w odpowiedziach API i logach serwera.
+
+`tests/wearables-config.test.php` (4/4) sprawdza, że brak `WEARABLES_ENCRYPTION_KEY` nie jest maskowany przez `SESSION_SECRET`, Apple działa bez OAuth, start OAuth zwraca 503, a po ustawieniu klucza integracja jest gotowa.
 
 Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przechodzi, a część UI jest jawnie pominięta.
 
