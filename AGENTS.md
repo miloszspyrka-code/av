@@ -189,6 +189,7 @@ PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
 npm test                 # API 23/23
 npm run test:roles       # rola: login + cron recheck 18/18
 npm run test:prop        # silnik prop challenge 27/27 (bez serwera)
+npm run test:router      # adresy podstron 18/18 (bez serwera)
 npm run test:ui          # UI 54/54 (Chrome/Edge)
 npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 12/12 (osobny serwer, guild bez wydarzeń)

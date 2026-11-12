@@ -313,3 +313,13 @@ To celowy fallback, nie drugi równoległy backend.
 | Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
 
 Powiadomienie o zamknięciu powstaje po stronie klienta, więc działa, gdy panel jest otwarty albo gdy transakcję zamyka się w panelu. Powiadomienie „po zamknięciu na giełdzie” przy zamkniętej aplikacji wymaga workera giełdowego i Web Push z VAPID — to osobny zakres.
+
+---
+
+## 19. Adresy podstron
+
+Każdy widok ma własny, czytelny adres w hashu, więc link można wysłać lub dodać do zakładek:
+
+`#/pulpit` · `#/plan` · `#/dziennik` · `#/playbook` · `#/nowa-transakcja` · `#/kalkulator` · `#/prop-challenge` · `#/akademia` · `#/statystyki` · `#/podatki` · `#/mentor-ai` · `#/kalendarz` · `#/cialo-i-glowa` · `#/gieldy` · `#/konto`
+
+Stare krótkie adresy (`#/trans`, `#/akad`, `#/ust`, `#/stat`, `#/kal`, `#/cialo`, …) nadal otwierają właściwy widok i są automatycznie przepisywane na czytelny slug. Pełna tabela i zasady: `DOCUMENTATION.md §11.1a`.

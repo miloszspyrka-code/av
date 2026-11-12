@@ -5,6 +5,28 @@
 
   /* ---------- routing ---------- */
   AV.views = ['pulpit', 'plan', 'trans', 'play', 'nowa', 'kalk', 'prop', 'akad', 'stat', 'tax', 'mentor', 'kal', 'cialo', 'gieldy', 'ust'];
+  /* Czytelne adresy podstron: id widoku -> slug w URL (bez znaków diakrytycznych). */
+  AV.viewSlugs = {
+    pulpit: 'pulpit',
+    plan: 'plan',
+    trans: 'dziennik',
+    play: 'playbook',
+    nowa: 'nowa-transakcja',
+    kalk: 'kalkulator',
+    prop: 'prop-challenge',
+    akad: 'akademia',
+    stat: 'statystyki',
+    tax: 'podatki',
+    mentor: 'mentor-ai',
+    kal: 'kalendarz',
+    cialo: 'cialo-i-glowa',
+    gieldy: 'gieldy',
+    ust: 'konto'
+  };
+  /* Slug -> id widoku. Stare krótkie adresy (#/akad) nadal działają. */
+  AV.slugViews = {};
+  AV.views.forEach((id) => { AV.slugViews[AV.viewSlugs[id] || id] = id; AV.slugViews[id] = id; });
+  AV.viewSlug = (v) => AV.viewSlugs[v] || v;
   AV.currentView = 'pulpit';
   AV.showView = (v) => {
     if (!AV.views.includes(v)) v = 'pulpit';
@@ -13,7 +35,7 @@
     $$('.navg button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
     $('#mw')?.classList.remove('open');
     window.scrollTo(0, 0);
-    try { history.replaceState(null, '', '#/' + v); } catch {}
+    try { history.replaceState(null, '', '#/' + AV.viewSlug(v)); } catch {}
     if (v === 'trans') AV.renderJournal();
     if (v === 'stat') AV.renderStats();
     if (v === 'prop' && AV.renderProp) AV.renderProp();
@@ -1439,7 +1461,10 @@
     $$('#qaG div').forEach((d) => d.onclick = () => $$('#qaG div').forEach((x) => x.classList.toggle('on', x === d)));
   };
 
-  AV.viewFromHash = () => (location.hash || '').replace(/^#\/?/, '') || 'pulpit';
+  AV.viewFromHash = () => {
+    const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].replace(/\/+$/, '').trim().toLowerCase();
+    return AV.slugViews[raw] || 'pulpit';
+  };
 
   /* ---------- init ---------- */
   AV.init = async () => {
@@ -1494,7 +1519,7 @@
     if (connected && AV.api.authenticated) {
       const label = AV.api.wearables?.devices?.[connected]?.label || connected;
       AV.toast(params.get('sync') === 'error' ? label + ' połączony, ale pierwsza synchronizacja się nie udała.' : label + ' połączony.');
-      history.replaceState(null, '', location.pathname + '#cialo');
+      AV.showView('cialo');
     }
     setInterval(AV.tickCountdowns, 1000);
     setInterval(AV.loadQuotes, 60000);
