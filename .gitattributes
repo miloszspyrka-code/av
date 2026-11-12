@@ -10,3 +10,4 @@
 *.sql text eol=lf
 *.md text eol=lf
 *.json text eol=lf
+scripts/local.env.example text eol=lf
