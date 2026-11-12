@@ -58,14 +58,15 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `DISCORD_REQUIRED_ROLE_ID` | ID roli Alpha |
 | `DISCORD_BOT_TOKEN` | token bota read-only do scheduled events |
 | `ADMIN_DISCORD_IDS` | opcjonalna lista Discord ID administratorów (po przecinku) |
-| `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja Oura (opcjonalne; bez nich kafelek jest nieaktywny) |
-| `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja Whoop (opcjonalne) |
-| `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja Garmin Health API (opcjonalne; wymaga zatwierdzenia partnera) |
-| `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | endpointy przydzielone przez Garmin |
-| `WEARABLES_ENCRYPTION_KEY` | opcjonalny klucz AES tokenów urządzeń |
+| `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja OAuth2 w Oura Cloud (scope `daily`; bez nich kafelek jest nieaktywny) |
+| `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja OAuth2 w WHOOP Developer Dashboard (scope `read:recovery read:sleep offline`) |
+| `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja w Garmin Connect Developer Program (Business Starter/Enterprise; Personal API nie jest dozwolone dla wielu użytkowników) |
+| `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | domyślnie `https://connect.garmin.com/oauth2Confirm`, `https://diauth.garmin.com/di-oauth2-service/oauth/token`, `https://apis.garmin.com` |
+| `WEARABLES_ENCRYPTION_KEY` | wymagany klucz AES-256-GCM tokenów urządzeń; bez niego integracje OAuth są nieaktywne (brak fallbacku na `SESSION_SECRET`) |
 | `WEARABLES_ENCRYPTION_KEY_PREVIOUS` | poprzedni klucz AES do odczytu starych tokenów w czasie rotacji |
-| `GARMIN_ACCESS_PLAN`, `GARMIN_DATA_DELIVERY`, `GARMIN_PUSH_READY` | status dostępu Garmin Health API i tryb dostarczania danych (push/pull) |
-| `GARMIN_REVOKE_URL` | endpoint wyrejestrowania Garmin |
+| `GARMIN_ACCESS_PLAN` | `starter` lub `enterprise`; puste oznacza brak zatwierdzonego dostępu |
+| `GARMIN_DATA_DELIVERY`, `GARMIN_PUSH_READY` | tryb dostarczania danych Garmin; Starter jest push-only, adapter push nie jest jeszcze wdrożony |
+| `GARMIN_REVOKE_URL` | endpoint wyrejestrowania Garmin (`/wellness-api/rest/user/registration`) |
 | `QUOTES_BASE`, `QUOTES_TTL`, `QUOTES_CACHE` | notowania rynkowe: URL dostawcy, TTL cache w sekundach (0–3600), plik cache |
 
 Zmienne repozytorium:
@@ -99,7 +100,13 @@ https://alphavault.pl/auth/wearables/oura/callback
 https://alphavault.pl/auth/wearables/whoop/callback
 ```
 
-Oura: scope `daily sleep heartrate personal`. Whoop: `read:recovery read:sleep read:profile offline`. Garmin: wartości `GARMIN_*` pochodzą z programu Garmin Health API i są przydzielane po zatwierdzeniu partnera; bez nich kafelek Garmin jest nieaktywny, a reszta działa.
+Oura używa OAuth2 Authorization Code + PKCE (S256). Minimalny scope to `daily` (dzienne podsumowania snu, gotowości i aktywności); nie żądaj `sleep`, bo taki scope nie istnieje. Wymagany jest nagłówek `User-Agent`, a refresh token jest jednorazowy i rotowany.
+
+WHOOP używa OAuth2 Authorization Code i API v2 (`/developer/v2/recovery`, `/developer/v2/activity/sleep`). Scope: `read:recovery read:sleep offline`. `offline` jest wymagany do otrzymania refresh tokenu; WHOOP unieważnia poprzedni token po odświeżeniu, więc kod zapisuje nowy zestaw atomowo.
+
+Garmin używa OAuth2 PKCE (S256), `code_verifier` jest przechowywany po stronie serwera. Authorization: `https://connect.garmin.com/oauth2Confirm`; token: `https://diauth.garmin.com/di-oauth2-service/oauth/token`; API: `https://apis.garmin.com`. Po autoryzacji kod pobiera User ID i przyznane uprawnienia oraz wyrejestrowuje użytkownika przy odłączaniu. **Business Starter jest push-only i nie daje historii** — obecny adapter danych Garmina jest oznaczony jako `awaiting_provider_spec`; nie jest używany pull. Szczegółowe schematy push są dostępne dopiero w Garmin Developer Portal. Enterprise może zapewnić push lub Ping/Pull i historię, ale wymaga odrębnego dostępu.
+
+Samo ustawienie `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` nie aktywuje Garmina. Wymagane jest zatwierdzenie planu (`GARMIN_ACCESS_PLAN=starter|enterprise`) i ukończenie adaptera push. Personal API key jest przeznaczony wyłącznie do własnych danych i nie może być używany w aplikacji wieloużytkownikowej.
 
 Apple Watch nie używa OAuth. Panel generuje kod `AV-XXXX-XXXX`; aplikacja iPhone wysyła nim `POST /api/wearables/apple/ingest` i dostaje token urządzenia. Sama aplikacja iPhone nie jest częścią tego repozytorium — backend jest gotowy, ale do realnego użycia potrzebna jest aplikacja klienta.
 

@@ -560,7 +560,13 @@ components:
               provider: { type: string }
               label: { type: string }
               configured: { type: boolean }
+              canConnect: { type: boolean }
               connected: { type: boolean }
+              oauthConnected: { type: boolean }
+              dataReady: { type: boolean }
+              status:
+                type: string
+                enum: [not_configured, ready_to_connect, pending_authorization, connected, syncing, sync_error, token_expired, revoked, awaiting_provider_access, awaiting_provider_spec]
               lastSyncAt: { type: [string, 'null'], format: date-time }
               lastSyncStatus: { type: [string, 'null'] }
               lastError: { type: [string, 'null'] }

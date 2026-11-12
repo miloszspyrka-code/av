@@ -28,6 +28,7 @@ const php = process.env.PHP_BIN || (fs.existsSync('C:/Users/milos/.local/php83/p
   : 'php');
 
 const results = [];
+const serverLogs = [];
 let cookie = '';
 let appServer = null;
 let fakeServer = null;
@@ -45,6 +46,7 @@ function baseEnv() {
     APP_ENV: 'local',
     ALLOW_DEMO_LOGIN: 'true',
     WEARABLES_ENCRYPTION_KEY: 'wearables-e2e-key-0123456789abcdef',
+    WEARABLES_ENCRYPTION_KEY_PREVIOUS: 'wearables-e2e-previous-key-0123456789',
     GARMIN_CLIENT_ID: 'fake-garmin-client',
     GARMIN_CLIENT_SECRET: 'fake-garmin-secret',
     GARMIN_AUTHORIZE_URL: `${FAKE}/oauth/garmin/authorize`,
@@ -85,6 +87,7 @@ function startServer(args, label) {
   const child = spawn(php, args, { cwd: ROOT, env: baseEnv(), stdio: ['ignore', 'pipe', 'pipe'] });
   child.stderr.on('data', (data) => {
     const text = String(data);
+    serverLogs.push(text);
     if (process.env.WEARABLES_TEST_VERBOSE) process.stderr.write(`[${label}] ${text}`);
   });
   return child;
@@ -152,6 +155,21 @@ async function startFlow(provider) {
   assert.equal(start.res.status, 302, 'start ' + provider + ': ' + start.text);
   const authorize = start.res.headers.get('location') || '';
   assert.ok(authorize.startsWith(FAKE + '/oauth/' + provider + '/authorize'), 'authorize URL: ' + authorize);
+  const authUrl = new URL(authorize);
+  if (provider === 'garmin' || provider === 'oura') {
+    assert.equal(authUrl.searchParams.get('code_challenge_method'), 'S256');
+    assert.match(authUrl.searchParams.get('code_challenge') || '', /^[A-Za-z0-9_-]{43}$/);
+  }
+  if (provider === 'oura') {
+    assert.equal(authUrl.searchParams.get('scope'), 'daily');
+  }
+  if (provider === 'whoop') {
+    const scope = authUrl.searchParams.get('scope') || '';
+    assert.ok(scope.includes('read:recovery'));
+    assert.ok(scope.includes('read:sleep'));
+    assert.ok(scope.includes('offline'));
+    assert.ok(!scope.includes('read:profile'));
+  }
   const providerRes = await fetch(authorize, { redirect: 'manual' });
   assert.equal(providerRes.status, 302, 'provider authorize');
   const callback = providerRes.headers.get('location') || '';
@@ -284,6 +302,12 @@ async function main() {
   fs.rmSync(FAKE_STATE, { force: true });
   const env = baseEnv();
   execFileSync(php, ['app/db/migrate.php'], { cwd: ROOT, env, stdio: 'pipe' });
+  const configTest = execFileSync(php, [path.join(ROOT, 'tests', 'wearables-config.test.php')], {
+    cwd: ROOT,
+    env,
+    encoding: 'utf8'
+  });
+  process.stdout.write(configTest);
 
   fakeServer = startServer(['-S', `127.0.0.1:${FAKE_PORT}`, path.join(ROOT, 'tests', 'fake-health-provider.php')], 'fake');
   appServer = startServer(['-S', `127.0.0.1:${APP_PORT}`, '-t', path.join(ROOT, 'public'), path.join(ROOT, 'public', 'router.php')], 'app');
@@ -500,6 +524,42 @@ async function main() {
   assert.equal(current.json.devices.oura.status, 'connected');
   log('mapowanie 401/429/niepoprawnego JSON i powrót do connected', true);
 
+  db(['set-access-key', 'oura', 'previous', 'previous']);
+  const previousKeySync = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(previousKeySync.res.status, 200, previousKeySync.text);
+  log('rotacja klucza: token z poprzednim kluczem odszyfrowany', true);
+
+  db(['set-access-unknown-key', 'oura']);
+  const unknownKeySync = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(unknownKeySync.res.status, 401, unknownKeySync.text);
+  current = await req('/api/wearables');
+  assert.equal(current.json.devices.oura.status, 'token_expired');
+  log('błędny klucz szyfrowania = token_expired', true);
+
+  await connect('oura');
+  const refreshCountBefore = JSON.parse(fs.readFileSync(FAKE_STATE, 'utf8')).oura_refresh_count || 0;
+  db(['expire-token', 'oura']);
+  db(['expire-refresh', 'oura']);
+  const expiredRefresh = await req('/api/wearables/oura/sync', {
+    method: 'POST',
+    headers: { Origin: ORIGIN },
+    body: '{}'
+  });
+  assert.equal(expiredRefresh.res.status, 401, expiredRefresh.text);
+  current = await req('/api/wearables');
+  assert.equal(current.json.devices.oura.status, 'token_expired');
+  const refreshCountAfter = JSON.parse(fs.readFileSync(FAKE_STATE, 'utf8')).oura_refresh_count || 0;
+  assert.equal(refreshCountAfter, refreshCountBefore);
+  log('wygasły refresh token = 401 bez niepotrzebnego odświeżania', true);
+
   await req('/api/wearables/oura', { method: 'DELETE', headers: { Origin: ORIGIN } });
 
   // Izolacja użytkowników: cudze połączenie nie jest widoczne ani usuwalne.
@@ -607,6 +667,11 @@ async function main() {
 
   await clearCheckins();
   await runUiChecks();
+
+  const joinedLogs = serverLogs.join('');
+  assert.ok(!joinedLogs.includes('fake-access'), 'logi nie zawierają access tokenu');
+  assert.ok(!joinedLogs.includes('fake-refresh'), 'logi nie zawierają refresh tokenu');
+  log('logi serwera bez tokenów', true);
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} PASS`);

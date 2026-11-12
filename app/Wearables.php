@@ -25,8 +25,6 @@ final class Wearables
 
     private const TOKEN_REFRESH_MARGIN = 120;
 
-    private const OUTBOUND_USER_AGENT = 'AlphaVault/3.4 (wearables)';
-
     private const METRIC_RANGE = [
         'sleepMinutes' => [0, 1440],
         'hrvMs' => [0, 400],
@@ -1251,7 +1249,7 @@ final class Wearables
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_CONNECTTIMEOUT => 8,
             CURLOPT_TIMEOUT => 20,
-            CURLOPT_HTTPHEADER => array_merge($headers, ['User-Agent: ' . self::OUTBOUND_USER_AGENT]),
+            CURLOPT_HTTPHEADER => array_merge($headers, ['User-Agent: AlphaVault/' . $this->config->version . ' (wearables)']),
             CURLOPT_MAXREDIRS => 0,
             CURLOPT_ENCODING => '',
         ]);
