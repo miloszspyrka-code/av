@@ -916,11 +916,7 @@
       if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
       await AV.loadWearables();
       AV.renderBody();
-      if (data.pending === 'provider_spec') {
-        AV.toast('Garmin jest połączony. Dane pojawią się po wdrożeniu odbioru push.');
-      } else {
-        AV.toast('Zsynchronizowano ' + (AV.api.wearables?.devices?.[provider]?.label || provider) + '.');
-      }
+      AV.toast('Zsynchronizowano ' + (AV.api.wearables?.devices?.[provider]?.label || provider) + '.');
     } catch (err) {
       AV.toast('Synchronizacja nie powiodła się: ' + err.message);
     }

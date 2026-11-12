@@ -1,6 +1,6 @@
 {
   "name": "alpha-vault",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "private": true,
   "description": "Alpha Vault — PHP 8.3 backend, MySQL, Discord OAuth2",
   "scripts": {
