@@ -648,13 +648,13 @@
     AV.saveNow();
   };
   AV.renderQ = () => {
-    AV.setHTML('#mChips', AV.MENTOR.map((x, i) => '<span class="chip" data-q="' + i + '">' + AV.esc(AV.genderize(x.q, AV.state.user.gender)) + '</span>').join(''));
+    AV.setHTML('#mChips', AV.MENTOR.map((x, i) => '<span class="chip" data-q="' + i + '">' + AV.esc(x.q) + '</span>').join(''));
   };
   AV.ask = (i) => {
     if (AV._thinking) return;
     const q = AV.MENTOR[i]; if (!q) return;
     AV._thinking = true;
-    AV.state.chat.push({ role: 'u', html: AV.esc(AV.genderize(q.q, AV.state.user.gender)), at: Date.now() });
+    AV.state.chat.push({ role: 'u', html: AV.esc(q.q), at: Date.now() });
     AV.renderMentor();
     const msgs = $('#msgs');
     msgs.insertAdjacentHTML('beforeend', '<div class="msg a" id="typ"><div class="who">Î± MENTOR</div><span class="typing"><i></i><i></i><i></i></span></div>');

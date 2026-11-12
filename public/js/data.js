@@ -46,12 +46,12 @@
     ['MM', 'SL przesuwasz tylko w stronę zysku. Nigdy dalej od ceny.'],
     ['MM', 'Wielkość pozycji liczysz w Kalkulatorze Alpha, nie na oko.'],
     ['Mental', 'Wdech na 4 sekundy, zatrzymanie na 4, wydech na 4. Dopiero teraz klikasz.'],
-    ['Mental', 'Czy wszedł[abyś|byś] tutaj, gdyby cena stała w miejscu od godziny? Jeśli nie, to emocja, a nie setup.'],
+    ['Mental', 'Czy to wejście miałoby sens, gdyby cena stała w miejscu od godziny? Jeśli nie, to emocja, a nie setup.'],
     ['Mental', 'Wyobraź sobie, że SL właśnie się zrealizował. Jeśli to boli, pozycja jest za duża.'],
     ['Mental', 'Ostatnia transakcja nie ma nic wspólnego z tą. Rynek nie pamięta, Ty też nie musisz.'],
     ['Mental', 'Nie musisz łapać każdego ruchu. Wystarczy łapać swoje.'],
     ['Mental', 'Szybsze bicie serca to sygnał emocji, a nie setupu. Odczekaj 2 minuty.'],
-    ['Mental', 'Plan robił[aś|eś] rano, w spokojnej głowie. Teraz tylko go wykonujesz.'],
+    ['Mental', 'Plan powstaje rano, w spokojnej głowie. Teraz tylko go wykonujesz.'],
     ['Forma', 'Gotowość dziś {gotowosc}/100. Przy wyniku poniżej 60 grasz połową pozycji.'],
     ['Rynek', 'Sprawdź kalendarz: czy w ciągu 15 minut nie ma danych ★★★? Najbliższe: {event}, {eventWhen} {eventTime}.'],
     ['Rynek', 'Czy wejście jest na poziomie z planu dnia? Jeśli nie, to nie jest Twój trade.']
@@ -64,13 +64,13 @@
 
   AV.MENTOR = [
     {
-      q: 'Stracił[am|em] dziś i chcę się odkuć',
+      q: 'Dziś strata i chęć odkuwania się',
       a: [
-        'Rozumiem, każdy to zna. Ale spójrz na swoje liczby: po stracie otworzył[aś|eś] {poStracie} pozycji na minusie, razem {poStracieWynik}. Odkuwanie się to nie strategia, to emocja z dźwignią.<br><br><b class="al">Krok:</b> zamknij platformę na 30 minut i zapisz w dzienniku, co teraz czujesz.',
-        '{imie}, rynek nie wie, że stracił[aś|eś]. I nie odda Ci tego tylko dlatego, że bardzo chcesz. Masz dziś {straty} z {limit} strat. Ten limit ustawił[aś|eś] w spokojnej głowie właśnie na taki moment.<br><br><b class="al">Krok:</b> zaufaj tamtej, spokojnej wersji siebie.',
+        'Rozumiem, każdy to zna. Ale spójrz na swoje liczby: po stracie pojawiło się {poStracie} pozycji na minusie, razem {poStracieWynik}. Odkuwanie się to nie strategia, to emocja z dźwignią.<br><br><b class="al">Krok:</b> zamknij platformę na 30 minut i zapisz w dzienniku, co teraz czujesz.',
+        '{imie}, rynek nie wie o stracie. I nie odda Ci tego tylko dlatego, że bardzo chcesz. Masz dziś {straty} z {limit} strat. Ten limit powstał w spokojnej głowie właśnie na taki moment.<br><br><b class="al">Krok:</b> zaufaj tamtej, spokojnej wersji siebie.',
         'Myśl „muszę to odrobić” kosztowała Cię już {poStracieWynik}. Najlepsi traderzy po stracie robią najmniej, nie najwięcej.<br><br><b class="al">Krok:</b> wstań od biurka na 10 minut. Wróć tylko do dziennika, nie do wykresu.',
         'Dziś jesteś na {wynikDzis}. To boli, ale to nie jest Twój wynik miesiąca. Ten zależy od tego, co zrobisz w najbliższej godzinie.<br><br><b class="al">Krok:</b> zero nowych pozycji do jutra. Jutro wracasz z planem dnia.',
-        'Spał[aś|eś] {sen}, gotowość masz {gotowosc}/100 i właśnie zaliczył[aś|eś] stratę. Gorszego zestawu do odrabiania nie ma.<br><br><b class="al">Krok:</b> dziś trenujesz cierpliwość, nie wejścia.',
+        'Gotowość {gotowosc}/100 i strata. Gorszego zestawu do odrabiania nie ma.<br><br><b class="al">Krok:</b> dziś trenujesz cierpliwość, nie wejścia.',
         'Amator po stracie zwiększa pozycję. Zawodowiec ją zmniejsza albo odpuszcza. Twoje dane mówią jasno: wejścia po stracie mają u Ciebie najgorszą skuteczność ze wszystkich.<br><br><b class="al">Krok:</b> jeśli już musisz, to połowa pozycji i tylko setup z planu.'
       ]
     },
@@ -80,16 +80,16 @@
         'Krótko: nie teraz. Przy FOMO masz {fomoWr}% skuteczności, ogólnie {wr}%. To {fomoN} transakcji i {fomoWynik}.<br><br><b class="al">Krok:</b> ustaw alert na poziomie z planu i odejdź. Jak cena tam wróci, wejdziesz na swoich warunkach.',
         'Jeśli ruch poszedł bez Ciebie, to nie był Twój ruch. Rynek da jutro kolejny.<br><br><b class="al">Krok:</b> 15 minut przerwy, potem checklista. Jeśli wejście nie jest na poziomie z planu, odpuszczasz.',
         'FOMO to uczucie, że coś Ci ucieka. A naprawdę ucieka Ci tylko kapitał: {fomoWynik} z {fomoN} takich wejść.<br><br><b class="al">Krok:</b> zapisz w dzienniku, co widzisz na wykresie, i wróć za kwadrans.',
-        'Jedno pytanie: czy wszedł[abyś|byś] tutaj, gdyby cena stała w miejscu od godziny? Jeśli nie, to wchodzisz w emocję, a nie w setup.<br><br><b class="al">Krok:</b> sprawdź punkt 2 checklisty: „poziom z planu”.',
+        'Jedno pytanie: czy to wejście miałoby sens, gdyby cena stała w miejscu od godziny? Jeśli nie, to wchodzisz w emocję, a nie w setup.<br><br><b class="al">Krok:</b> sprawdź punkt 2 checklisty: „poziom z planu”.',
         'Najdroższe zdanie w tradingu to „jeszcze zdążę”. U Ciebie kosztowało już {fomoWynik}.<br><br><b class="al">Krok:</b> jeśli bardzo chcesz, to maksymalnie połowa pozycji i SL przed wejściem.',
-        'Dobrze, że to zauważył[aś|eś]. Większość ludzi klika, zanim w ogóle nazwie to uczucie.<br><br><b class="al">Krok:</b> zaznacz FOMO w check-inie i odczekaj 15 minut. Jeśli setup dalej będzie ważny, wtedy wracamy do tematu.'
+        'Dobrze, że to zostało zauważone. Większość ludzi klika, zanim w ogóle nazwie to uczucie.<br><br><b class="al">Krok:</b> zaznacz FOMO w check-inie i odczekaj 15 minut. Jeśli setup dalej będzie ważny, wtedy wracamy do tematu.'
       ]
     },
     {
       q: 'Co najbardziej psuje moje wyniki?',
       a: [
         'Trzy rzeczy, w tej kolejności: transakcje z oceną C ({cN} sztuk, {cWynik}), wejścia po stracie ({poStracieWynik}) i granie {godz} ({godzWr}% skuteczności).<br><br><b class="al">Krok:</b> wytnij tylko pierwszy punkt, a wynik rośnie o ponad 130.',
-        'Na pewno nie strategia. Twoje transakcje A mają {aWr}% skuteczności. Wynik psują dni, w które w ogóle nie powinn[aś|eś] grać: po słabym śnie, po stracie i wieczorem.<br><br><b class="al">Krok:</b> przy gotowości poniżej 60 grasz połową pozycji.',
+        'Na pewno nie strategia. Twoje transakcje A mają {aWr}% skuteczności. Wynik psują dni, w które lepiej nie grać: po słabym śnie, po stracie i wieczorem.<br><br><b class="al">Krok:</b> przy gotowości poniżej 60 grasz połową pozycji.',
         'Najwięcej zabiera Ci {para}: {paraWynik}. Najwięcej daje {dobraPara}: {dobraWynik}.<br><br><b class="al">Krok:</b> przez 2 tygodnie zero {para}. Różnicę zobaczysz na krzywej kapitału.',
         'Pomijanie checklisty. Z pełną masz {clFull}% skuteczności, bez niej {clNo}%. To nie drobiazg, to prawie dwa razy lepszy wynik.<br><br><b class="al">Krok:</b> żadnej transakcji poniżej 6/7.',
         'Pora dnia. {godz} masz {godzWr}% skuteczności. Rano jesteś zupełnie innym traderem.<br><br><b class="al">Krok:</b> ustaw w zasadach „nie handluję po 21:00”. Przypomnę Ci o tym.',
@@ -100,7 +100,7 @@
       q: 'Oceń mój dzień',
       a: [
         'Dziś: {tr} transakcje, wynik {wynikDzis}, zgodnie z planem {planZgodne}. Poranny trade na {dobraPara} był wzorowy, dwa kolejne to emocje.<br><br><b class="al">Ocena dnia: C+.</b> Plan dobry, wykonanie rozjechało się po pierwszej stracie.',
-        'Zacznę od dobrego: pierwsza transakcja miała pełną checklistę i SL. Potem przyszła strata i w 12 minut podjęł[aś|eś] dwie decyzje, których rano byś nie podpisał[a|].<br><br><b class="al">Lekcja:</b> po stracie przerwa, nie kolejny trade.',
+        'Zacznę od dobrego: pierwsza transakcja miała pełną checklistę i SL. Potem przyszła strata i w 12 minut pojawiły się dwie decyzje, których rano nikt by nie podpisał.<br><br><b class="al">Lekcja:</b> po stracie przerwa, nie kolejny trade.',
         'Liczby: {wynikDzis}, {straty} straty, gotowość {gotowosc}. Ale najważniejsze jest co innego: tryb ochronny zadziałał. To dobry dzień dla dyscypliny, nawet jeśli słaby dla konta.',
         'Gdyby dzień skończył się po pierwszej transakcji, byłby świetny. Wszystko, co przyszło potem, to próba odrobienia.<br><br><b class="al">Na jutro:</b> po pierwszej stracie robisz przerwę.',
         'Szczerze: 4/10. Plan był, ale przegrał z emocjami. Dobra wiadomość: wiesz dokładnie, co poszło nie tak, bo masz to w dzienniku.<br><br><b class="al">Krok:</b> dopisz do planu na jutro „po stracie 30 minut przerwy”.',
@@ -124,8 +124,8 @@
     '{imie}, {straty} straty dziś i limit osiągnięty. Wiem, że korci. Zamknij platformę, a jutro wrócisz z planem.',
     'Stop na chwilę. {straty} z {limit} strat to sygnał, żeby odpuścić, a nie przyspieszyć. Tryb ochronny jest po to, żeby chronić Cię przed tym impulsem.',
     'Hej {imie}. Dziś już wystarczy. Najlepsze, co możesz teraz zrobić dla konta, to nic.',
-    'Limit strat osiągnięty. Zawodowcy kończą dzień właśnie w takim momencie. Zapisz w dzienniku, co czuł[aś|eś], i odpocznij.',
-    '{imie}, po stracie otworzył[aś|eś] już {poStracie} pozycji na minusie. Nie dawaj dziś tej liczbie kolejnego punktu.'
+    'Limit strat osiągnięty. Zawodowcy kończą dzień właśnie w takim momencie. Zapisz w dzienniku, co się pojawiło, i odpocznij.',
+    '{imie}, po stracie pojawiło się już {poStracie} pozycji na minusie. Nie dawaj dziś tej liczbie kolejnego punktu.'
   ];
 
   /* ---------- kalendarz ---------- */
@@ -252,12 +252,12 @@
       const note = result == null
         ? 'Retest 68 500 z planu dnia. SL pod knotem, TP na oporze. Pozycja otwarta.'
         : win
-          ? 'Wejście zgodnie z planem, cierpliwe prowadzenie do TP. ' + (errors.includes('Za wczesne wyjście') ? 'Wyszłam wcześniej, niż zakładał plan.' : 'Bez pośpiechu, SL nietknięty.')
+          ? 'Wejście zgodnie z planem, cierpliwe prowadzenie do TP. ' + (errors.includes('Za wczesne wyjście') ? 'Wyjście było wcześniejsze, niż zakładał plan.' : 'Bez pośpiechu, SL nietknięty.')
           : 'Wejście ' + (errors.includes('Bez SL') ? 'bez stop lossa. ' : '') + (errors.includes('Gonienie ceny') ? 'Cena była już daleko od poziomu. ' : '') + 'Pozycja zamknięta na minusie.';
       const mentor = result == null
         ? 'Wzorowo: plan, pełna checklista, SL, spokojna głowa. Tak wyglądają Twoje najlepsze transakcje.'
         : win
-          ? (errors.includes('Za wczesne wyjście') ? 'Dobra transakcja, ale spójrz na MFE: cena poszła dalej, niż wyszedłeś. Zostawiasz część zysku na stole.' : 'Podręcznikowy trade: plan, checklista, SL i cierpliwość. Powtarzaj dokładnie to.')
+          ? (errors.includes('Za wczesne wyjście') ? 'Dobra transakcja, ale spójrz na MFE: cena poszła dalej niż planowane wyjście. Zostawiasz część zysku na stole.' : 'Podręcznikowy trade: plan, checklista, SL i cierpliwość. Powtarzaj dokładnie to.')
           : (errors.length ? 'Ta transakcja miała ' + errors.length + ' ' + AV.plural(errors.length, 'błąd', 'błędy', 'błędów') + ': ' + errors.join(', ') + '. To nie pech, to decyzja.' : 'Strata mieści się w planie. Sama strata nie jest błędem — błędem byłby brak SL albo za duża pozycja.');
       seq++;
       return {
@@ -403,7 +403,7 @@
       version: 2,
       user: {
         name: 'Kasia', email: 'kasia@example.com', joined: '2026-03-01',
-        avatar: null, gender: 'f', style: 'Day trader', markets: ['Krypto'],
+        avatar: null, style: 'Day trader', markets: ['Krypto'],
         motto: 'Plan. Cierpliwość. Bez odgrywania się.', goal: '+6% bez łamania zasad',
         currency: 'USDT', timezone: 'Polska (Warszawa)', hour12: false,
         accent: { a: '217,178,95', b: '#f1d48e' }, greeting: true
@@ -416,14 +416,14 @@
         maxLosses: 2, maxDailyLoss: 3, block: 'midnight',
         maxRisk: 1, rules: ['Max 1% ryzyka na transakcję', 'Zawsze stop loss', 'Po 2 stratach koniec dnia'],
         checklist: ['Trend wyższego TF', 'Poziom z planu', 'Potwierdzenie', 'SL przed wejściem', 'R:R ≥ 2', 'Brak makro 15 min', 'Spokojna głowa'],
-        devices: { garmin: true, apple: false, oura: false, whoop: false },
+        devices: { garmin: false, apple: false, oura: false, whoop: false },
         connections: {
           weex: { connected: true, lastSync: new Date().toISOString(), imported: 41, masked: 'wx_live_••••7f2a', perms: 'read-only' },
           okx: { connected: false }, bingx: { connected: false },
           mt: { connected: false, server: '', login: '', masked: '', code: 'AV-7K3Q-92XD', codeAt: Date.now() }
         }
       },
-      health: { sleepH: 5.2, sleepBase: 7.2, hrv: 38, hrvBase: 52, hr: 61, hrBase: 56, battery: 34 },
+      health: null,
       plans,
       trades,
       setups: [
