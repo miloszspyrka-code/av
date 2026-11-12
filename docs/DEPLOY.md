@@ -30,7 +30,7 @@ Migracja schematu:
 php ~/public_html/alphavault.pl/.app/app/db/migrate.php
 ```
 
-Wykonuje `db/schema.sql` (idempotentnie) i wpis w `schema_migrations`.
+Wykonuje `db/schema.sql` (idempotentnie), a następnie nieaplikowane pliki z `db/migrations/` i zapisuje ich wersje w `schema_migrations`.
 
 ## 3. Sekrety GitHub
 

@@ -27,6 +27,9 @@ final class ExchangeSync
         if ($row === null) {
             throw new IntegrationException('not_found', 'Nie znaleziono połączenia.', 404);
         }
+        if (!empty($row['pairing_hash'])) {
+            throw new IntegrationException('ea_push_only', 'Połączenie EA wysyła dane z MetaTrader; nie można go synchronizować z serwera.', 422);
+        }
         return $this->syncRecord($row);
     }
 
@@ -36,6 +39,10 @@ final class ExchangeSync
         $summaries = [];
         $deadline = microtime(true) + 22.0;
         foreach ($this->store->listForUser($userId) as $public) {
+            if (!empty($public['pairing'])) {
+                // EA push: brak danych do pobrania po stronie serwera.
+                continue;
+            }
             if ($onlyProvider !== null && $public['provider'] !== $onlyProvider) {
                 continue;
             }
@@ -159,10 +166,22 @@ final class ExchangeSync
                     $existing[(string) $trade['extId']] = true;
                 }
             }
-            $imports = $db->query(
-                'SELECT external_id FROM exchange_imports WHERE user_id = ? AND provider = ?',
-                [$userId, $provider]
-            );
+            $imports = [];
+            $wanted = [];
+            foreach ($trades as $trade) {
+                $wantedId = substr(trim((string) ($trade['extId'] ?? '')), 0, 191);
+                if ($wantedId !== '' && !isset($existing[$wantedId])) {
+                    $wanted[$wantedId] = true;
+                }
+            }
+            if ($wanted !== []) {
+                $wantedIds = array_keys($wanted);
+                $placeholders = implode(',', array_fill(0, count($wantedIds), '?'));
+                $imports = $db->query(
+                    'SELECT external_id FROM exchange_imports WHERE user_id = ? AND provider = ? AND external_id IN (' . $placeholders . ')',
+                    array_merge([$userId, $provider], $wantedIds)
+                );
+            }
             foreach ($imports as $import) {
                 $existing[(string) $import['external_id']] = true;
             }

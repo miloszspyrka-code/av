@@ -21,7 +21,7 @@ int OnInit()
       return(INIT_PARAMETERS_INCORRECT);
    }
    EventSetTimer(MathMax(1, InpTimerMin) * 60);
-   Print("AlphaVault: EA uruchomiony. Kod ", InpCode, ", endpoint ", InpEndpoint);
+   Print("AlphaVault: EA uruchomiony. Endpoint ", InpEndpoint);
    return(INIT_SUCCEEDED);
 }
 

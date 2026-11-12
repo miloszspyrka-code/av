@@ -458,10 +458,21 @@ try {
   await page.evaluate(() => document.getElementById('roleGate').classList.remove('on'));
 
   // wylogowanie
+  const leakMarker = 'E2E-LEAK-' + Date.now();
+  await page.evaluate((marker) => { AV.state.e2eLeakMarker = marker; AV.saveNow(); }, leakMarker);
+  await page.waitForTimeout(400);
   await page.evaluate(() => document.querySelector('#logout').click());
   await page.waitForURL(BASE + '/', { timeout: 10000 }).catch(() => {});
   await page.waitForFunction(() => window.AV?.api?.authenticated === false, null, { timeout: 10000 });
+  const cacheAfterLogout = await page.evaluate((marker) => ({
+    body: document.body.innerText.includes(marker),
+    state: JSON.stringify(window.AV?.state || {}).includes(marker),
+    keys: Object.keys(localStorage).filter((key) => key.startsWith('alphavault.'))
+  }), leakMarker);
   log('wylogowanie', await page.locator('#auth').isVisible());
+  log('wylogowanie czyści prywatny cache', !cacheAfterLogout.body && !cacheAfterLogout.state
+    && !cacheAfterLogout.keys.some((key) => key.startsWith('alphavault.state.v2') || key.startsWith('alphavault.state.v3')),
+    JSON.stringify(cacheAfterLogout.keys));
 } catch (err) {
   console.error('\nFAIL  test przerwany:', err.message);
   results.push({ name: 'test przerwany', ok: false, info: err.message });

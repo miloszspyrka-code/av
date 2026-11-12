@@ -556,7 +556,7 @@
   };
 
   AV.getDraft = () => {
-    try { return JSON.parse(AV.safeGet(AV.DRAFT_KEY) || '{}'); } catch { return {}; }
+    try { return JSON.parse(AV.safeGet(AV.draftKey()) || '{}'); } catch { return {}; }
   };
   AV.saveDraft = () => {
     const d = {
@@ -568,7 +568,7 @@
       checks: AV.ui.ntChecks || {}, grade: $('.gp.on')?.dataset.g || 'B',
       gradeManual: AV.ui.ntGradeManual, screens: AV.ui.ntScreens || {}
     };
-    AV.safeSet(AV.DRAFT_KEY, JSON.stringify(d));
+    AV.safeSet(AV.draftKey(), JSON.stringify(d));
   };
 
   AV.renderDrops = (screens) => {

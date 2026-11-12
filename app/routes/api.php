@@ -143,6 +143,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'revision' => (int) $row['revision'],
                 'bytes' => (int) $row['bytes'],
                 'updatedAt' => $row['updated_at'],
+                'userId' => (int) $current['id'],
             ]);
         }
 
@@ -151,9 +152,26 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             $auth->requireSameOrigin();
             $auth->rateLimit('state-save', 180, 60000);
             $body = Http::readJsonBody($config->maxStateBytes);
+            $ownerId = isset($body['ownerId']) && is_numeric($body['ownerId']) ? (int) $body['ownerId'] : null;
+            if ($ownerId !== null && $ownerId !== (int) $current['id']) {
+                Http::json([
+                    'error' => 'session_changed',
+                    'message' => 'Sesja w tej karcie należy do innego konta. Odśwież stronę.',
+                    'userId' => (int) $current['id'],
+                ], 409);
+            }
             $state = $body['state'] ?? null;
             if (!is_array($state)) {
                 Http::json(['error' => 'bad_state', 'message' => 'Pole state musi być obiektem JSON.'], 400);
+            }
+            $stateOwner = $state['user']['discordId'] ?? null;
+            if ($stateOwner !== null && $stateOwner !== '' && is_numeric($stateOwner)
+                && (int) $stateOwner !== (int) $current['id']) {
+                Http::json([
+                    'error' => 'session_changed',
+                    'message' => 'Stan należy do innego konta. Odśwież stronę.',
+                    'userId' => (int) $current['id'],
+                ], 409);
             }
             $json = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if ($json === false) {
@@ -175,7 +193,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                     [$current['id'], $json, $bytes]
                 );
                 $auth->audit((int) $current['id'], 'state.create', ['bytes' => $bytes, 'revision' => 1]);
-                Http::json(['ok' => true, 'revision' => 1, 'bytes' => $bytes, 'updatedAt' => gmdate('Y-m-d\TH:i:s\Z')]);
+                Http::json(['ok' => true, 'revision' => 1, 'bytes' => $bytes, 'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'), 'userId' => (int) $current['id']]);
             }
             $baseRevision = isset($body['baseRevision']) && is_numeric($body['baseRevision'])
                 ? (int) $body['baseRevision']
@@ -185,6 +203,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                     'error' => 'revision_conflict',
                     'message' => 'Dane zmienione w innej karcie.',
                     'revision' => (int) $existing['revision'],
+                    'userId' => (int) $current['id'],
                 ], 409);
             }
             $nextRevision = (int) $existing['revision'] + 1;
@@ -198,10 +217,11 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                     'error' => 'revision_conflict',
                     'message' => 'Dane zmienione w innej karcie.',
                     'revision' => (int) ($latest['revision'] ?? 0),
+                    'userId' => (int) $current['id'],
                 ], 409);
             }
             $auth->audit((int) $current['id'], 'state.save', ['bytes' => $bytes, 'revision' => $nextRevision]);
-            Http::json(['ok' => true, 'revision' => $nextRevision, 'bytes' => $bytes, 'updatedAt' => gmdate('Y-m-d\TH:i:s\Z')]);
+            Http::json(['ok' => true, 'revision' => $nextRevision, 'bytes' => $bytes, 'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'), 'userId' => (int) $current['id']]);
         }
 
         if ($path === '/api/state' && $method === 'DELETE') {
@@ -217,6 +237,9 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             $auth->requireSameOrigin();
             $auth->audit((int) $current['id'], 'account.delete', ['demo' => (bool) $current['isDemo']]);
             $auth->destroySession();
+            if (!empty($current['isDemo'])) {
+                $auth->clearCookie($config->demoCookie);
+            }
             $db->execute('DELETE FROM users WHERE id = ?', [$current['id']]);
             Http::json(['ok' => true]);
         }

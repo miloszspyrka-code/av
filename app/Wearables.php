@@ -143,7 +143,8 @@ final class Wearables
         $rows = [];
         try {
             $rows = $this->db->query(
-                'SELECT * FROM wearable_connections WHERE user_id = ? ORDER BY provider',
+                'SELECT provider, status, device_name, last_sync_at, last_sync_status, last_error, consent_at
+                 FROM wearable_connections WHERE user_id = ? ORDER BY provider',
                 [$userId]
             );
         } catch (\Throwable $err) {
@@ -378,6 +379,8 @@ final class Wearables
     public function applePairCode(int $userId): array
     {
         $this->db->execute('DELETE FROM wearable_pair_codes WHERE expires_at < UTC_TIMESTAMP()');
+        // Nowy kod unieważnia poprzednie nieużyte kody tego użytkownika.
+        $this->db->execute('DELETE FROM wearable_pair_codes WHERE user_id = ? AND used_at IS NULL', [$userId]);
         $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         $raw = '';
         for ($i = 0; $i < 8; $i++) {

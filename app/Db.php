@@ -72,16 +72,65 @@ final class Db
         }
     }
 
-    public function migrate(string $schemaFile): void
+    /**
+     * Aplikuje schemat bazowy, a następnie wszystkie nieaplikowane migracje.
+     *
+     * Migracje są plikami db/migrations/*.sql. Wersją jest nazwa pliku, więc
+     * ponowne uruchomienie jest bezpieczne i nie wykonuje zmian drugi raz.
+     *
+     * @return list<string> wersje migracji zastosowane w tym wywołaniu
+     */
+    public function migrate(string $schemaFile, ?string $migrationsDir = null): array
     {
         $schema = file_get_contents($schemaFile);
         if ($schema === false) {
             throw new \RuntimeException('Nie można odczytać schematu bazy.');
         }
+        $this->applySql($schema);
 
+        $this->applyAdditiveMigrations();
+
+        $this->execute(
+            'INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version = VALUES(version)',
+            ['003_php']
+        );
+        $this->execute(
+            'INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version = VALUES(version)',
+            ['004_role_recheck']
+        );
+
+        $applied = [];
+        $dir = $migrationsDir ?? dirname($schemaFile) . '/migrations';
+        if (!is_dir($dir)) {
+            return $applied;
+        }
+        $files = glob($dir . '/*.sql') ?: [];
+        sort($files, SORT_STRING);
+        foreach ($files as $file) {
+            $version = basename($file);
+            $done = $this->queryOne('SELECT version FROM schema_migrations WHERE version = ?', [$version]);
+            if ($done !== null) {
+                continue;
+            }
+            $sql = file_get_contents($file);
+            if ($sql === false) {
+                throw new \RuntimeException('Nie można odczytać migracji: ' . $version);
+            }
+            $this->applySql($sql);
+            $this->execute(
+                'INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version = VALUES(version)',
+                [$version]
+            );
+            $applied[] = $version;
+        }
+        return $applied;
+    }
+
+    private function applySql(string $sql): void
+    {
         // Tylko rzeczywiste końce linii. Bez trybu /u \R traktuje bajt 0x85
         // (część UTF-8 liter ą/ń) jako separator i rozcina komentarze SQL.
-        $lines = preg_split('/\r\n|\n|\r/', $schema) ?: [];
+        $lines = preg_split('/\r\n|\n|\r/', $sql) ?: [];
         $clean = [];
         foreach ($lines as $line) {
             if (str_starts_with(ltrim($line), '--')) {
@@ -97,13 +146,6 @@ final class Db
             }
             $this->pdo->exec($statement);
         }
-
-        $this->applyAdditiveMigrations();
-
-        $this->execute(
-            'INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version = VALUES(version)',
-            ['004_role_recheck']
-        );
     }
 
     /**

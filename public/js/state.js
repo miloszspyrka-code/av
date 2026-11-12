@@ -3,9 +3,13 @@
   'use strict';
   const AV = window.AV;
   AV.KEY = 'alphavault.state.v2';
+  AV.LEGACY_KEY = AV.KEY;
+  AV.LEGACY_DRAFT_KEY = 'alphavault.draft.v2';
+  AV.LEGACY_WIPED_KEY = 'alphavault.wiped.v2';
+  AV.KEY_PREFIX = 'alphavault.state.v3';
+  AV.OFFLINE_KEY = AV.KEY_PREFIX + '.offline';
   AV.SESSION_KEY = 'alphavault.session.v2';
-  AV.WIPED_KEY = 'alphavault.wiped.v2';
-  AV.DRAFT_KEY = 'alphavault.draft.v2';
+  AV.currentUserId = null;
 
   AV.state = null;
   AV._saveTimer = null;
@@ -13,6 +17,7 @@
     online: false,
     authenticated: false,
     ready: false,
+    resolved: false,
     revision: 0,
     me: null,
     discordConfigured: false,
@@ -34,6 +39,51 @@
     wearablesError: null,
     integrationsConfigured: false,
     metaApiConfigured: false
+  };
+
+  const scopedKey = (suffix, userId = AV.currentUserId) => {
+    const id = Number(userId);
+    return Number.isFinite(id) && id > 0 ? `${AV.KEY_PREFIX}.${id}.${suffix}` : null;
+  };
+  AV.stateKey = () => scopedKey('state') || (AV.api.resolved && !AV.api.online ? AV.OFFLINE_KEY : null);
+  AV.draftKey = () => scopedKey('draft') || (AV.api.resolved && !AV.api.online ? AV.OFFLINE_KEY + '.draft' : null);
+  AV.wipedKey = () => scopedKey('wiped') || (AV.api.resolved && !AV.api.online ? AV.OFFLINE_KEY + '.wiped' : null);
+
+  AV.purgeUserCache = (userId) => {
+    ['state', 'draft', 'wiped'].forEach((suffix) => AV.safeDel(scopedKey(suffix, userId)));
+  };
+  AV.purgeCurrentUserCache = () => {
+    if (AV.currentUserId) AV.purgeUserCache(AV.currentUserId);
+  };
+  AV.purgeAllUserCaches = () => {
+    AV.safeDel(AV.LEGACY_KEY);
+    AV.safeDel(AV.LEGACY_DRAFT_KEY);
+    AV.safeDel(AV.LEGACY_WIPED_KEY);
+    AV.safeDel(AV.OFFLINE_KEY);
+    AV.safeDel(AV.OFFLINE_KEY + '.draft');
+    AV.safeDel(AV.OFFLINE_KEY + '.wiped');
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(AV.KEY_PREFIX + '.')) keys.push(key);
+      }
+      keys.forEach((key) => AV.safeDel(key));
+    } catch {}
+  };
+  AV.purgeOtherUserCaches = (keepUserId) => {
+    const keep = `${AV.KEY_PREFIX}.${Number(keepUserId)}.`;
+    AV.safeDel(AV.LEGACY_KEY);
+    AV.safeDel(AV.LEGACY_DRAFT_KEY);
+    AV.safeDel(AV.LEGACY_WIPED_KEY);
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(AV.KEY_PREFIX + '.') && !key.startsWith(keep)) keys.push(key);
+      }
+      keys.forEach((key) => AV.safeDel(key));
+    } catch {}
   };
 
   const deepMerge = (base, patch) => {
@@ -79,7 +129,12 @@
   };
 
   AV.load = () => {
-    const raw = AV.safeGet(AV.KEY);
+    const key = AV.stateKey();
+    if (!key) {
+      AV.state = AV.buildEmpty();
+      return AV.state;
+    }
+    const raw = AV.safeGet(key);
     if (raw) {
       try {
         AV.state = AV.normalize(JSON.parse(raw));
@@ -88,7 +143,7 @@
         console.warn('Nie udało się odczytać stanu, tworzę nowy.', e);
       }
     }
-    AV.state = AV.safeGet(AV.WIPED_KEY) ? AV.buildEmpty() : AV.normalize(AV.buildDemo());
+    AV.state = AV.safeGet(AV.wipedKey()) ? AV.buildEmpty() : AV.normalize(AV.buildDemo());
     AV.saveNow();
     return AV.state;
   };
@@ -118,11 +173,14 @@
 
   AV.saveNow = () => {
     if (!AV.state) return;
-    try {
-      AV.safeSet(AV.KEY, JSON.stringify(AV.state));
-    } catch (e) {
-      console.warn('localStorage pełny — nie zapisano stanu.', e);
-      if (!AV.api.online) AV.toast('Pamięć przeglądarki pełna. Usuń stare screeny, żeby zapisać zmiany.', 5000);
+    const key = AV.stateKey();
+    if (key) {
+      try {
+        AV.safeSet(key, JSON.stringify(AV.state));
+      } catch (e) {
+        console.warn('localStorage pełny — nie zapisano stanu.', e);
+        if (!AV.api.online) AV.toast('Pamięć przeglądarki pełna. Usuń stare screeny, żeby zapisać zmiany.', 5000);
+      }
     }
     if (AV.api.online && AV.api.authenticated && AV.api.ready) AV.schedulePush();
   };
@@ -202,6 +260,21 @@
     AV.api.me = user;
   };
 
+  AV.forceSessionReset = (message) => {
+    AV.api.authenticated = false;
+    AV.api.ready = false;
+    AV.api.me = null;
+    AV.currentUserId = null;
+    AV.safeDel(AV.SESSION_KEY);
+    try { sessionStorage.removeItem(AV.SESSION_KEY); } catch {}
+    AV.purgeAllUserCaches();
+    AV.state = AV.buildEmpty();
+    if (AV.renderAll) AV.renderAll();
+    const auth = document.getElementById('auth');
+    if (auth) auth.classList.remove('hide');
+    if (message && AV.toast) AV.toast(message, 6000);
+  };
+
   AV.bootstrap = async () => {
     try {
       const meRes = await AV.apiFetch('/api/me');
@@ -223,7 +296,9 @@
         AV.api.ready = true;
         return { authenticated: false, denied: true, me };
       }
+      AV.api.resolved = true;
       if (!me.authenticated) {
+        AV.currentUserId = null;
         AV.api.events = null;
         AV.api.eventsSync = null;
         AV.api.eventsLoaded = false;
@@ -231,17 +306,28 @@
         AV.api.macroSync = null;
         AV.api.macroLoaded = false;
         AV.api.ready = true;
+        AV.purgeAllUserCaches();
+        AV.state = AV.buildEmpty();
         return { authenticated: false, me };
       }
+      const userId = Number(me.user?.id);
+      if (!Number.isFinite(userId) || userId <= 0) throw new Error('Brak identyfikatora użytkownika.');
+      AV.purgeOtherUserCaches(userId);
+      AV.currentUserId = userId;
       const stRes = await AV.apiFetch('/api/state');
       if (stRes.status === 401) {
-        AV.api.authenticated = false;
+        AV.forceSessionReset('Sesja wygasła. Zaloguj się ponownie.');
         AV.api.ready = true;
         AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
         return { authenticated: false, denied: true, me };
       }
       if (!stRes.ok) throw new Error('state HTTP ' + stRes.status);
       const payload = await stRes.json();
+      if (payload.userId && Number(payload.userId) !== userId) {
+        AV.forceSessionReset('Sesja w tej karcie należy do innego konta. Odśwież stronę.');
+        AV.api.ready = true;
+        return { authenticated: false, me };
+      }
       const hadState = !!payload.state;
       const taxMigrated = hadState && Number(payload.state?.tax?.version || 0) < AV.TAX_VERSION;
       if (hadState) {
@@ -265,7 +351,10 @@
       AV.api.online = false;
       AV.api.authenticated = false;
       AV.api.ready = false;
+      AV.api.resolved = true;
+      AV.currentUserId = null;
       AV.api.lastError = err.message;
+      AV.state = AV.load();
       return { offline: true, error: err.message };
     }
   };
@@ -401,13 +490,17 @@
       const res = await AV.apiFetch('/api/state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: AV.state, baseRevision: AV.api.revision })
+        body: JSON.stringify({ state: AV.state, baseRevision: AV.api.revision, ownerId: AV.currentUserId })
       });
       if (res.status === 409) {
         AV.api.dirty = false;
         const latest = await AV.apiFetch('/api/state');
         if (latest.ok) {
           const payload = await latest.json();
+          if (payload.userId && Number(payload.userId) !== Number(AV.currentUserId)) {
+            AV.forceSessionReset('Sesja w tej karcie należy do innego konta. Odśwież stronę.');
+            return false;
+          }
           if (payload.state) {
             AV.state = AV.normalizeServer(payload.state, { isDemo: !!AV.api.me?.isDemo });
             AV.applyServerUser(AV.api.me);
@@ -420,11 +513,19 @@
         return false;
       }
       if (res.status === 401) {
-        AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
+        AV.api.authenticated = false;
+        AV.currentUserId = null;
+        AV.purgeAllUserCaches();
+        AV.state = AV.buildEmpty();
+        AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie - dostęp wymaga aktywnej roli Alpha.');
         return false;
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const payload = await res.json();
+      if (payload.userId && Number(payload.userId) !== Number(AV.currentUserId)) {
+        AV.forceSessionReset('Sesja w tej karcie należy do innego konta. Odśwież stronę.');
+        return false;
+      }
       AV.api.revision = payload.revision;
       AV.api.lastSavedAt = Date.now();
       AV.api.lastError = null;
@@ -442,14 +543,14 @@
   };
 
   AV.flushState = () => {
-    if (!AV.api.online || !AV.api.authenticated || !AV.api.ready) return;
+    if (!AV.api.online || !AV.api.authenticated || !AV.api.ready || !AV.currentUserId) return;
     try {
       fetch('/api/state', {
         method: 'PUT',
         credentials: 'same-origin',
         keepalive: true,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: AV.state, baseRevision: AV.api.revision })
+        body: JSON.stringify({ state: AV.state, baseRevision: AV.api.revision, ownerId: AV.currentUserId })
       }).catch(() => {});
     } catch {}
   };
@@ -506,14 +607,19 @@
   };
 
   AV.reloadStateFromServer = async () => {
-    if (!AV.api.online || !AV.api.authenticated) return false;
+    if (!AV.api.online || !AV.api.authenticated || !AV.currentUserId) return false;
     const res = await AV.apiFetch('/api/state');
     if (!res.ok) return false;
     const payload = await res.json();
+    if (payload.userId && Number(payload.userId) !== Number(AV.currentUserId)) {
+      AV.forceSessionReset('Sesja w tej karcie należy do innego konta. Odśwież stronę.');
+      return false;
+    }
     if (!payload.state) return false;
     AV.state = AV.normalizeServer(payload.state, { isDemo: !!AV.api.me?.isDemo });
     AV.api.revision = payload.revision || 1;
-    try { AV.safeSet(AV.KEY, JSON.stringify(AV.state)); } catch {}
+    const key = AV.stateKey();
+    if (key) { try { AV.safeSet(key, JSON.stringify(AV.state)); } catch {} }
     if (AV.renderAll) AV.renderAll();
     return true;
   };
@@ -587,40 +693,51 @@
 
   AV.serverLogout = async () => {
     try { await AV.apiFetch('/auth/logout', { method: 'POST' }); } catch {}
+    AV.purgeAllUserCaches();
+    AV.currentUserId = null;
     AV.api.events = null;
     AV.api.eventsSync = null;
     AV.api.eventsLoaded = false;
     AV.api.isAdmin = false;
     AV.api.integrationsConfigured = false;
     AV.api.metaApiConfigured = false;
-    if (AV.state?.settings?.connections) {
-      ['weex', 'okx', 'bingx'].forEach((k) => { AV.state.settings.connections[k] = { connected: false }; });
-      AV.state.settings.connections.mt = { connected: false, platform: 'mt5' };
-      AV.state.settings.connections.file = { connected: false };
-    }
+    AV.api.authenticated = false;
+    AV.api.me = null;
+    AV.api.ready = false;
+    AV.state = AV.buildEmpty();
+    AV.logout();
   };
 
   AV.serverDeleteAccount = async () => {
     const res = await AV.apiFetch('/api/account', { method: 'DELETE' });
     if (!res.ok) throw new Error('Nie udało się usunąć konta');
+    AV.purgeAllUserCaches();
+    AV.currentUserId = null;
+    AV.api.authenticated = false;
+    AV.api.me = null;
+    AV.api.ready = false;
+    AV.state = AV.buildEmpty();
+    AV.logout();
     return res.json();
   };
 
   AV.resetAll = (keepSession = false) => {
-    AV.safeDel(AV.KEY);
-    AV.safeDel(AV.DRAFT_KEY);
+    AV.purgeCurrentUserCache();
+    const wiped = AV.wipedKey();
+    if (wiped) AV.safeSet(wiped, '1');
     if (!keepSession) {
       AV.safeDel(AV.SESSION_KEY);
       try { sessionStorage.removeItem(AV.SESSION_KEY); } catch {}
     }
-    AV.safeSet(AV.WIPED_KEY, '1');
     AV.state = AV.buildEmpty();
     AV.saveNow();
   };
 
   AV.resetDemo = () => {
-    AV.safeDel(AV.WIPED_KEY);
-    AV.safeDel(AV.DRAFT_KEY);
+    const wiped = AV.wipedKey();
+    const draft = AV.draftKey();
+    if (wiped) AV.safeDel(wiped);
+    if (draft) AV.safeDel(draft);
     AV.state = AV.normalize(AV.buildDemo());
     AV.saveNow();
     if (AV.renderAll) AV.renderAll();
@@ -646,6 +763,9 @@
   AV.logout = () => {
     AV.safeDel(AV.SESSION_KEY);
     try { sessionStorage.removeItem(AV.SESSION_KEY); } catch {}
+    AV.purgeAllUserCaches();
+    AV.currentUserId = null;
+    AV.state = AV.buildEmpty();
   };
 
   /* ---------- kapitał / konta ---------- */

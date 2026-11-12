@@ -144,7 +144,6 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 ## API — 23 scenariusze
 
 `tests/api.e2e.mjs` sprawdza:
-
 - health + MySQL,
 - `/api/me` bez sesji,
 - `/api/state`, `/api/events` i `/api/macro-events` bez sesji = 401,
@@ -165,7 +164,23 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI - 54 scenariusze
+## Izolacja użytkowników - 9 scenariuszy
+
+`tests/isolation.e2e.mjs` (`npm run test:isolation`) używa dwóch niezależnych jarów cookie:
+
+- osobne konto demo per przeglądarka (różne `user.id` i `av_demo`),
+- powrót w tej samej przeglądarce do tego samego demo,
+- `/api/me` zwraca właściwe konto,
+- stan dziennika A i B jest rozdzielony,
+- zapis z karty A z `ownerId` konta B = 409 `session_changed` i brak zmiany stanu,
+- zapis stanu A bez `ownerId` do sesji B = 409 (zgodność ze starym klientem),
+- listy połączeń integracji są rozdzielone,
+- tokeny MCP A nie są widoczne w B,
+- wylogowanie A nie wpływa na B.
+
+Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `db/schema.sql` oraz `db/migrations/*.sql` (w tym `mcp_*`). Runner jest idempotentny.
+
+## UI - 55 scenariusze
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -186,7 +201,7 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 - 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,
 - przywrócenie stanu demo,
-- wylogowanie.
+- wylogowanie i usunięcie prywatnego cache z `localStorage`.
 
 ## UI empty-state — 12 scenariuszy
 
@@ -264,10 +279,14 @@ Naprawa istniejących plików: `node scripts/fix-mojibake.mjs --write <plik>`.
 - dokumentacja (`docs:check` + `test:docs`),
 - kodowanie (`test:encoding`),
 - PHP lint,
-- migracja,
+- migracja (schema + `db/migrations/*.sql` + `ensureColumn`/`ensureIndex`),
 - rola: decyzje login + cron na mocku Discord,
+- MCP security,
+- prop challenge,
 - Discord DB/sync,
 - API e2e,
+- izolacja użytkowników,
+- integracje e2e + UI integracje,
 - UI e2e (systemowy Chrome),
 - PWA e2e (emulacja iPhone 14, Chrome),
 - empty-state na osobnym porcie.

@@ -172,7 +172,7 @@ Dane w `rate_limits` (bucket, IP, window_start, count). Przekroczenie → 429.
 ### 4.5. Demo login
 
 - `POST /auth/demo` tylko gdy `ALLOW_DEMO_LOGIN=true`.
-- Konto `demo-local`, stan z `db/demo-state.json`.
+- Każda przeglądarka dostaje osobne konto `demo-<24 hex>`; identyfikatorem jest cookie `av_demo` (HttpOnly, 30 dni). Stan z `db/demo-state.json`.
 - Na produkcji `ALLOW_DEMO_LOGIN=false`; health check wymaga `demoAllowed=false`.
 - Demo nie jest produkcyjną metodą logowania.
 
@@ -181,14 +181,14 @@ Dane w `rate_limits` (bucket, IP, window_start, count). Przekroczenie → 429.
 **Aktor:** zalogowany użytkownik. **Trigger:** zmiana w UI.
 
 1. Frontend trzyma cały stan w `AV.state`.
-2. `AV.schedulePush()` zbiera zmiany i wysyła `PUT /api/state` z `{ state, baseRevision }`.
-3. Serwer sprawdza sesję, `Origin`, rozmiar (`MAX_STATE_BYTES`, domyślnie 12 MiB) i typ JSON.
+2. `AV.schedulePush()` zbiera zmiany i wysyła `PUT /api/state` z `{ state, baseRevision, ownerId }`.
+3. Serwer sprawdza sesję, `Origin`, rozmiar (`MAX_STATE_BYTES`, domyślnie 12 MiB), typ JSON oraz `ownerId`; stan z karty innego konta → 409 `session_changed`.
 4. `UPDATE user_states ... WHERE user_id = ? AND revision = ?`.
-5. Sukces → `revision + 1`, odpowiedź z nową rewizją.
-6. Konflikt → 409; frontend pobiera świeży stan i scala bez nadpisania.
-7. `GET /api/state` zwraca `{ state, revision, updatedAt }`.
+5. Sukces → `revision + 1`, odpowiedź z nową rewizją i `userId`.
+6. Konflikt → 409; frontend pobiera świeży stan tylko wtedy, gdy `userId` zgadza się z sesją.
+7. `GET /api/state` zwraca `{ state, revision, updatedAt, userId }`.
 8. `DELETE /api/state` czyści stan (reset).
-9. `localStorage` jest fallbackiem offline; po zalogowaniu stan serwera ma pierwszeństwo.
+9. `localStorage` jest fallbackiem offline i jest namespace'owany po `user.id`; po wylogowaniu cache użytkownika jest usuwany.
 
 **Błąd:** brak sesji → 401; zły JSON → 400; za duży stan → 413; konflikt → 409.
 
@@ -491,6 +491,9 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 | `wearable_daily_metrics` | dzienne metryki zdrowotne | `(user_id, provider, metric_date)` |
 | `wearable_oauth_states` | jednorazowe stany OAuth2 urządzeń | `state` |
 | `wearable_pair_codes` | jednorazowe kody Apple | `code_hash` |
+| `mcp_tokens` | tokeny MCP (hash, TTL, unieważnienie) | `id`, `token_hash` |
+| `mcp_proposals` | propozycje agenta do zatwierdzenia | `id` |
+| `mcp_audit` | audyt MCP | `id` |
 | `schema_migrations` | wersje migracji | `version` |
 
 ### 10.2. Indeksy wydarzeń
@@ -589,7 +592,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 ### 11.6. Offline
 
-- `localStorage` przechowuje ostatni stan i sesję UI.
+- `localStorage` przechowuje ostatni stan i sesję UI w kluczach `alphavault.state.v3.<user.id>.*`; klucze są usuwane przy wylogowaniu i przy zmianie konta.
 - Po utracie sieci UI działa, ale zapisy są odkładane.
 - Po powrocie stan serwera ma pierwszeństwo; konflikt rewizji rozwiązuje 409.
 

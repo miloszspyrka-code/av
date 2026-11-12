@@ -53,6 +53,7 @@ npm test                 # API: 23 scenariusze
 npm run test:prop        # silnik prop challenge: 27 scenariuszy
 npm run test:ui          # UI: 54 scenariusze
 npm run test:tax         # PIT-38: 8 scenariuszy (MySQL + UI)
+npm run test:isolation   # izolacja użytkowników: 9 scenariuszy
 npm run test:pwa         # PWA mobile: 20 scenariuszy
 npm run test:ui:empty    # puste pola: 12 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze

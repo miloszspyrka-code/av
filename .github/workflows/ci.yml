@@ -109,6 +109,14 @@ jobs:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: npm run test:roles
 
+      - name: MCP security tests
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: php tests/mcp.test.php
+
+      - name: Prop challenge unit tests
+        run: node tests/prop.unit.mjs
+
       - name: Discord events tests
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
@@ -152,6 +160,47 @@ jobs:
         run: |
           ALPHA_VAULT_CONFIG=tests/config.test.json php tests/seed-macro-events.php
           node tests/api.e2e.mjs
+
+      - name: User isolation E2E
+        env:
+          APP_URL: http://127.0.0.1:4173
+        run: node tests/isolation.e2e.mjs
+
+      - name: Create integrations test configuration
+        run: |
+          cat > tests/config.integrations.json <<'JSON'
+          {
+            "APP_URL": "http://127.0.0.1:4175",
+            "APP_ENV": "local",
+            "SESSION_SECRET": "ci-test-session-secret-0123456789abcdef",
+            "DB_HOST": "127.0.0.1",
+            "DB_PORT": "3306",
+            "DB_NAME": "alpha_vault",
+            "DB_USER": "alpha_vault",
+            "DB_PASSWORD": "test",
+            "DISCORD_GUILD_ID": "123456789012345678",
+            "DISCORD_REQUIRED_ROLE_ID": "test-role",
+            "DISCORD_DEFAULT_PLAN": "full",
+            "ALLOW_DEMO_LOGIN": "true",
+            "MAX_STATE_BYTES": "12582912",
+            "INTEGRATIONS_KEY": "ci-integrations-key-0123456789abcdef",
+            "METAAPI_TOKEN": "test-metaapi-token",
+            "OKX_BASE": "http://127.0.0.1:4191/okx",
+            "BINGX_BASE": "http://127.0.0.1:4191/bingx",
+            "WEEX_SPOT_BASE": "http://127.0.0.1:4191/weex",
+            "WEEX_FUTURES_BASE": "http://127.0.0.1:4191/weex",
+            "METAAPI_BASE": "http://127.0.0.1:4191/metaapi",
+            "METAAPI_CLIENT_BASE": "http://127.0.0.1:4191/metaapi-client/{region}"
+          }
+          JSON
+
+      - name: Integrations E2E
+        run: node tests/integrations.e2e.mjs
+
+      - name: UI integrations E2E
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/ui-integrations.e2e.mjs
 
       - name: Seed Discord events for UI
         env:
