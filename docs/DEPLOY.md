@@ -43,7 +43,7 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `LH_DEPLOY_PATH` | `~/public_html/alphavault.pl` |
 | `LH_APP_PATH` | `~/alphavault-app` |
 | `SESSION_SECRET` | 64+ losowych znaków |
-| `DB_HOST` | `localhost` |
+| `DB_HOST` | `main195.lh.pl` (host MySQL z panelu LH.pl; musi zgadzać się z hostem użytkownika MySQL) |
 | `DB_PORT` | `3306` |
 | `DB_NAME` | `serwer445119_alphavault` |
 | `DB_USER` | `serwer445119_alphavault` |

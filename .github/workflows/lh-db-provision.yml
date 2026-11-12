@@ -18,12 +18,14 @@ jobs:
           LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
           LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
           LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           set -euo pipefail
-          for name in LH_SSH_HOST LH_SSH_USER LH_SSH_PASSWORD DB_NAME DB_USER DB_PASSWORD; do
+          for name in LH_SSH_HOST LH_SSH_USER LH_SSH_PASSWORD DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD; do
             if [ -z "${!name:-}" ]; then
               echo "::error::Missing secret: ${name}"
               exit 1
@@ -48,19 +50,22 @@ jobs:
           LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
           LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
           LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           set -euo pipefail
           LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          DB_PORT="${DB_PORT:-3306}"
           mkdir -p "$HOME/.ssh"
           ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
           chmod 600 "$HOME/.ssh/known_hosts"
           export SSHPASS="$LH_SSH_PASSWORD"
           SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20)
 
-          sshpass -e ssh -N "${SSH_OPTS[@]}" -L 13306:localhost:3306 "$LH_SSH_USER@$LH_SSH_HOST" &
+          sshpass -e ssh -N "${SSH_OPTS[@]}" -L "13306:${DB_HOST}:${DB_PORT}" "$LH_SSH_USER@$LH_SSH_HOST" &
           TUNNEL_PID=$!
           trap 'kill "$TUNNEL_PID" 2>/dev/null || true' EXIT
           for _ in $(seq 1 20); do
