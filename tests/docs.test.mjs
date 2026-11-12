@@ -119,5 +119,44 @@ check(drift.length === 0, 'public/docs zsynchronizowane', drift.length ? drift.j
 const missingPublic = MANAGED.filter((entry) => !fs.existsSync(path.join(ROOT, 'public', 'docs', entry.out)));
 check(missingPublic.length === 0, 'public/docs zawiera wszystkie dokumenty', missingPublic.map((e) => e.out).join(', '));
 
+const legal = [
+  {
+    file: 'public/regulamin.html',
+    title: 'Regulamin serwisów Alpha Moves',
+    canonical: 'https://alphavault.pl/regulamin',
+  },
+  {
+    file: 'public/polityka-prywatnosci.html',
+    title: 'Polityka prywatności i plików cookies',
+    canonical: 'https://alphavault.pl/polityka-prywatnosci',
+  },
+];
+
+for (const entry of legal) {
+  const full = path.join(ROOT, entry.file);
+  check(fs.existsSync(full), entry.file + ': istnieje');
+  if (!fs.existsSync(full)) continue;
+  const content = fs.readFileSync(full, 'utf8');
+  check(content.includes(entry.title), entry.file + ': tytuł');
+  check(content.includes('12 listopada 2026'), entry.file + ': data obowiązywania');
+  check(content.includes('8652572005') && content.includes('384033683'), entry.file + ': NIP i REGON');
+  check(content.includes('kontakt@alphamoves.pl'), entry.file + ': kontakt');
+  check(content.includes(entry.canonical), entry.file + ': canonical');
+  check(!content.includes('[data publikacji]'), entry.file + ': brak placeholdera publikacji');
+  check(!content.includes('alphamovesfutures@gmail.com'), entry.file + ': brak starego e-maila');
+  check(!content.includes('ul. Polna 1'), entry.file + ': brak starego adresu');
+  check(!mojibake.some((token) => content.includes(token)), entry.file + ': kodowanie UTF-8');
+}
+
+const indexHtml = read('public/index.html');
+check(indexHtml.includes('href="/regulamin"'), 'index.html → /regulamin');
+check(indexHtml.includes('href="/polityka-prywatnosci"'), 'index.html → /polityka-prywatnosci');
+check(!indexHtml.includes('data-doc="priv"') && !indexHtml.includes('data-doc="reg"'), 'index.html: brak starych wyzwalaczy dokumentów');
+check(!indexHtml.includes('t-priv') && !indexHtml.includes('t-reg'), 'index.html: brak starych szablonów prawnych');
+
+const indexPhp = read('public/index.php');
+check(indexPhp.includes("$path === '/regulamin'"), 'index.php: route /regulamin');
+check(indexPhp.includes("$path === '/polityka-prywatnosci'"), 'index.php: route /polityka-prywatnosci');
+
 console.log('\n' + (failed === 0 ? 'Dokumentacja: all PASS' : 'Dokumentacja: ' + failed + ' FAIL'));
 if (failed > 0) process.exit(1);
