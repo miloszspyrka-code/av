@@ -363,7 +363,7 @@
         const label = new Intl.DateTimeFormat('pl-PL', {
           timeZone: 'Europe/Warsaw', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
         }).format(dt);
-        set('#acadUpdated', (sync.stale ? 'nieaktualne · ' : '') + label);
+        set('#acadUpdated', (sync.status === 'error' ? 'błąd synchronizacji · ' : (sync.stale ? 'nieaktualne · ' : '')) + label);
       } catch (e) {
         set('#acadUpdated', '');
       }
