@@ -800,6 +800,7 @@ Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
 | zmiana testów | `docs/TESTOWANIE.md`, §16, README |
 | zmiana deployu | `docs/DEPLOY.md`, §14, AGENTS.md |
 | nowy dokument | `docs/README.md`, ten rozdział, test linków |
+| strona prawna | `docs/FUNKCJE.md` §16, `public/index.html`, `public/index.php`, `tests/docs.test.mjs` |
 
 ### 17.3. Automatyczna spójność
 
