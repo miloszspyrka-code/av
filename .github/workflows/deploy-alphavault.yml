@@ -179,3 +179,30 @@ jobs:
           set -euo pipefail
           chmod +x scripts/deploy-alphavault.sh
           ./scripts/deploy-alphavault.sh
+
+      - name: Verify production E2E
+        if: >-
+          github.event_name == 'workflow_run'
+          || (github.event_name == 'workflow_dispatch'
+          && inputs.dry_run != true
+          && inputs.rollback != true)
+        run: |
+          set -euo pipefail
+          health="$(curl -fsS --retry 5 --retry-delay 5 --max-time 25 https://alphavault.pl/api/health)"
+          echo "$health" | jq .
+          echo "$health" | jq -e '
+            .ok == true and
+            .db.ok == true and
+            .discordConfigured == true and
+            .roleCheckConfigured == true and
+            .eventsConfigured == true and
+            .demoAllowed == false and
+            .sync.status == "success" and
+            .sync.stale == false
+          ' >/dev/null
+
+          test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/docs/)" = "200"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/.app/config.json)" = "403"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/api/events)" = "401"
+          curl -fsS --max-time 25 https://alphavault.pl/ | grep -qi "Alpha Vault"
+          echo "Production E2E verification passed."

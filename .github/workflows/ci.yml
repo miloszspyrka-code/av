@@ -130,6 +130,9 @@ jobs:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php tests/macro-events.test.php
 
+      - name: Prop engine tests
+        run: node tests/prop.unit.mjs
+
       - name: Quotes tests
         run: |
           php tests/quotes.test.php
@@ -248,6 +251,35 @@ jobs:
           APP_URL: http://127.0.0.1:4174
           CHROME_PATH: /usr/bin/google-chrome
         run: node tests/ui-empty.e2e.mjs
+
+      - name: Create integrations test configuration
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const config = JSON.parse(fs.readFileSync("tests/config.test.json", "utf8"));
+            Object.assign(config, {
+              APP_URL: "http://127.0.0.1:4175",
+              INTEGRATIONS_KEY: "ci-integrations-key-0123456789abcdef0123456789abcdef",
+              METAAPI_TOKEN: "test-metaapi-token",
+              OKX_BASE: "http://127.0.0.1:4191/okx",
+              BINGX_BASE: "http://127.0.0.1:4191/bingx",
+              WEEX_SPOT_BASE: "http://127.0.0.1:4191/weex",
+              WEEX_FUTURES_BASE: "http://127.0.0.1:4191/weex",
+              METAAPI_BASE: "http://127.0.0.1:4191/metaapi",
+              METAAPI_CLIENT_BASE: "http://127.0.0.1:4191/metaapi-client/us-east-1"
+            });
+            fs.writeFileSync("tests/config.integrations.json", JSON.stringify(config, null, 2));
+          '
+
+      - name: Integrations API E2E
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/integrations.e2e.mjs
+
+      - name: Integrations UI E2E
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/ui-integrations.e2e.mjs
 
       - name: Upload PHP server log on failure
         if: failure()
