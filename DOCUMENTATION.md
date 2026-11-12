@@ -710,9 +710,9 @@ Plik: `.github/workflows/deploy-alphavault.yml`.
 
 Dodatkowo `/` musi zawierać „Alpha Vault”, a `/js/state.js` musi zwracać 200.
 
-### 14.3. Deploy lokalny (bez Actions)
+### 14.3. Deploy wyłącznie przez GitHub
 
-`scripts/local-deploy.sh` (WSL2) wykonuje test MySQL na LH i dopiero potem deleguje do `deploy-alphavault.sh`. Konfiguracja w `~/.config/alphavault/local.env` (600). Szczegóły: [docs/LOCAL-DEPLOY.md](docs/LOCAL-DEPLOY.md).
+`deploy-alphavault.yml` jest jedyną ścieżką wdrożenia. Uruchamia się po zielonym CI na `main` (`workflow_run`), wymaga `DEPLOY_ENABLED=true` i przechodzi krok `Verify production E2E`. Lokalny deploy, SSH/rsync i `scripts/local-deploy.sh` nie są używane.
 
 ### 14.4. Rollback
 
@@ -745,7 +745,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 
 ## 16. Testy i weryfikacja
 
-| Suita | Plik | Zakres | Wynik lokalny |
+| Suita | Plik | Zakres | Wynik CI |
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
 | Makro DB/sync | `tests/macro-events.test.php` | normalizacja FF/TradingView, UTC, UPSERT, soft delete, okno źródła | 21/21 PASS |
@@ -760,32 +760,16 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 + PKCE Oura, rotacja tokenów i klucza, statusy, Apple, UI, bezpieczeństwo, wyłączenie Garmin/Whoop | PASS |
 | Konfiguracja urządzeń | `tests/wearables-config.test.php` | lista dostawców, brak fallbacku klucza, start OAuth 503, gotowość po ustawieniu klucza | 5/5 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
-| Kodowanie | `tests/encoding.test.mjs` | naprawa mojibake, brak uszkodzonych znaków w repo | 7/7 PASS |
+| Integracje giełd/API | `tests/integrations.e2e.mjs` | OKX, BingX, WEEX, MetaApi, EA, mocki | 19/19 PASS |
+| Integracje UI | `tests/ui-integrations.e2e.mjs` | formularze, dziennik, licznik transakcji | 11/11 PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
-| Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
-| Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | 3/3, bez duplikatów |
-| Prod Cron | LH Cron | logi `18:05:05`, `18:10:02` | co 5 min, PASS |
-| Prod monitor | `monitor-production.yml` | health + `sync.status`, `sync.stale` | co 15 min |
+| Prod health/docs | `curl` + deploy verify | `/api/health`, `/docs/`, `.app` deny | PASS |
+| Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | `success`, liczba w `sync.eventsCount` |
+| Prod Cron | LH Cron | health `sync.lastSuccessAt` 21:45:02 UTC | co 5 min, PASS |
+| Prod monitor | `monitor-production.yml` | health, sync, UI, docs, `.app` 403 | co 15 min |
 | Prod UI read-only | Playwright + sesja testowa | live, harmonogram, puste konsultacje | 10/10 PASS |
 
-Komendy:
-
-```powershell
-npm test
-npm run test:ui
-npm run test:ui:empty
-npm run test:pwa
-npm run test:events
-npm run test:macro
-npm run test:quotes
-npm run test:prop
-npm run test:router
-npm run test:wearables
-npm run test:docs
-npm run test:encoding
-```
-
-CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-state na osobnym porcie.
+Wszystkie suites uruchamia `.github/workflows/ci.yml` (MySQL 8.4, migracja, integracje na mockach, empty-state na osobnym porcie; dodatkowo router, izolacja użytkowników i encoding guard). Lokalne polecenia nie są dowodem i nie są częścią workflow AV-engineer.
 
 **Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika; LH Cron jest skonfigurowany w panelu LH (SSH nie ma dostępu do `crontab`, więc zmiany harmonogramu tylko przez panel).
 
@@ -818,11 +802,10 @@ Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
 ### 17.3. Automatyczna spójność
 
 ```powershell
-npm run docs:sync   # generuje public/docs z docs/ i root
-npm run test:docs   # sprawdza linki, sekcje i brak dryfu
+node scripts/sync-docs.mjs   # generuje public/docs z docs/ i root
 ```
 
-`public/docs/` jest generowane. Nie edytuj plików w `public/docs/` ręcznie — zmień źródło i uruchom `docs:sync`.
+CI sprawdza linki, sekcje i brak dryfu (`node scripts/sync-docs.mjs --check` + `node tests/docs.test.mjs`). `public/docs/` jest generowane — nie edytuj plików ręcznie, zmień źródło i uruchom generator.
 
 ## 18. Runbook
 
@@ -841,7 +824,7 @@ npm run test:docs   # sprawdza linki, sekcje i brak dryfu
 | puste pola mimo wydarzeń | filtr kategorii/statusu | `/api/events`, `category`, `status` |
 | 409 przy zapisie | konflikt rewizji | odśwież stan, scal |
 | 403 przy zapisie | zły `Origin` | sprawdź domenę i proxy |
-| deploy: billing error | limit GitHub Actions | napraw billing lub użyj `local-deploy.sh` |
+| deploy: billing error | limit GitHub Actions | napraw billing; brak lokalnej alternatywy, zgłoś BLOCKER |
 | deploy: health fail | config/DB/Discord | przeczytaj odpowiedź health, popraw sekrety |
 
 ## 19. Słownik

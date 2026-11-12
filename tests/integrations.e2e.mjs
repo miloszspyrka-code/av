@@ -124,7 +124,8 @@ async function stateTrades() {
 try {
   const mock = start(php, ['-S', `127.0.0.1:${MOCK_PORT}`, 'tests/fixtures/mock-providers.php']);
   const app = start(php, ['-S', `127.0.0.1:${APP_PORT}`, '-t', 'public', 'public/router.php'], {
-    ALPHA_VAULT_CONFIG: CONFIG
+    ALPHA_VAULT_CONFIG: CONFIG,
+    APP_URL: BASE
   });
   await waitFor(`http://127.0.0.1:${MOCK_PORT}/okx/api/v5/time`);
   await waitFor(BASE + '/api/health');

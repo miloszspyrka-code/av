@@ -50,3 +50,11 @@ jobs:
               ;;
           esac
           echo "UI responds with Alpha Vault."
+
+      - name: Check docs and private app directory
+        run: |
+          set -euo pipefail
+          test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/docs/)" = "200"
+          echo "Public docs respond with 200."
+          test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 https://alphavault.pl/.app/config.json)" = "403"
+          echo ".app is denied."

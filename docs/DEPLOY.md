@@ -34,7 +34,7 @@ Wykonuje `db/schema.sql` (idempotentnie), a następnie nieaplikowane pliki z `db
 
 ## 3. Sekrety GitHub
 
-W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Actions:
+W `miloszspyrka-code/av` → Settings → Secrets and variables → Actions:
 
 | Sekret | Wartość |
 | --- | --- |
@@ -68,7 +68,7 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 Zmienne repozytorium:
 
 - `APP_URL=https://alphavault.pl`
-- `DEPLOY_ENABLED=false` (ustaw `true` po odblokowaniu GitHub Actions)
+- `DEPLOY_ENABLED=true` (wymagane dla auto-deployu; produkcja ma `true`)
 - `ADMIN_DISCORD_IDS` (opcjonalnie, zamiast sekretu)
 
 ## 4. Discord
@@ -163,54 +163,49 @@ Ręczny test:
 
 Log: `~/public_html/alphavault.pl/.app/logs/discord-sync.log`. Stan: tabele `discord_sync_state`, `discord_sync_runs`. Skrypt blokuje równoległe uruchomienia i przy błędzie API nie usuwa ostatniego dobrego zestawu wydarzeń.
 
-## 6. Deployment
+## 6. Deployment — wyłącznie GitHub Actions
 
-Workflow `.github/workflows/deploy-alphavault.yml`:
+Workflow `.github/workflows/deploy-alphavault.yml` jest jedyną ścieżką wdrożenia. Lokalny deploy, SSH/rsync i `scripts/local-deploy.sh` nie istnieją w procesie.
 
-1. checkout i lint PHP,
-2. weryfikacja sekretów,
-3. zapis klucza SSH i `known_hosts` z `StrictHostKeyChecking=yes`,
-4. backup `~/public_html/alphavault.pl` i `~/public_html/alphavault.pl/.app` do `~/alphavault-backups`,
-5. `rsync` frontendu do docrootu i PHP/`bin`/`db`/`config` do `~/public_html/alphavault.pl/.app`,
-6. wygenerowanie `public/app-path.php`,
-7. wygenerowanie `~/public_html/alphavault.pl/.app/config.json` (600) z sekretów,
-8. `php app/db/migrate.php`,
-9. health check `GET /api/health` + UI + `/js/state.js`.
+1. PR → CI (`ci.yml`) → wymagany check `PHP + API + UI`.
+2. Merge do `main` (squash).
+3. CI na `main` kończy się `success`.
+4. `deploy-alphavault.yml` startuje z `workflow_run` CI i wypakowuje dokładnie ten commit, który przeszedł testy.
+5. Deploy: walidacja sekretów → klucz SSH → backup → rsync → `config.json` (600) → migracja → health check.
+6. Krok `Verify production E2E` sprawdza health, `/docs/`, `.app` 403, `/api/events` 401 i UI.
 
-Uruchomienie ręczne:
+Bramki:
 
-```powershell
-gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry_run=true
-gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f dry_run=false
-```
+- deploy uruchamia się tylko dla CI z `event=push` na `main` w `miloszspyrka-code/av`;
+- wymagane `DEPLOY_ENABLED=true`;
+- environment `alphavault-production` dopuszcza tylko `main`;
+- runy z PR-ów i forków są ignorowane.
 
-Automatyczny deploy uruchamia się dopiero po zielonym CI (`PHP + API + UI`) na `main`: `deploy-alphavault.yml` reaguje na `workflow_run` CI, nie na sam push, i wypakowuje dokładnie ten commit, który przeszedł testy. Bramkuje go zmienna repozytorium `DEPLOY_ENABLED`. Ustaw ją na `true` po skonfigurowaniu sekretów:
+Uruchomienie ręczne tylko dla dry-run, rollbacku lub po awarii automatu:
 
 ```powershell
-gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/alphavault --body true
+gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f dry_run=true
+gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f dry_run=false
+gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f rollback=true
 ```
 
-Dopóki `DEPLOY_ENABLED` nie jest `true`, zielone CI na `main` nie uruchamia produkcyjnego zapisu; ręczny dry run nadal działa. Deploy z czerwonym lub nieuruchomionym CI na `main` nie startuje.
-
-Bramka bezpieczeństwa: deploy akceptuje wyłącznie run CI z `event=push` na `main` w tym repozytorium (`head_repository` musi być `miloszspyrka-code/av`). Runy z PR-ów i forków — także forka z gałęzią nazwaną `main` — są ignorowane.
-
-Alternatywa bez GitHub Actions (WSL2): `scripts/local-deploy.sh` — test DB, dry-run, deploy, rollback. Konfiguracja w `~/.config/alphavault/local.env` (600). Szczegóły: [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md).
-
-Rollback:
-
-```powershell
-gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/alphavault -f rollback=true
-```
-
-lub ręcznie:
-
-```bash
-ls -1t ~/alphavault-backups
-tar -xzf ~/alphavault-backups/<PLIK>-public.tar.gz -C ~/public_html
-tar -xzf ~/alphavault-backups/<PLIK>-app.tar.gz -C ~
-```
+Rollback odtwarza ostatni backup `public` i `app`, a następnie wykonuje health check. Nie ma lokalnej alternatywy deployu; przy blokadzie GitHub Actions zgłoś BLOCKER.
 
 ## 7. Weryfikacja
+
+Automatyczna, w runie deployu:
+
+```text
+GET /api/health          → ok, db.ok, discordConfigured, roleCheckConfigured,
+                           eventsConfigured, demoAllowed=false,
+                           sync.status=success, sync.stale=false
+GET /docs/               → 200
+GET /.app/config.json    → 403
+GET /api/events          → 401 bez sesji
+GET /                    → UI Alpha Vault
+```
+
+Ręcznie (tylko odczyt):
 
 ```bash
 curl -fsS https://alphavault.pl/api/health
@@ -218,21 +213,15 @@ curl -fsS https://alphavault.pl/api/me
 curl -fsS -o /dev/null -w '%{http_code}\n' https://alphavault.pl/
 ```
 
-Oczekiwane:
-
-- health: `ok=true`, `db.ok=true`, `discordConfigured=true`, `roleCheckConfigured=true`, `eventsConfigured=true`, `demoAllowed=false`,
-- `/api/me` bez sesji: `authenticated=false`, `demoAllowed=false`,
-- `/` zwraca UI Alpha Vault.
-
 Po deployu:
 
-1. zaloguj się kontem z rolą Alpha,
-2. sprawdź `/api/events` (3 wydarzenia VOICE w dniu testu),
-3. uruchom ręcznie sync i porównaj `events_count` z Discordem,
-4. sprawdź wpis Cron w logu po 5 minutach,
-5. sprawdź puste pola na środowisku testowym, nie na produkcji.
+1. sprawdź run `Deploy AlphaVault` — krok `Verify production E2E` musi być zielony,
+2. sprawdź `monitor-production.yml` — musi być `success`,
+3. zaloguj się kontem z rolą Alpha tylko za zgodą użytkownika,
+4. sprawdź `/api/events` i porównaj `eventsCount` z Discorda,
+5. sprawdź `sync.lastSuccessAt` — Cron co 5 min.
 
-**Wynik 2026-11-12:** `/` 200, health wszystkie flagi `true`, `/docs/` 200, `.app` 403, sync 3/3 bez duplikatów, UI read-only PASS. Cron aktywny: logi `18:05:05` i `18:10:02`.
+**Wynik 2026-11-12 21:49 UTC:** `/` 200, health wszystkie flagi `true`, `sync.status=success`, `/docs/` 200, `.app` 403, sync `eventsCount=2`, `lastSuccessAt=21:45:02`.
 
 ## 8. Bezpieczeństwo
 
@@ -250,7 +239,7 @@ Po deployu:
 - Hosting współdzielony: brak Node.js na produkcji, brak własnego procesu daemon.
 - `rsync --delete` jest używany tylko w dedykowanych katalogach `alphavault.pl` i `.app`; przed nim wykonywany jest backup.
 - Testy Discord wymagają interaktywnego logowania użytkownika z wymaganą rolą.
-- GitHub Actions może być zablokowane przez billing — wtedy deploy nie startuje mimo poprawnych sekretów.
+- GitHub Actions może być zablokowane przez billing — wtedy deploy nie startuje i jest to BLOCKER; nie ma lokalnej alternatywy.
 
 ## 10. Monitoring
 
@@ -261,6 +250,7 @@ Workflow `.github/workflows/monitor-production.yml`:
 - wymaga: `ok`, `db.ok`, `discordConfigured`, `roleCheckConfigured`, `eventsConfigured`, `demoAllowed=false`,
 - wymaga `sync.status=success` i `sync.stale=false`,
 - sprawdza, że `/` zwraca UI Alpha Vault,
+- sprawdza `/docs/` = 200 i `.app/config.json` = 403,
 - nie używa sekretów; `/api/health` jest publiczny.
 
 Ręcznie:

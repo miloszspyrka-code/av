@@ -16,14 +16,12 @@
 | [DISCORD.md](DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
 | [DEPLOY.md](DEPLOY.md) | produkcja, reverse proxy, backup | nie |
 | [MCP.md](MCP.md) | mapa narzędzi MCP, walidacje, OAuth, plan wdrożenia | nie |
-| [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md) | deploy z WSL2 bez GitHub Actions | nie |
 | [CHANGELOG.md](../CHANGELOG.md) | historia zmian | nie |
 
 Dokumentacja publiczna jest serwowana pod `/docs/`. Katalog `public/docs/` jest generowany z `docs/` oraz dokumentów głównych:
 
 ```powershell
-npm run docs:sync
-npm run test:docs
+node scripts/sync-docs.mjs
 ```
 
-Nie edytuj `public/docs/` ręcznie. Dokumenty oznaczone „nie” są dostępne wyłącznie w repozytorium (linki w wersji publicznej prowadzą do GitHub).
+CI sprawdza dryf (`node scripts/sync-docs.mjs --check`) i linki (`node tests/docs.test.mjs`). Nie edytuj `public/docs/` ręcznie. Dokumenty oznaczone „nie” są dostępne wyłącznie w repozytorium (linki w wersji publicznej prowadzą do GitHub).

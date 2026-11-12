@@ -4,7 +4,7 @@
 > **Produkt:** Alpha Vault / Alpha Moves
 > **Repozytorium:** `miloszspyrka-code/av` (publiczne)
 > **Produkcja:** <https://alphavault.pl>
-> **Wersja kontraktu:** 3.1 · 2026-11-12
+> **Wersja kontraktu:** 3.2 · 2026-11-12
 
 Ten plik jest kontraktem pracy agenta. Przeczytaj go przed każdą zmianą w kodzie, bazie, konfiguracji lub dokumentacji.
 
@@ -29,10 +29,10 @@ Jesteś **AV-engineer** — inżynierem odpowiedzialnym za cały cykl życia Alp
 
 1. Czyta wymagania i dokumentację.
 2. Zmienia kod PHP/JS/SQL.
-3. Uruchamia testy lokalne.
+3. Weryfikuje zmianę wyłącznie w GitHub Actions.
 4. Aktualizuje dokumentację.
-5. Przygotowuje PR.
-6. Wdraża na LH.pl i weryfikuje E2E.
+5. Przygotowuje PR i doprowadza CI do zieleni.
+6. Wdraża przez GitHub Actions na LH.pl i weryfikuje E2E produkcji.
 
 Nie jesteś agentem „tylko od dokumentacji” ani „tylko od frontendu”. Odpowiadasz za działającą produkcję.
 
@@ -63,12 +63,14 @@ Nie zaczynaj od zgadywania. Najpierw ustal, który punkt styku zmieniasz.
 
 ### Repozytorium i GitHub
 
+- **Jedyna ścieżka weryfikacji i wdrożenia to GitHub Actions.** Lokalny build, testy, serwer PHP, baza, Playwright, SSH/rsync i `scripts/local-deploy.sh` są zabronione.
 - Zakaz zostawiania zmian wyłącznie lokalnie. Każda zmiana = branch + commit + push + PR.
 - Zakaz pracy bezpośrednio na `main`; `main` zmienia się wyłącznie przez merge PR.
 - Po zakończeniu pracy `git status --porcelain` musi być czysty, a `git log --oneline @{u}..HEAD` pusty.
 - Zaległe lokalne zmiany bez remote wypychaj w tej samej sesji; raport bez push nie zamyka zadania.
 - Brak push (uprawnienia, sieć, blokada brancha) = BLOCKER; zadanie nie jest wtedy done.
 - Sekrety i runtime (`.env`, `config.json`, `.runtime/`, cache) nie trafiają do repo.
+- Dowodem są runy GitHub Actions (PR CI, deploy, monitor), nie lokalne polecenia.
 
 ### Discord
 
@@ -127,10 +129,10 @@ app/
 bin/sync-discord-events.php   LH Cron co 5 min
 db/schema.sql            schemat
 db/migrations/           migracje
-scripts/deploy-alphavault.sh  deploy SSH/rsync
-scripts/local-deploy.sh  deploy bez GitHub Actions (WSL2)
+scripts/deploy-alphavault.sh  deploy SSH/rsync (wywoływany wyłącznie przez GitHub Actions)
 tests/                   PHP + Playwright + docs
 docs/                    dokumentacja źródłowa
+.github/workflows/       CI, deploy, monitoring
 ```
 
 Produkcja:
@@ -164,7 +166,7 @@ MySQL: serwer445119_alphavault
 
 **Sekrety GitHub:** wszystkie wymagane są ustawione (DB, Discord, SSH). Wartości są write-only — nie próbuj ich odczytać.
 
-**Lokalny plik hasła DB:** `C:\Users\milos\AppData\Local\Temp\opencode\alphavault-deploy\db_password.txt`. Nigdy nie kopiuj jego zawartości do repo, czatu, logów ani dokumentacji.
+**SSH na LH:** dopuszczone wyłącznie do odczytu logów (break-glass), nigdy do deployu, rsync, migracji ani testów. Standardowa ścieżka to GitHub Actions.
 
 ### 5.1. LH Cron — jedno źródło automatyzacji
 
@@ -194,99 +196,123 @@ curl.exe -sS https://alphavault.pl/api/health
 
 Wymagane: `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` młodsze niż 10 min, `sync.status=success`, `roleRecheck.status=success`, `sync.stale=false`. Panel: LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań.
 
-## 6. Komendy
+## 6. GitHub E2E — jedyna ścieżka zmiany i wdrożenia
 
-### Lokalnie (Windows PowerShell)
+**Zasada:** lokalnie wolno wyłącznie czytać repo, edytować pliki i uruchomić generator `public/docs`. Build, testy, baza, serwer PHP, Playwright, SSH/rsync i deploy uruchamia tylko GitHub Actions.
+
+### 6.1. Diagnoza i branch
 
 ```powershell
 $repo = "C:\Users\milos\AppData\Local\Temp\opencode\alphavault-repo"
-cd $repo
-Copy-Item tests/config.test.example.json tests/config.test.json
-# uzupełnij DB_* lokalnie; plik jest ignorowany
-
-$env:ALPHA_VAULT_CONFIG = "$repo\tests\config.test.json"
-php app/db/migrate.php
-php -S 127.0.0.1:4173 -t public public/router.php
+Set-Location $repo
+git fetch origin
+git switch -c <typ>/<slug> origin/main
 ```
 
-PHP 8.3 na tym komputerze: `C:\Users\milos\.local\php83\php.exe`.
+Przed edycją ustal punkt styku P1–P14 i pliki. Nie zakładaj, że lokalny `main` jest aktualny.
 
-### Testy
+### 6.2. Zmiana i generator dokumentacji
 
 ```powershell
-npm test                 # API 23/23
-npm run test:roles       # rola: login + cron recheck 18/18
-npm run test:prop        # silnik prop challenge 27/27 (bez serwera)
-npm run test:router      # adresy podstron 18/18 (bez serwera)
-npm run test:ui          # UI 55/55 (Chrome/Edge)
-npm run test:isolation   # izolacja użytkowników 9/9 (dwa cookie jary)
-npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
-npm run test:ui:empty    # puste pola 12/12 (osobny serwer, guild bez wydarzeń)
-npm run test:events      # Discord DB/sync + DST
-npm run test:macro       # kalendarz makro DB/sync
-npm run test:quotes      # notowania rynkowe 14/14 (bez sieci i bazy)
-npm run test:wearables   # urządzenia zdrowotne API + UI 42/42
-npm run test:docs        # linki i spójność dokumentacji
-npm run test:encoding    # UTF-8 i brak mojibake
+# edytuj tylko źródła: app/, public/ (poza public/docs), tests/, docs/, pliki główne
+node scripts/sync-docs.mjs
+git status --short
 ```
 
-UI wymaga uruchomionego serwera PHP i `APP_URL`. PWA używa tego samego serwera i Chrome/Edge. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
+`node scripts/sync-docs.mjs` to jedyny dozwolony lokalny generator. Nie uruchamiaj `npm test`, `npm run test:*`, `php -l`, `php -S`, MySQL, Playwright ani skryptów deployu.
 
-### Deploy
+### 6.3. Commit, push, PR
 
 ```powershell
-gh variable set DEPLOY_ENABLED --repo miloszspyrka-code/av --body true
+git add -A
+git commit -m "<typ>(<zakres>): <opis>"
+git push -u origin HEAD
+
+gh pr create --repo miloszspyrka-code/av --base main --head <branch> `
+  --title "<typ>(<zakres>): <opis>" --body-file .github/pull_request_template.md
+```
+
+GitHub MCP (preferowane, gdy dostępne):
+
+```text
+tools.github.create_pull_request({ owner: "miloszspyrka-code", repo: "av", base: "main", head: "<branch>", title, body })
+tools.github.pull_request_read({ owner: "miloszspyrka-code", repo: "av", pullNumber, method: "get_check_runs" })
+tools.github.actions_list({ owner: "miloszspyrka-code", repo: "av", method: "list_workflow_runs", resource_id: "ci.yml" })
+tools.github.get_job_logs({ owner: "miloszspyrka-code", repo: "av", run_id, failed_only: true, return_content: true, tail_lines: 200 })
+```
+
+### 6.4. Bramka CI
+
+Wymagany check: `PHP + API + UI` w `.github/workflows/ci.yml`. PR nie jest gotowy, dopóki check nie jest `success`.
+
+- Czerwone CI: przeczytaj logi failed jobs, popraw źródło, pushnij nowy commit. Nie odpalaj testów lokalnie.
+- Nie dodawaj `continue-on-error`, nie usuwaj testów i nie osłabiaj progów, żeby przejść CI.
+- `gh pr checks <PR> --repo miloszspyrka-code/av` uruchamiaj bez `--watch`; odpytuj co 30–60 s.
+
+### 6.5. Merge i deploy
+
+Merge wyłącznie przez PR, po zielonym CI:
+
+```text
+tools.github.merge_pull_request({ owner: "miloszspyrka-code", repo: "av", pullNumber, merge_method: "squash" })
+```
+
+Po merge do `main`:
+
+1. CI na `main` musi być `success`.
+2. `deploy-alphavault.yml` startuje z `workflow_run` CI i wymaga `DEPLOY_ENABLED=true`.
+3. Deploy jest poprawny tylko wtedy, gdy run `Deploy AlphaVault` ma `success` i przeszedł krok `Verify production E2E`.
+
+Ręczny deploy tylko dla dry-run, rollbacku lub po awarii automatu:
+
+```powershell
+gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f dry_run=true
 gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f dry_run=false
+gh workflow run deploy-alphavault.yml --repo miloszspyrka-code/av -f rollback=true
 ```
 
-Alternatywa bez Actions (WSL2):
-
-```bash
-./scripts/local-deploy.sh --test-db
-./scripts/local-deploy.sh --dry-run
-./scripts/local-deploy.sh --deploy
-```
-
-Konfiguracja: `~/.config/alphavault/local.env` (600). Szczegóły: [docs/LOCAL-DEPLOY.md](docs/LOCAL-DEPLOY.md).
-
-### Weryfikacja produkcji
+### 6.6. Weryfikacja produkcji
 
 ```powershell
 curl.exe -sS https://alphavault.pl/api/health
-curl.exe -sS -I https://alphavault.pl
-ssh serwer445119@serwer445119.lh.pl "php ~/public_html/alphavault.pl/.app/bin/sync-discord-events.php"
-ssh serwer445119@serwer445119.lh.pl "tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log"
+curl.exe -sS -o NUL -w "%{http_code}" https://alphavault.pl/docs/
+curl.exe -sS -o NUL -w "%{http_code}" https://alphavault.pl/.app/config.json
+curl.exe -sS -o NUL -w "%{http_code}" https://alphavault.pl/api/events
 gh workflow run monitor-production.yml --repo miloszspyrka-code/av
 ```
 
-`/api/events` wymaga sesji — nie testuj go bez logowania.
+Wymagane wartości:
+
+- health: `ok=true`, `db.ok=true`, `discordConfigured=true`, `roleCheckConfigured=true`, `eventsConfigured=true`, `demoAllowed=false`, `sync.status="success"`, `sync.stale=false`;
+- `/docs/` = 200, `.app/config.json` = 403, `/api/events` bez sesji = 401;
+- `monitor-production.yml` = `success`.
+
+`/api/events` wymaga sesji — 401 bez logowania jest oczekiwane. Nie loguj się na produkcji bez zgody użytkownika.
 
 ## 7. Testy i Definition of Done
 
-Przed PR uruchom **wszystkie** suites, które dotyczą zmiany. Przy zmianie backendu lub wydarzeń — pełny zestaw:
+**Wszystkie testy uruchamia CI.** Nie uruchamiaj ich lokalnie i nie traktuj lokalnego wyniku jako dowodu. Zakres suites zależy od zmiany, ale bramką PR jest cały workflow `CI` (`PHP + API + UI`).
 
-```powershell
-php -l <zmienione pliki>
-npm run test:events
-npm run test:wearables
-npm test
-npm run test:ui
-npm run test:ui:empty
-npm run test:docs
-```
+Zakres CI:
+
+- dokumentacja: `sync-docs --check` + `tests/docs.test.mjs`,
+- PHP lint `app/` i `public/`,
+- migracja MySQL 8.4,
+- role, Discord DB/sync, makro, notowania, prop, router, izolacja, urządzenia, API, UI, empty-state, PWA, podatki, kodowanie,
+- integracje giełd/MetaTrader/API i ich UI na mockach.
 
 **Definition of Done:**
 
-1. Kod działa lokalnie.
-2. PHP lint i JS syntax check przechodzą.
-3. Testy jednostkowe/API/UI zielone.
-4. Nowe zachowanie ma test (albo jawne uzasadnienie, dlaczego nie).
-5. Dokumentacja zaktualizowana i `npm run test:docs` oraz `npm run test:encoding` zielone.
-6. `public/docs` zsynchronizowane (`npm run docs:sync`).
-7. PR opisuje zmianę, ryzyko i sposób weryfikacji.
-8. CI zielone **lub** blokada CI jawnie opisana (billing, środowisko).
-9. Deploy wykonany i potwierdzony health checkiem.
-10. E2E na produkcji wykonane albo blokada opisana z konkretnym next action.
+1. Zmiana na branchu i PR; brak pushu bezpośrednio na `main`.
+2. CI `PHP + API + UI` = `success` (run ID/link w raporcie).
+3. Nowe zachowanie ma test w CI albo jawne uzasadnienie, dlaczego nie.
+4. Dokumentacja zaktualizowana wg §8; `docs:check` zielone w CI.
+5. `public/docs` wygenerowane przez `node scripts/sync-docs.mjs` i zgodne w CI.
+6. PR opisuje zmianę, ryzyko i weryfikację.
+7. Merge przez PR (squash).
+8. Deploy `Deploy AlphaVault` = `success` dla zmian produkcyjnych.
+9. Produkcja: health OK, `/docs/` 200, `.app` 403, `sync.status=success`, `sync.stale=false`.
+10. `monitor-production.yml` = `success`; raport zawiera run ID, nie lokalne PASS-y.
 
 ## 8. Dokumentacja — obowiązek, nie opcja
 
@@ -304,22 +330,23 @@ npm run test:docs
 Po zmianie źródeł:
 
 ```powershell
-npm run docs:sync
-npm run test:docs
+node scripts/sync-docs.mjs
 ```
 
-`public/docs/` jest generowane — nie edytuj ręcznie.
+`public/docs/` jest generowane — nie edytuj ręcznie. Weryfikację dryfu wykonuje CI (`node scripts/sync-docs.mjs --check` + `node tests/docs.test.mjs`).
 
 ## 9. Znane pułapki
 
 | Pułapka | Rozwiązanie |
 | --- | --- |
+| Lokalny build/test | zakazany; dowodem jest run GitHub Actions, nie lokalny PASS |
+| `execute` w Code Mode | nie ma tam `tools.shell`; `shell`, `read`, `edit` są narzędziami najwyższego poziomu, a `execute` służy do `tools.github.*` |
+| `gh pr checks --watch` | potrafi wisieć; odpytywaj bez `--watch` co 30–60 s albo użyj MCP `pull_request_read` |
+| Stary lokalny `main` | zawsze `git fetch origin` i branch od `origin/main` przed edycją |
+| `public/docs` dryf | edytuj źródło i uruchom `node scripts/sync-docs.mjs`; CI sprawdza dryf |
 | PowerShell nie jest POSIX | używaj `Select-String`, `Get-Content`, `;`, nie `grep/head/&&` |
-| CRLF w skryptach | `.gitattributes` wymusza LF; po edycji sprawdź `bash -n` i shellcheck |
-| `node -e` z cudzysłowami w PowerShell | pisz skrypt `.cjs` zamiast jednolinijkowca |
-| PHP nie w PATH | `C:\Users\milos\.local\php83\php.exe` |
-| GitHub Actions billing | repo jest publiczne — standard runners są darmowe; powrót do private wymaga naprawy Billing |
-| DB na LH bez tabel | uruchom `php app/db/migrate.php` po deployu |
+| CRLF w skryptach | `.gitattributes` wymusza LF; nie zmieniaj liniowo zakończeń |
+| GitHub Actions billing | repo publiczne — standard runners są darmowe; blokada billingu = BLOCKER, nie lokalny deploy |
 | Discord 401/403 | token lub uprawnienia bota; nie retryuj w pętli |
 | Discord 429 | `Retry-After`, maks. 3 próby |
 | Stage | brak realnego wydarzenia = niezweryfikowany |
@@ -332,9 +359,9 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 23/23, UI 55/55, router 18/18, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 6/6, PWA 20/20, integracje 20/20, UI integracje 11/11, izolacja 9/9 |
-| Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
-| Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 doda kolumnę EA i tabele MCP |
+| Testy (ostatni pełny CI) | prop 27/27, router 18/18, API 23/23, UI 55/55, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 6/6, PWA 20/20, integracje 20/20, UI integracje 11/11, izolacja 9/9 |
+| Realny Discord API | aktualna liczba w `/api/health` → `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
+| Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 dodaje kolumnę EA i tabele MCP |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
 | Cron integracji | `success` (health `integrations.sync`), 0 połączeń, 0 importów; wewnątrz 5-min wrappera, realny sync max co 25 min |
 | Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; **brak wpisu LH Cron** — uruchamiany ręcznie `bin/sync-macro-events.php` |
@@ -344,7 +371,7 @@ npm run test:docs
 | CI gate | `PHP + API + UI` wymagany; PR + branch protection na `main` |
 | Auto-deploy | po zielonym CI na `main` (`workflow_run` CI → `deploy-alphavault.yml`) przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
 | Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
-| Prod sync | success, 3 wydarzenia, 3 unikalne ID |
+| Prod sync | `success`, liczba w `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
 | PWA produkcja | manifest 200 `application/manifest+json`, SW 200 `no-cache`, ikony `/assets/pwa/*` 200; `Page.getInstallabilityErrors` bez błędów |
 | PWA na fizycznym telefonie | **niezweryfikowane** — wymaga instalacji i zgody na powiadomienia |
@@ -352,7 +379,7 @@ npm run test:docs
 | Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
 | Cron urządzeń | **brak wpisu LH Cron**; `cron/sync-wearables.sh` uruchomiony ręcznie 2026-11-12 (`ok=0 failed=0 total=0`) |
 | LH Cron | **1 wpis `*/5`**; sync i recheck roli 22:00:02 UTC, `stale=false` |
-| Monitoring | `monitor-production.yml` — co 15 min |
+| Monitoring | `monitor-production.yml` — co 15 min: health, sync, UI, docs, `.app` 403 |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
 
@@ -375,15 +402,16 @@ IMPLEMENTATION
 - co zmieniono (pliki, tabele, endpointy)
 
 TESTS
-- co uruchomiono i ile PASS/FAIL
-- czego nie uruchomiono i dlaczego
+- run CI: ID/link, wynik `PHP + API + UI`
+- które jobs padły i co poprawiono; czego nie uruchomiono i dlaczego
 
 COMMIT
-- branch, commit, PR
+- branch, commit, PR (numer/link)
 
 DELIVERY
-- czy wdrożono, jaki URL, jaki health
-- czy Cron działa
+- run `Deploy AlphaVault`: ID/wynik
+- health, `/docs/`, `.app` 403, `sync.status`/`stale`
+- Cron: `sync.lastSuccessAt`
 
 BLOCKERS
 - konkretny błąd infrastruktury
@@ -403,6 +431,5 @@ NEXT_ACTION
 - Baza: [docs/BAZA-DANYCH.md](docs/BAZA-DANYCH.md)
 - Discord: [docs/DISCORD.md](docs/DISCORD.md)
 - Deploy: [docs/DEPLOY.md](docs/DEPLOY.md)
-- Deploy lokalny: [docs/LOCAL-DEPLOY.md](docs/LOCAL-DEPLOY.md)
 - Testy: [docs/TESTOWANIE.md](docs/TESTOWANIE.md)
 - Funkcje: [docs/FUNKCJE.md](docs/FUNKCJE.md)

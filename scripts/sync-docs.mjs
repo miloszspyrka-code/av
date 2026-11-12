@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_DIR = path.join(ROOT, 'public', 'docs');
-const GITHUB = 'https://github.com/miloszspyrka-code/alphavault/blob/main/';
+const GITHUB = 'https://github.com/miloszspyrka-code/av/blob/main/';
 
 /** Dokumenty publiczne. Kolejność ma znaczenie tylko dla komunikatów. */
 export const MANAGED = [
@@ -36,8 +36,7 @@ const REPO_ONLY = new Set([
   'docs/AGENTS.md',
   'docs/DEPLOY.md',
   'docs/DISCORD.md',
-  'docs/MCP.md',
-  'docs/LOCAL-DEPLOY.md'
+  'docs/MCP.md'
 ]);
 
 const PUBLIC_NAMES = new Set(MANAGED.map((entry) => entry.out));

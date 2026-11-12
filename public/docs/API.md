@@ -51,7 +51,7 @@ GET https://discord.com/api/v10/guilds/{DISCORD_GUILD_ID}/members/{user_id}
 Authorization: Bot <DISCORD_BOT_TOKEN>
 ```
 
-Brak roli lub członkostwa usuwa wszystkie sesje użytkownika (`access.role_revoked`). Błąd Discorda nie odbiera dostępu osobom już zweryfikowanym. Szczegóły: [DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md#3a-cykliczna-weryfikacja-roli-co-5-min).
+Brak roli lub członkostwa usuwa wszystkie sesje użytkownika (`access.role_revoked`). Błąd Discorda nie odbiera dostępu osobom już zweryfikowanym. Szczegóły: [DISCORD.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DISCORD.md#3a-cykliczna-weryfikacja-roli-co-5-min).
 
 ### 2.3. Tryb demo
 
