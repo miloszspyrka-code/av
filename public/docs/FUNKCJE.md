@@ -209,13 +209,14 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Ten/następny tydzień | ✅ | |
-| Filtr ★★ | ✅ | |
+| Ten/następny tydzień | ✅ | `macro_events` + `/api/macro-events`; FF (bieżący) i TradingView (następny) |
+| Filtr ★★ | ✅ | toggle `macroTwo` |
 | Statusy (zakończone/dziś/za X min) | ✅ | odświeżanie |
 | Następne ważne | ✅ | |
 | Twoje dane w dni makro | ✅ | z transakcji |
 | Powiadomienia 30 min | ✅ | toast + Notification API, jeśli pozwolono |
-| Widget MAKRO | ✅ | |
+| Widget MAKRO | ✅ | te same dane co kalendarz |
+| Synchronizacja | ✅ | `bin/sync-macro-events.php`, LH Cron co 15 min |
 
 ---
 

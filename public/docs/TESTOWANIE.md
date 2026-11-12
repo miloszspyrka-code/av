@@ -19,6 +19,7 @@ W drugim terminalu:
 npm ci
 $env:APP_URL = "http://127.0.0.1:4173"
 npm test
+npm run test:macro
 npm run test:ui
 npm run test:pwa
 ```
@@ -56,7 +57,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 
 ## Notowania rynkowe - 14 scenariuszy
 
-`tests/quotes.test.php` (`npm run test:quotes`) testuje `app/Quotes.php` bez sieci i bez bazy: świeży zestaw, cache w TTL, fallback po błędzie dostawcy, pusty payload bez cache, cząstkowe pobranie, wygasanie pojedynczego notowania (900 s) i uszkodzony plik cache. `npm run test:quotes:e2e` uruchamia `tests/quotes.e2e.mjs`: osobne serwery PHP z lokalnym dostawcą notowań sprawdzają odpowiedź HTTP, cache i pusty stan.
+`tests/quotes.test.php` (`npm run test:quotes`) testuje `app/Quotes.php` bez sieci i bez bazy: świeży zestaw, cache w TTL, fallback po błędzie dostawcy, pusty payload bez cache, cząstkowe pobranie, wygasanie pojedynczego notowania (900 s) i uszkodzony plik cache.
 
 ## Discord DB/sync - 24 scenariusze
 
@@ -92,18 +93,35 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - statystyki, serię strat, najlepszy/najgorszy dzień,
 - archiwum poza metrykami i zachowanie waluty.
 
-## API — 21 scenariuszy
+## Makro — 21 scenariuszy
+
+`npm run test:macro` uruchamia `tests/macro-events.test.php`:
+
+- normalizacja ForexFactory: High→3, Medium→2, Low/Holiday pomijane,
+- konwersja oryginalnego ISO z offsetem na UTC,
+- stabilny `external_id` i opis z prognozą/poprzednim odczytem,
+- normalizacja TradingView: importance 1→3, 0→2, filtr szumu i mapowanie kraju na walutę,
+- UPSERT bez duplikatów,
+- soft delete po braku w feedzie i przywrócenie po powrocie,
+- okno źródła: FF czyści TV w swoim zakresie,
+- pusta lista nie czyści widoku,
+- `syncState` (status, świeżość, licznik).
+
+Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
+
+## API — 23 scenariusze
 
 `tests/api.e2e.mjs` sprawdza:
 
 - health + MySQL,
 - `/api/me` bez sesji,
-- `/api/state` i `/api/events` bez sesji = 401,
+- `/api/state`, `/api/events` i `/api/macro-events` bez sesji = 401,
 - demo login + cookie HttpOnly/SameSite,
 - OAuth start bez konfiguracji = 503,
 - callback ze złym `state` = 400,
 - `/api/me` z sesją,
 - `/api/events` z sesją,
+- `/api/macro-events` z sesją (kształt, impact 2/3, UTC ISO),
 - `/api/admin/events` bez uprawnień = 403,
 - GET/PUT state + MySQL,
 - round-trip `prop.challenges` i `selectedId` przez MySQL,
@@ -115,7 +133,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 51 scenariuszy
+## UI — 52 scenariusze
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -132,7 +150,7 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - prop: alarm limitu + banner na pulpicie,
 - prop: archiwum, empty state i przywrócenie,
 - prop: zapis w MySQL, reload i usunięcie,
-- kalendarz, check-in, profil,
+- kalendarz + makro-widget z API, check-in, profil,
 - 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,
 - przywrócenie stanu demo,

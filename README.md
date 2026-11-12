@@ -49,14 +49,14 @@ php app/db/migrate.php
 php -S 127.0.0.1:4173 -t public public/router.php
 
 npm ci
-npm test                 # API: 21 scenariuszy
+npm test                 # API: 23 scenariusze
 npm run test:prop        # silnik prop challenge: 27 scenariuszy
-npm run test:ui          # UI: 51 scenariuszy
+npm run test:ui          # UI: 52 scenariusze
 npm run test:pwa         # PWA mobile: 20 scenariuszy
-npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
+npm run test:ui:empty    # puste pola: 12 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze
+npm run test:macro       # kalendarz makro DB/sync: 21 scenariuszy
 npm run test:quotes      # notowania rynkowe: 14 scenariuszy
-npm run test:quotes:e2e  # notowania rynkowe end-to-end: lokalny dostawca + cache
 npm run test:wearables   # urządzenia zdrowotne API + UI: 33 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
 ```
@@ -74,7 +74,7 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 - Repo jest publiczne; włączone secret scanning, push protection i Dependabot security updates.
 - Rollback: workflow z `rollback=true` przywraca ostatni backup z `~/alphavault-backups`.
 
-**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK (DB + Discord flagi `true`), sync Discord 3/3, `/docs/` 200, LH Cron działa co 5 min (log `18:10:02`), CI gate `PHP + API + UI` aktywny.
+**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK (DB + Discord flagi `true`), sync Discord 3/3, `/docs/` 200, LH Cron działa co 5 min (log `18:10:02`) oraz co 15 min dla makro, CI gate `PHP + API + UI` aktywny.
 
 Wymagane sekrety GitHub:
 

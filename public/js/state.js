@@ -24,6 +24,10 @@
     events: null,
     eventsLoaded: false,
     eventsSync: null,
+    macroEvents: [],
+    macroSync: null,
+    macroLoaded: false,
+    macroError: null,
     isAdmin: false,
     wearables: null,
     wearablesLoaded: false,
@@ -160,6 +164,9 @@
         AV.api.events = null;
         AV.api.eventsSync = null;
         AV.api.eventsLoaded = false;
+        AV.api.macroEvents = [];
+        AV.api.macroSync = null;
+        AV.api.macroLoaded = false;
         AV.api.ready = true;
         return { authenticated: false, me };
       }
@@ -182,6 +189,7 @@
       AV.applyServerUser(me.user);
       await AV.loadConnections();
       await AV.loadEvents();
+      await AV.loadMacroEvents();
       await AV.loadWearables();
       AV.api.ready = true;
       if (!hadState || AV.state.subscription.expired !== !!me.user?.subscription?.expired) {
@@ -219,6 +227,41 @@
       return true;
     } catch (err) {
       AV.api.lastError = err.message;
+      return false;
+    }
+  };
+
+  AV.loadMacroEvents = async () => {
+    if (!AV.api.online || !AV.api.authenticated) {
+      AV.api.macroEvents = [];
+      AV.api.macroSync = null;
+      AV.api.macroLoaded = false;
+      return false;
+    }
+    try {
+      const res = await AV.apiFetch('/api/macro-events');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.events)) throw new Error('invalid macro payload');
+      AV.api.macroEvents = data.events.map((e) => ({
+        id: String(e.id || ''),
+        date: e.startAt,
+        cur: e.currency || '',
+        name: e.name || '',
+        desc: e.description || '',
+        imp: Number(e.impact) || 0,
+        forecast: e.forecast || '',
+        previous: e.previous || ''
+      })).filter((e) => e.date && e.name);
+      AV.api.macroSync = data.sync || null;
+      AV.api.macroLoaded = true;
+      AV.api.macroError = null;
+      if (AV.renderCalendar) AV.renderCalendar();
+      if (AV.renderPlanSide) AV.renderPlanSide();
+      return true;
+    } catch (err) {
+      // Błąd API zachowuje ostatni dobry zestaw; sukces z [] czyści widok.
+      AV.api.macroError = err.message;
       return false;
     }
   };
@@ -827,7 +870,7 @@
       gotowosc: r.score == null ? '' : r.score,
       clFull: full.length ? Math.round(full.filter((t) => t.result > 0).length / full.length * 100) : 0,
       clNo: part.length ? Math.round(part.filter((t) => t.result > 0).length / part.length * 100) : 0,
-      tr: today.count, event: next ? next.name : 'brak ważnych publikacji',
+      tr: today.count, event: next ? next.name : '',
       eventTime: next ? AV.timeFmt(next.date, state) : '—',
       eventWhen: next ? AV.eventStatus(next.date)[1] : 'do końca tygodnia',
       macroWynik: AV.money(macroNet, 2, ''), macroN: macroTrades.length,

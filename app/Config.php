@@ -215,7 +215,7 @@ final class Config
             quotesBase: rtrim((string) $env('QUOTES_BASE', 'https://query1.finance.yahoo.com'), '/'),
             quotesTtl: max(0, min(3600, $parseInt($env('QUOTES_TTL'), 60))),
             quotesCacheFile: (string) $env('QUOTES_CACHE', $root . '/cache/quotes.json'),
-            version: '3.5.0',
+            version: '3.6.0',
         );
     }
 }

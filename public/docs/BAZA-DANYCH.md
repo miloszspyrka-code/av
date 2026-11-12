@@ -19,6 +19,8 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `discord_scheduled_events` | zsynchronizowane wydarzenia Discord (UPSERT, soft delete) |
 | `discord_sync_state` | ostatnia próba/sukces, licznik, błąd, blokada CRON |
 | `discord_sync_runs` | historia synchronizacji (30 dni) |
+| `macro_events` | publikacje makro z feedów (UPSERT, soft delete, źródło FF/TradingView) |
+| `macro_sync_state` | ostatnia próba/sukces synchronizacji makro, licznik, błąd |
 | `wearable_connections` | jedno połączenie użytkownika z dostawcą; status, zaszyfrowane tokeny, token urządzenia Apple (hash), last sync |
 | `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
 | `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) |
@@ -34,6 +36,15 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 `user_states.state` to jeden dokument JSON. Limit `MAX_STATE_BYTES` = 12 MiB. Zapis jest optymistyczny: `revision` + `baseRevision`; konflikt → 409. Przy setkach screenów należy przenieść obrazy do osobnego storage i trzymać w stanie URL.
 
 Dokument zawiera m.in. `prop.challenges` (konfiguracje challenge'ów) i `prop.selectedId`. Metryki prop (cel, dzienny limit, obsunięcie, dni) są liczone po stronie frontendu z `trades` — bez dodatkowych tabel i endpointów. Szczegóły: [PROP.md](PROP.md).
+
+## Dane makro
+
+- `macro_events.external_id` to SHA-1 z `source|currency|nazwa|data ISO`; unikalny klucz pozwala robić UPSERT bez duplikatów.
+- `source` rozróżnia `forexfactory` (bieżący tydzień) i `tradingview` (następny tydzień).
+- `starts_at_utc` służy do okien i sortowania; `starts_at_iso` zachowuje oryginalny offset źródła.
+- `impact`: 3 = ★★★, 2 = ★★. Publikacje Low/Holiday nie są zapisywane.
+- Brak wydarzenia w udanym feedzie → `is_deleted=1`; powrót → `is_deleted=0`.
+- `raw_payload` nie jest przechowywany.
 
 ## Dane zdrowotne
 
