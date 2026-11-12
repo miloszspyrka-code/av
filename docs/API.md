@@ -251,6 +251,8 @@ Dozwolone: `live`, `consultation`, `unassigned`. Ręczne przypisanie (`manual_ca
 | `DISCORD_REDIRECT_URI` | `https://alphavault.pl/auth/discord/callback` |
 | `DISCORD_GUILD_ID` | serwer Alpha Moves |
 | `DISCORD_REQUIRED_ROLE_ID` | rola Alpha |
+| `DISCORD_BOT_TOKEN` | bot read-only do scheduled events |
+| `ADMIN_DISCORD_IDS` | Discord ID administratorów (po przecinku) |
 | `DISCORD_DEFAULT_PLAN` | `solo` lub `full` |
 | `DISCORD_TRIAL_DAYS` | 0 = bez daty końca |
 | `ALLOW_DEMO_LOGIN` | `false` na produkcji |
