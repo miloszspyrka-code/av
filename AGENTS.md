@@ -288,9 +288,11 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, wearables 33/33, PWA 20/20 |, integracje 19/19, UI integracje 11/11
+| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, wearables 33/33, PWA 20/20, integracje 19/19, UI integracje 11/11 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
-| Baza LH | tabele utworzone (14), w tym 4 tabele `wearable_*`, login OK |
+| Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK |
+| Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
+| Cron integracji | `success` 20:20:01, 0 połączeń, 0 importów (LH Cron co 5 min) |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
