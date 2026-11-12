@@ -6,7 +6,9 @@ Aplikacja używa **Authorization Code Grant** i dwóch scope'ów:
 identify guilds.members.read
 ```
 
-Nie wymaga bota ani `DISCORD_BOT_TOKEN`. Role są sprawdzane tokenem zalogowanego użytkownika:
+Do weryfikacji roli **nie jest potrzebny bot**. Bot jest natomiast używany wyłącznie do odczytu harmonogramu wydarzeń (`GET /guilds/{guild.id}/scheduled-events?with_user_count=true`) przez `DISCORD_BOT_TOKEN`. Bot ma tylko `View Channels`, bez uprawnień do zarządzania wydarzeniami i bez Privileged Gateway Intents.
+
+Role są sprawdzane tokenem zalogowanego użytkownika:
 
 ```text
 GET https://discord.com/api/v10/users/@me/guilds/{DISCORD_GUILD_ID}/member
@@ -46,6 +48,8 @@ DISCORD_CLIENT_SECRET
 DISCORD_REDIRECT_URI=https://alphavault.pl/auth/discord/callback
 DISCORD_GUILD_ID
 DISCORD_REQUIRED_ROLE_ID
+DISCORD_BOT_TOKEN
+ADMIN_DISCORD_IDS
 ```
 
 Wartości nie są zapisywane w repo ani wysyłane do przeglądarki. `config.json` jest generowany na serwerze poza docrootem.

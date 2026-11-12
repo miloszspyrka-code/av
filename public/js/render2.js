@@ -265,40 +265,133 @@
   /* ---------- akademia ---------- */
   AV.warsawNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
   AV.liveInfo = () => {
-    const now = AV.warsawNow();
-    const wd = now.getDay() === 0 ? 6 : now.getDay() - 1;
-    let target = new Date(now);
-    target.setHours(20, 0, 0, 0);
-    const liveNow = now >= target && now.getHours() < 23;
-    if (!liveNow && now >= target) target = AV.addDays(target, 1);
-    const sec = Math.max(0, Math.floor((target - now) / 1000));
-    const dayIdx = liveNow ? wd : (target.getDay() === 0 ? 6 : target.getDay() - 1);
-    return { now, target, sec, liveNow, live: AV.LIVES[dayIdx] };
+    const now = new Date();
+    const live = AV.nextLiveEvent();
+    if (!live) return { now, target: null, sec: null, liveNow: false, live: null };
+    const start = new Date(live.startAt);
+    const end = live.endAt ? new Date(live.endAt) : null;
+    const liveNow = start <= now && (!end || now < end);
+    const sec = Math.max(0, Math.floor((start - now) / 1000));
+    return { now, target: start, sec, liveNow, live };
   };
 
   AV.renderAcademy = () => {
-    const s = AV.state, info = AV.liveInfo();
-    AV.setText('#liveTitle', info.live[1]);
-    AV.setText('#liveWho', info.live[2]);
-    AV.setText('#liveCd', info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'));
-    $$('.liveIn').forEach((e) => e.textContent = info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'));
-    const wd = info.now.getDay() === 0 ? 6 : info.now.getDay() - 1;
-    AV.setHTML('#acad', AV.LIVES.map((l, i) => '<div class="aday ' + (i === wd ? 'today' : '') + '"><div class="d">' + l[0].toUpperCase() + (i === wd ? ' · DZIŚ' : '') + '</div><b>' + AV.esc(l[1]) + '</b><span>' + AV.esc(l[2]) + '</span><span class="mono" style="margin-top:8px">20:00</span></div>').join(''));
-    const c = s.meta.consultation;
-    AV.setText('#nextConsult', c ? new Date(c.date + 'T' + c.time + ':00').toLocaleDateString('pl-PL', { weekday: 'long', day: '2-digit', month: '2-digit' }) + ' · ' + c.time : '—');
-    AV.setText('#nextConsultWho', c ? 'z ' + c.who + ' · 60 min · Discord' : '');
-    const used = s.meta.consultationUsed || 0;
-    AV.setText('#consultUsed', used + ' z 3 h');
-    $('#consultBar').style.width = (used / 3 * 100) + '%';
-    AV.setText('#consultBar', '');
-    $('[data-setting="remindDay"]')?.classList.toggle('on', !!s.settings.remindDay);
-    $('[data-setting="remindHour"]')?.classList.toggle('on', !!s.settings.remindHour);
+    const s = AV.state;
+    const data = AV.api.events || { live: [], consultations: [], unassigned: [], nextConsultation: null, sync: null };
+    const live = AV.nextLiveEvent();
+    const info = AV.liveInfo();
+    const todayKey = AV.warsawDateKey(new Date());
+    const set = (sel, text) => AV.setText(sel, text || '');
+    const showEl = (sel, visible) => {
+      const el = document.querySelector(sel);
+      if (el) el.style.display = visible ? '' : 'none';
+    };
+
+    set('#liveTitle', live ? live.name : '');
+    set('#liveWho', live ? (live.host || '') : '');
+    set('#liveWhen', live ? (live.startLabel || '') : '');
+    set('#liveCd', live
+      ? (info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'))
+      : '');
+    $$('.liveIn').forEach((e) => {
+      e.textContent = live
+        ? (info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'))
+        : '';
+    });
+    const isToday = !!(live && live.localDate === todayKey);
+    set('#liveBadge', live ? (isToday ? 'Live dziś' : 'Najbliższy live') : '');
+    set('#liveTop', live ? (isToday ? 'Live dziś ' + live.localTime : live.startLabel) : '');
+    showEl('#liveBadge', !!live);
+    showEl('#liveWhen', !!live);
+    showEl('#liveJoin', !!live);
+    showEl('#liveRem', !!live);
+
+    const c = data.nextConsultation;
+    if (c) {
+      set('#nextConsult', c.startLabel || '');
+      const bits = [];
+      if (c.host) bits.push('z ' + c.host);
+      if (c.durationMinutes !== null && c.durationMinutes !== undefined) bits.push(c.durationMinutes + ' min');
+      bits.push('Discord');
+      set('#nextConsultWho', bits.join(' · '));
+      let month = '';
+      try {
+        month = new Intl.DateTimeFormat('pl-PL', { month: 'long', timeZone: 'Europe/Warsaw' }).format(new Date(c.startAt));
+      } catch (e) {
+        month = '';
+      }
+      set('#consultMonth', month);
+      AV.setHTML('#consultTopWrap', 'Twoja konsultacja: <b>' + AV.esc(c.startLabel || '') + '</b>' + (c.host ? ' z ' + AV.esc(c.host) : ''));
+    } else {
+      set('#nextConsult', '');
+      set('#nextConsultWho', '');
+      set('#consultMonth', '');
+      set('#consultTopWrap', '');
+    }
+
+    const used = Number(s.meta.consultationUsed || 0);
+    set('#consultUsed', used + ' z 3 h');
+    const bar = document.querySelector('#consultBar');
+    if (bar) bar.style.width = Math.min(100, (used / 3) * 100) + '%';
+
+    const labels = ['PN', 'WT', 'ŚR', 'CZW', 'PT', 'SB', 'ND'];
+    const [y, m, d] = todayKey.split('-').map(Number);
+    const monday = new Date(Date.UTC(y, m - 1, d, 12));
+    const dow = monday.getUTCDay() || 7;
+    monday.setUTCDate(monday.getUTCDate() - dow + 1);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const dt = new Date(monday);
+      dt.setUTCDate(monday.getUTCDate() + i);
+      const key = dt.toISOString().slice(0, 10);
+      days.push({ key, label: labels[i], today: key === todayKey });
+    }
+    const liveEvents = (data.live || []).slice().sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+    AV.setHTML('#acad', days.map((day) => {
+      const events = liveEvents.filter((e) => e.localDate === day.key);
+      return '<div class="aday ' + (day.today ? 'today' : '') + '"><div class="d">' + day.label + (day.today ? ' · DZIŚ' : '') + '</div>' +
+        events.map((e) => '<b>' + AV.esc(e.name) + '</b><span>' + AV.esc(e.host || '') + '</span><span class="mono" style="margin-top:8px">' +
+          AV.esc(e.localTime || '') + (e.userCount !== null && e.userCount !== undefined ? ' · ' + e.userCount + ' os.' : '') + '</span>').join('') +
+        '</div>';
+    }).join(''));
+
+    const sync = data.sync;
+    if (sync && sync.lastSuccessAt) {
+      try {
+        const dt = new Date(String(sync.lastSuccessAt).replace(' ', 'T') + 'Z');
+        const label = new Intl.DateTimeFormat('pl-PL', {
+          timeZone: 'Europe/Warsaw', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        }).format(dt);
+        set('#acadUpdated', (sync.stale ? 'nieaktualne · ' : '') + label);
+      } catch (e) {
+        set('#acadUpdated', '');
+      }
+    } else {
+      set('#acadUpdated', '');
+    }
+
+    const adminCard = document.querySelector('#adminEventsCard');
+    const unassigned = data.unassigned || [];
+    if (adminCard) {
+      const visible = !!(AV.api.isAdmin && unassigned.length);
+      adminCard.style.display = visible ? '' : 'none';
+      if (visible) {
+        AV.setHTML('#adminEvents', unassigned.map((e) =>
+          '<div class="row" style="margin-top:8px;align-items:center"><div><b>' + AV.esc(e.name) + '</b><span class="dim" style="display:block;font-size:12px">' +
+          AV.esc(e.startLabel || '') + '</span></div><div style="display:flex;gap:6px">' +
+          '<button class="btn g sm" data-event-category="live" data-event-id="' + AV.esc(e.id) + '">live</button>' +
+          '<button class="btn g sm" data-event-category="consultation" data-event-id="' + AV.esc(e.id) + '">konsultacja</button>' +
+          '</div></div>').join(''));
+        set('#adminSyncState', sync && sync.stale ? 'synchronizacja nieaktualna' : (sync && sync.lastSuccessAt ? 'zsynchronizowano' : ''));
+      }
+    }
+
     AV.show('#akUp', s.subscription.plan === 'solo');
     AV.show('#akFull', s.subscription.plan !== 'solo');
     $$('.strip').forEach((e) => e.style.display = s.subscription.plan === 'solo' ? 'none' : 'flex');
     const nb = $('.navg button[data-v="akad"] .badge');
     if (nb) { nb.innerHTML = s.subscription.plan === 'solo' ? AV.ic('lock') : 'LIVE'; nb.className = s.subscription.plan === 'solo' ? 'badge g lk' : 'badge'; }
-    const cnt = s.subscription.plan === 'solo' ? 0 : 3;
     const mb = $('.navg button[data-v="mentor"] .badge');
     if (mb) { mb.textContent = '3'; }
   };

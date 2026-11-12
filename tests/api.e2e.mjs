@@ -58,6 +58,10 @@ async function main() {
   assert.equal(unauthorized.res.status, 401);
   log('state bez sesji = 401', true);
 
+  const eventsAnon = await req('/api/events');
+  assert.equal(eventsAnon.res.status, 401);
+  log('events bez sesji = 401', true);
+
   const demo = await req('/auth/demo', {
     method: 'POST',
     body: JSON.stringify({ remember: true }),
@@ -92,6 +96,16 @@ async function main() {
   assert.equal(me.json.authenticated, true);
   assert.equal(me.json.user.isDemo, true);
   log('me z sesją', true, me.json.user.username);
+
+  const events = await req('/api/events');
+  assert.equal(events.res.status, 200, events.text);
+  assert.ok(Array.isArray(events.json.events));
+  assert.ok(events.json.sync && typeof events.json.sync.status === 'string');
+  log('events z sesją', true, events.json.events.length + ' wydarzeń');
+
+  const adminEvents = await req('/api/admin/events');
+  assert.equal(adminEvents.res.status, 403);
+  log('admin events bez uprawnień = 403', true);
 
   const state = await req('/api/state');
   assert.equal(state.res.status, 200);

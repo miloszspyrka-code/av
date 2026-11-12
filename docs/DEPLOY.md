@@ -72,7 +72,29 @@ Backend odmawia dostępu, gdy:
 - użytkownik nie ma wymaganej roli,
 - `DISCORD_GUILD_ID` lub `DISCORD_REQUIRED_ROLE_ID` nie są ustawione (fail closed).
 
-## 5. Deployment
+## 5. Synchronizacja Discord (CRON)
+
+Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → dodaj zadanie:
+
+```text
+*/5 * * * * /usr/bin/php /home/platne/serwer445119/alphavault-app/bin/sync-discord-events.php
+```
+
+Wymagania:
+
+- `DISCORD_BOT_TOKEN` i `DISCORD_GUILD_ID` w `~/alphavault-app/config.json`,
+- bot z uprawnieniem `View Channels`, bez uprawnień do zarządzania wydarzeniami,
+- brak Privileged Gateway Intents.
+
+Ręczny test:
+
+```bash
+/usr/bin/php ~/alphavault-app/bin/sync-discord-events.php
+```
+
+Log: `~/alphavault-app/logs/discord-sync.log`. Stan: tabele `discord_sync_state`, `discord_sync_runs`. Skrypt blokuje równoległe uruchomienia i przy błędzie API nie usuwa ostatniego dobrego zestawu wydarzeń.
+
+## 6. Deployment
 
 Workflow `.github/workflows/deploy-alphavault.yml`:
 

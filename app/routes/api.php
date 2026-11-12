@@ -26,16 +26,20 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 'now' => gmdate('Y-m-d\TH:i:s\Z'),
                 'discordConfigured' => $config->discordConfigured,
                 'roleCheckConfigured' => $config->roleCheckConfigured,
+                'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
             ]);
         }
 
         if ($path === '/api/me' && $method === 'GET') {
+            $events = new DiscordEvents($config, $db);
             $base = [
                 'authenticated' => $user !== null,
                 'discordConfigured' => $config->discordConfigured,
                 'roleCheckConfigured' => $config->roleCheckConfigured,
+                'eventsConfigured' => $config->eventsConfigured,
                 'demoAllowed' => $config->allowDemoLogin,
+                'isAdmin' => $events->isAdmin($user),
                 'db' => $config->db['database'],
             ];
             if ($user === null) {
@@ -163,6 +167,41 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             header('Content-Disposition: attachment; filename="alpha-vault-' . gmdate('Y-m-d') . '.json"');
             echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
             exit;
+        }
+
+        if ($path === '/api/events' && $method === 'GET') {
+            $auth->requireAuth($user);
+            $events = new DiscordEvents($config, $db);
+            Http::json($events->listForApi(false));
+        }
+
+        if ($path === '/api/admin/events' && $method === 'GET') {
+            $current = $auth->requireAuth($user);
+            $events = new DiscordEvents($config, $db);
+            if (!$events->isAdmin($current)) {
+                Http::json(['error' => 'forbidden', 'message' => 'Brak uprawnień administratora wydarzeń.'], 403);
+            }
+            Http::json([
+                'isAdmin' => true,
+                'events' => $events->listForApi(true)['events'],
+                'sync' => $events->syncState(),
+            ]);
+        }
+
+        if (preg_match('#^/api/admin/events/([0-9]+)/category$#', $path, $matches) && $method === 'PUT') {
+            $current = $auth->requireAuth($user);
+            $events = new DiscordEvents($config, $db);
+            if (!$events->isAdmin($current)) {
+                Http::json(['error' => 'forbidden', 'message' => 'Brak uprawnień administratora wydarzeń.'], 403);
+            }
+            $auth->requireSameOrigin();
+            $body = Http::readJsonBody(65536);
+            $category = (string) ($body['category'] ?? '');
+            $updated = $events->adminSetCategory($matches[1], $category);
+            if (!$updated) {
+                Http::json(['error' => 'not_found', 'message' => 'Nie ma takiego wydarzenia.'], 404);
+            }
+            Http::json(['ok' => true, 'id' => $matches[1], 'category' => $category]);
         }
 
         if (str_starts_with($path, '/api/')) {

@@ -27,8 +27,10 @@ Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request.
 | `app/Auth.php` | cookie, sesje, CSRF, rate limit, audit, public user |
 | `app/Discord.php` | OAuth2, profil, członkostwo i rola |
 | `app/Http.php` | JSON/HTML, nagłówki, błędy |
-| `app/routes/api.php` | `/api/health`, `/api/me`, `/api/state`, konto, eksport |
+| `app/routes/api.php` | `/api/health`, `/api/me`, `/api/state`, `/api/events`, konto, eksport |
 | `app/routes/auth.php` | `/auth/discord`, callback, demo, logout |
+| `app/DiscordEvents.php` | Discord Scheduled Events, klasyfikacja, upsert, soft delete |
+| `bin/sync-discord-events.php` | skrypt LH Cron (co 5 min) |
 | `public/index.php` | routing i serwowanie UI |
 
 ## Dane

@@ -69,6 +69,18 @@ Wymagane sekrety GitHub:
 - CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`,
 - `config.json` poza docrootem, `.env` i klucze w `.gitignore`.
 
+## Discord Scheduled Events
+
+Harmonogram live'ów i konsultacje są synchronizowane z Discorda przez `bin/sync-discord-events.php` uruchamiany z LH Cron co 5 minut. Skrypt pobiera `GET /guilds/{guild.id}/scheduled-events?with_user_count=true`, zapisuje wydarzenia w `discord_scheduled_events` (UPSERT, soft delete) i aktualizuje `discord_sync_state`.
+
+- kategorie: `live`, `consultation`, `unassigned`;
+- ręczne przypisanie event ID ma pierwszeństwo;
+- czasy są przechowywane w UTC i prezentowane w `Europe/Warsaw`;
+- przy błędzie API ostatni poprawny zestaw wydarzeń pozostaje w bazie;
+- panel pobiera dane z `/api/events`, bez odpytywania Discorda przy każdym otwarciu.
+
+Konfiguracja Cron: `docs/DEPLOY.md`.
+
 ## CI/CD
 
 - `ci.yml`: PHP lint, MySQL 8.4, migracja, API e2e, UI e2e.

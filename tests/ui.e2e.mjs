@@ -60,6 +60,18 @@ try {
   assert.equal(rows, 47);
   log('dziennik z bazy', rows === 47, rows + ' transakcji');
 
+  await page.click('.navg button[data-v="akad"]');
+  await page.waitForTimeout(600);
+  const liveTitle = (await page.locator('#liveTitle').innerText()).trim();
+  const liveWho = (await page.locator('#liveWho').innerText()).trim();
+  const nextConsult = (await page.locator('#nextConsult').innerText()).trim();
+  const acadText = (await page.locator('#acad').innerText()).trim();
+  const liveTop = (await page.locator('#liveTop').innerText()).trim();
+  log('Discord live z API', liveTitle.includes('AT - Marcin') && liveWho.includes('Marcin'), liveTitle + ' / ' + liveWho);
+  log('Discord konsultacja z API', nextConsult.includes('Konsultacja 1:1') || nextConsult.includes('17.11') || nextConsult.length > 0, nextConsult);
+  log('Discord harmonogram tygodnia', acadText.includes('AT - Marcin'), acadText.slice(0, 120));
+  log('Discord strip live', liveTop.length > 0, liveTop);
+
   // nawigacja po wszystkich widokach
   const views = ['plan', 'trans', 'play', 'nowa', 'kalk', 'stat', 'mentor', 'akad', 'tax', 'kal', 'cialo', 'gieldy', 'ust', 'pulpit'];
   for (const v of views) {

@@ -515,7 +515,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     </div>
   </div>
 
-  <div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span>Live dziś <b>20:00</b> · <span class="liveIn al"></span></span><span class="sep"></span><span>Twoja konsultacja: <b id="consultTop">wt 17.11, 18:00</b> z Marcinem</span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
+<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
   <div class="grid sec" style="grid-template-columns:1.3fr 1fr">
     <div class="card ins alert" id="dashMentor"><div class="sech" style="margin:0"><span class="tag alert">Mentor · alarm</span><span class="link" data-go="mentor">Wszystkie uwagi <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div><h3>To wygląda na odgrywanie się</h3><p>12 min po stracie na ETH otworzyłaś SOL pozycją 2,3× większą niż zwykle. Rynek nie wie, że straciłaś.</p><div class="step"><b>Krok na dziś:</b> zamknij platformę i zapisz, co czułaś przy ostatnim wejściu.</div></div>
     <div class="card" style="cursor:pointer" data-go="stat"><div class="sech" style="margin:0"><div class="lbl">Kapitał · 30 dni</div><span class="win mono" style="font-weight:700" id="dash30">+8,2%</span></div>
@@ -814,19 +814,20 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div id="akFull">
   <div class="head"><div><div class="eyebrow">Akademia Alpha Moves</div><h1>Twoja <span class="serif">Akademia.</span></h1><p>Live'y, konsultacje i materiały w jednym miejscu. Przypomnienia przychodzą same.</p></div><div style="display:flex;gap:10px"><span class="btn g" data-doc="ak">Czym jest Akademia?</span><a class="btn g" href="https://www.alphamoves.pl" target="_blank" rel="noopener">www.alphamoves.pl ↗</a></div></div>
   <div class="grid" style="grid-template-columns:1.3fr 1fr;align-items:start">
-    <div class="card hl"><div class="sech" style="margin:0"><span class="tag alert"><span class="pulse rd" style="width:6px;height:6px"></span>Live dziś</span><span class="mono dim" style="font-size:12px">20:00 czasu PL</span></div>
-      <h2 style="font-size:28px;margin-top:14px;letter-spacing:-.6px" id="liveTitle">Analiza rynku na nowy tydzień</h2><div class="mut" style="margin-top:6px" id="liveWho">Marcin · BTC, ETH, alty i plan na weekend</div>
-      <div style="display:flex;align-items:flex-end;gap:24px;margin-top:20px;flex-wrap:wrap"><div><div class="lbl">Start za</div><div class="mono" style="font-size:40px;font-weight:700;margin-top:6px" id="liveCd">--:--:--</div></div>
-      <div style="display:flex;gap:10px;margin-left:auto"><button class="btn p" id="liveJoin"><svg class="i"><use href="#i-play"/></svg>Dołącz o 20:00</button><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div></div>
+<div class="card hl"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
+<h2 style="font-size:28px;margin-top:14px;letter-spacing:-.6px" id="liveTitle"></h2><div class="mut" style="margin-top:6px" id="liveWho"></div>
+<div style="display:flex;align-items:flex-end;gap:24px;margin-top:20px;flex-wrap:wrap"><div><div class="lbl">Start za</div><div class="mono" style="font-size:40px;font-weight:700;margin-top:6px" id="liveCd"></div></div>
+<div style="display:flex;gap:10px;margin-left:auto"><button class="btn p" id="liveJoin"><svg class="i"><use href="#i-play"/></svg>Dołącz</button><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div></div>
     </div>
-    <div class="card"><div class="sech" style="margin:0"><h2>Konsultacje 1:1</h2><span class="mono dim" style="font-size:12px">listopad</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-top:14px"><span class="mut">Wykorzystane</span><b id="consultUsed">1 z 3 h</b></div><div class="bar"><i id="consultBar" style="width:33%;background:var(--alpha)"></i></div>
-      <div class="ticket" style="margin-top:16px"><div class="lbl">Najbliższa</div><div style="font-weight:800;font-size:18px;margin-top:6px" id="nextConsult">wtorek 17.11 · 18:00</div><div class="mut" style="font-size:13.5px;margin-top:2px" id="nextConsultWho">z Marcinem · 60 min · Discord</div></div>
+<div class="card"><div class="sech" style="margin:0"><h2>Konsultacje 1:1</h2><span class="mono dim" style="font-size:12px" id="consultMonth"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:13.5px;margin-top:14px"><span class="mut">Wykorzystane</span><b id="consultUsed"></b></div><div class="bar"><i id="consultBar" style="width:0;background:var(--alpha)"></i></div>
+<div class="ticket" style="margin-top:16px"><div class="lbl">Najbliższa</div><div style="font-weight:800;font-size:18px;margin-top:6px" id="nextConsult"></div><div class="mut" style="font-size:13.5px;margin-top:2px" id="nextConsultWho"></div></div>
       <div class="row" style="margin-top:6px"><div><b>Przypomnienie dzień wcześniej</b></div><div class="toggle on" data-setting="remindDay"></div></div><div class="row"><div><b>Przypomnienie 1 h przed</b></div><div class="toggle on" data-setting="remindHour"></div></div>
       <div style="display:flex;gap:10px;margin-top:10px"><button class="btn p sm" id="bookBtn">Zarezerwuj kolejną</button><button class="btn g sm" id="shareTrade">Wyślij transakcję do omówienia</button></div>
     </div>
   </div>
-  <div class="card sec"><div class="sech"><h2>Harmonogram live'ów</h2><span class="mono dim" style="font-size:12px">codziennie 20:00</span></div><div class="acad" id="acad"></div></div>
+<div class="card sec"><div class="sech"><h2>Harmonogram live'ów</h2><span class="mono dim" style="font-size:12px" id="acadUpdated"></span></div><div class="acad" id="acad"></div></div>
+  <div class="card sec" id="adminEventsCard" style="display:none"><div class="sech"><h2>Wydarzenia do przypisania</h2><span class="mono dim" style="font-size:12px" id="adminSyncState"></span></div><div id="adminEvents"></div></div>
   <div class="grid sec g2">
     <div class="card"><div class="sech"><h2>Ostatnie nagrania</h2><span class="link" id="recordsAll">Wszystkie</span></div>
       <div class="rec" data-recording="Najczęstsze błędy na starcie"><div class="th"><svg class="i"><use href="#i-play"/></svg></div><div><b>Najczęstsze błędy na starcie</b><span>Albert · Q&amp;A z psycholożką · 1:24 h</span></div></div>

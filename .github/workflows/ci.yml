@@ -75,8 +75,10 @@ jobs:
             "DISCORD_CLIENT_ID": "",
             "DISCORD_CLIENT_SECRET": "",
             "DISCORD_REDIRECT_URI": "http://127.0.0.1:4173/auth/discord/callback",
-            "DISCORD_GUILD_ID": "",
-            "DISCORD_REQUIRED_ROLE_ID": "",
+            "DISCORD_GUILD_ID": "test-guild",
+            "DISCORD_REQUIRED_ROLE_ID": "test-role",
+            "DISCORD_BOT_TOKEN": "test-bot-token",
+            "ADMIN_DISCORD_IDS": "admin-test",
             "DISCORD_DEFAULT_PLAN": "full",
             "DISCORD_TRIAL_DAYS": "0",
             "ALLOW_DEMO_LOGIN": "true",
@@ -88,6 +90,11 @@ jobs:
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php app/db/migrate.php
+
+      - name: Discord events tests
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: php tests/discord-events.test.php
 
       - name: Start PHP server
         run: |
@@ -110,16 +117,44 @@ jobs:
           APP_URL: http://127.0.0.1:4173
         run: node tests/api.e2e.mjs
 
+      - name: Seed Discord events for UI
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: php tests/seed-discord-events.php
+
       - name: UI E2E
         env:
           APP_URL: http://127.0.0.1:4173
           CHROME_PATH: /usr/bin/google-chrome
         run: node tests/ui.e2e.mjs
 
+      - name: Start empty-events PHP server
+        run: |
+          set -euo pipefail
+          APP_URL=http://127.0.0.1:4174 DISCORD_GUILD_ID=empty-guild ALPHA_VAULT_CONFIG=tests/config.test.json \
+            php -S 127.0.0.1:4174 -t public public/router.php > /tmp/php-server-empty.log 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4174/api/health >/dev/null 2>&1; then
+              echo "Empty-events PHP server is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/php-server-empty.log
+          exit 1
+
+      - name: UI empty-state E2E
+        env:
+          APP_URL: http://127.0.0.1:4174
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/ui-empty.e2e.mjs
+
       - name: Upload PHP server log on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: php-server-log
-          path: /tmp/php-server.log
+          path: |
+            /tmp/php-server.log
+            /tmp/php-server-empty.log
           retention-days: 3
