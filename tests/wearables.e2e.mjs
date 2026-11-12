@@ -163,7 +163,7 @@ async function ensureTodayTrade() {
   const sample = trades[0] || {};
   value.trades = [
     ...trades,
-    { ...sample, id: 'e2e-sleep-' + Date.now(), date: new Date().toISOString(), result: 10 }
+    { ...sample, id: 'e2e-sleep-' + Date.now(), date: warsawDay() + 'T12:00:00.000Z', result: 10 }
   ];
   const put = await req('/api/state', {
     method: 'PUT',
