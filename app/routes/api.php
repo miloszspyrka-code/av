@@ -364,6 +364,12 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             Http::json($events->listForApi(false));
         }
 
+        if ($path === '/api/macro-events' && $method === 'GET') {
+            $auth->requireAuth($user);
+            $macro = new MacroEvents($config, $db);
+            Http::json($macro->listForApi());
+        }
+
         if ($path === '/api/admin/events' && $method === 'GET') {
             $current = $auth->requireAuth($user);
             $events = new DiscordEvents($config, $db);

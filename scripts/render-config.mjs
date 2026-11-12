@@ -38,7 +38,10 @@ const keys = [
   'GARMIN_CLIENT_SECRET',
   'GARMIN_AUTHORIZE_URL',
   'GARMIN_TOKEN_URL',
-  'GARMIN_API_BASE'
+  'GARMIN_API_BASE',
+  'QUOTES_BASE',
+  'QUOTES_TTL',
+  'QUOTES_CACHE'
 ];
 
 const out = {};

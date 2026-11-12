@@ -1432,10 +1432,11 @@
     setInterval(AV.loadQuotes, 60000);
     setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); if (AV.propNotify) AV.propNotify(); } }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
+    setInterval(() => { if (AV.isLoggedIn()) AV.loadMacroEvents(); }, 300000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadWearables(); }, 300000);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') AV.loadQuotes();
-      if (document.visibilityState === 'visible' && AV.isLoggedIn()) { AV.loadEvents(); AV.loadWearables(); }
+      if (document.visibilityState === 'visible' && AV.isLoggedIn()) { AV.loadEvents(); AV.loadMacroEvents(); AV.loadWearables(); }
     });
     setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); if (AV.propNotify) AV.propNotify(); }, 4000);
     AV.showView(AV.viewFromHash());

@@ -118,6 +118,22 @@ Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alpha
 
 `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje), więc harmonogram zmieniaj tylko w panelu LH.
 
+## 5a. Synchronizacja kalendarza makro (CRON)
+
+Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadanie:
+
+```text
+*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
+```
+
+Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-macro-events.php`.
+
+- bieżący tydzień: `ff_calendar_thisweek.json` (ForexFactory),
+- następny tydzień: `economic-calendar.tradingview.com` (TradingView),
+- zapis tylko ★★/★★★, UPSERT + soft delete,
+- log: `~/public_html/alphavault.pl/.app/logs/macro-sync.log`,
+- deploy po migracji uruchamia jednorazowy sync; błąd nie blokuje wdrożenia.
+
 Wymagania:
 
 - `DISCORD_BOT_TOKEN` i `DISCORD_GUILD_ID` w `~/public_html/alphavault.pl/.app/config.json`,
@@ -280,6 +296,12 @@ Istniejące zadanie co 5 min wywołuje także worker integracji:
 
 ```text
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
+```
+
+Kalendarz makro ma osobne zadanie co 15 min:
+
+```text
+*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
 ```
 
 Worker pilnuje progu 25 minut, więc realny import odbywa się co ok. 30 min. Ręcznie:

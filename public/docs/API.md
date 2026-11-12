@@ -227,11 +227,42 @@ Wymaga sesji. Zwraca wydarzenia Discord zsynchronizowane przez CRON oraz stan sy
 
 Każde wydarzenie zawiera m.in. `id`, `url` (kanoniczny link `https://discord.com/events/{guild_id}/{event_id}`), `name`, `description`, `entityType`, `status`, `startAt` (UTC ISO), `startLocal` (`Europe/Warsaw` z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`. `url` jest `null` wyłącznie dla rekordów z identyfikatorem spoza formatu Snowflake (fixtury testowe). `raw_payload` nie jest udostępniany.
 
-### 3.9. `GET /api/admin/events`
+### 3.9. `GET /api/macro-events`
+
+Wymaga sesji. Zwraca publikacje makro z MySQL, zsynchronizowane przez CRON z publicznych feedów (bieżący tydzień: ForexFactory; następny tydzień: TradingView), oraz stan synchronizacji. Zakres: od 8 dni wstecz do 21 dni do przodu.
+
+```json
+{
+  "events": [
+    {
+      "id": "6f1c...",
+      "source": "forexfactory",
+      "name": "Core CPI m/m",
+      "description": "Prognoza 0.2% · poprzednio 0.3%",
+      "currency": "USD",
+      "impact": 3,
+      "startAt": "2026-11-10T13:30:00Z",
+      "startIso": "2026-11-10T08:30:00-05:00",
+      "forecast": "0.2%",
+      "previous": "0.3%"
+    }
+  ],
+  "sync": {
+    "status": "success",
+    "lastSuccessAt": "2026-11-12T21:45:00Z",
+    "eventsCount": 42,
+    "stale": false
+  }
+}
+```
+
+`impact`: `3` = ★★★, `2` = ★★. `startAt` jest w UTC ISO; `startIso` zachowuje oryginalny offset źródła. `status`: `never`, `running`, `success`, `partial` (bieżący tydzień OK, następny niedostępny) lub `error`. Sukces z `events: []` czyści widok; błąd API po stronie UI zachowuje ostatni dobry zestaw.
+
+### 3.10. `GET /api/admin/events`
 
 Wymaga zalogowania i Discord ID z `ADMIN_DISCORD_IDS`. Zwraca wszystkie rekordy (także soft-deleted), stan synchronizacji i listę do przypisania.
 
-### 3.10. `PUT /api/admin/events/{id}/category`
+### 3.11. `PUT /api/admin/events/{id}/category`
 
 Wymaga administratora i poprawnego `Origin`.
 
@@ -241,7 +272,7 @@ Wymaga administratora i poprawnego `Origin`.
 
 Dozwolone: `live`, `consultation`, `unassigned`. Ręczne przypisanie (`manual_category`) ma pierwszeństwo przed regułami i przetrwa kolejne synchronizacje.
 
-### 3.11. Urządzenia zdrowotne
+### 3.12. Urządzenia zdrowotne
 
 Wszystkie endpointy poza ingestem Apple wymagają sesji. Tokeny dostawców są szyfrowane AES-256-GCM i nigdy nie trafiają do odpowiedzi API.
 

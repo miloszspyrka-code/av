@@ -244,8 +244,8 @@
     const tomorrowEv = AV.buildEvents().filter((e) => e.imp === 3 && AV.dateKey(new Date(e.date)) === AV.dateKey(AV.addDays(new Date(), 1)))[0];
     AV.setHTML('#planSideBody',
       lv.slice(0, 4).map((l) => '<div class="kv"><span>' + AV.esc(l.type) + (l.note ? ' · ' + AV.esc(l.note) : '') + '</span><b class="mono ' + (l.type === 'Wsparcie' && l.note && /unieważ/i.test(l.note) ? 'loss' : '') + '">' + AV.esc(l.price || '—') + '</b></div>').join('') +
-      '<div class="kv"><span>Makro dziś</span><b>' + (todayEv ? AV.esc(todayEv.name) + ' ' + AV.timeFmt(todayEv.date, AV.state) : 'spokojnie') + '</b></div>' +
-      '<div class="kv"><span>Makro jutro</span><b class="al">' + (tomorrowEv ? AV.esc(tomorrowEv.name) + ' ' + AV.timeFmt(tomorrowEv.date, AV.state) : 'brak ★★★') + '</b></div>' +
+      '<div class="kv"><span>Makro dziś</span><b>' + (todayEv ? AV.esc(todayEv.name) + ' ' + AV.timeFmt(todayEv.date, AV.state) : '') + '</b></div>' +
+      '<div class="kv"><span>Makro jutro</span><b class="al">' + (tomorrowEv ? AV.esc(tomorrowEv.name) + ' ' + AV.timeFmt(tomorrowEv.date, AV.state) : '') + '</b></div>' +
       '<div class="kv"><span>Limity</span><b>ryzyko ' + AV.esc(p.risk || '—') + ' · max ' + AV.esc(p.maxTrades || '—') + ' transakcji</b></div>');
   };
 

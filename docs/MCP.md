@@ -166,7 +166,7 @@ Legenda: **R** = read-only, **W** = zapis, **A** = admin. Fazy: 1 = MVP, 2 = po 
 | # | Narzędzie | Typ | Funkcja | Uwagi |
 | --- | --- | --- | --- | --- |
 | 20 | `get_mentor_insights` | R | regułowy mentor: limit strat, odgrywanie, MFE, ocena A | bez LLM po stronie serwera |
-| 21 | `get_macro_calendar` | R | kalendarz makro | wymaga przeniesienia danych makro do backendu; teraz są w JS |
+| 21 | `get_macro_calendar` | R | kalendarz makro | dane są już w `macro_events` / `/api/macro-events`; narzędzie MCP do dodania |
 | 22 | `export_data` | R | eksport JSON/CSV | duże; raczej jako MCP resource niż tool |
 
 ### 5.4. Świadomie poza zakresem

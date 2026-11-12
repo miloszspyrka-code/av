@@ -195,6 +195,7 @@ Pełny kontrakt: [docs/API.md](docs/API.md). Specyfikacja: [docs/openapi.yaml](d
 | GET | `/api/me/export` | tak | eksport JSON |
 | GET | `/api/quotes` | nie | notowania rynkowe z cache i fallbackiem |
 | GET | `/api/events` | tak | wydarzenia, live, konsultacje, sync |
+| GET | `/api/macro-events` | tak | publikacje makro + sync |
 | GET | `/api/admin/events` | admin | wszystkie wydarzenia + sync |
 | PUT | `/api/admin/events/{id}/category` | admin | ręczne przypisanie |
 | GET | `/api/wearables` | tak | urządzenia, metryki, baseline, gotowość |
@@ -387,9 +388,10 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 
 ```text
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
+*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
 ```
 
-Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php`.
+Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` oraz `/usr/bin/php .../bin/sync-macro-events.php`.
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
@@ -435,6 +437,15 @@ Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/al
 
 Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępnia wyłącznie metadane operacyjne.
 
+### 9.6. Kalendarz makro
+
+- `bin/sync-macro-events.php` pobiera bieżący tydzień z `ff_calendar_thisweek.json` (ForexFactory) i następny tydzień z `economic-calendar.tradingview.com` (TradingView).
+- Zapisuje tylko publikacje ★★ i ★★★; Low/Holiday oraz szum (aukcje, wystąpienia) są pomijane.
+- UPSERT po `external_id`, soft delete po udanym pobraniu danego feedu.
+- Błąd ForexFactory → `status=error`, dane nietknięte. Błąd TradingView → `status=partial`, bieżący tydzień nadal się zapisuje.
+- `stale=true` po 1800 s od ostatniego sukcesu.
+- Log: `~/public_html/alphavault.pl/.app/logs/macro-sync.log`.
+
 ## 10. Baza danych i transakcje
 
 ### 10.1. Tabele
@@ -450,6 +461,8 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 | `discord_scheduled_events` | wydarzenia Discord | `discord_event_id` (UNIQUE) |
 | `discord_sync_state` | stan i blokada sync | `id=1` |
 | `discord_sync_runs` | historia sync (30 dni) | `id` |
+| `macro_events` | publikacje makro (FF/TradingView, UPSERT, soft delete) | `external_id` (UNIQUE) |
+| `macro_sync_state` | stan synchronizacji makro | `id=1` |
 | `wearable_connections` | połączenie z urządzeniem, zaszyfrowane tokeny | `(user_id, provider)` |
 | `wearable_daily_metrics` | dzienne metryki zdrowotne | `(user_id, provider, metric_date)` |
 | `wearable_oauth_states` | jednorazowe stany OAuth2 urządzeń | `state` |
@@ -465,6 +478,14 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 - `idx_discord_start (scheduled_start_time)`,
 - `idx_discord_category (category)`,
 - `idx_discord_deleted (is_deleted)`.
+
+### 10.2a. Indeksy makro
+
+- `UNIQUE uq_macro_external (external_id)`,
+- `idx_macro_start (starts_at_utc)`,
+- `idx_macro_impact (impact)`,
+- `idx_macro_source (source)`,
+- `idx_macro_deleted (is_deleted)`.
 
 ### 10.3. Soft delete
 
@@ -503,8 +524,9 @@ Skrypty mają `defer`; kolejność jest istotna.
 3. Sesja → `GET /api/state`; brak stanu → `buildEmpty()` lub `buildDemo()` dla demo.
 4. `AV.applyServerUser()`.
 5. `AV.loadEvents()` → `GET /api/events`.
-6. `AV.loadWearables()` → `GET /api/wearables` (błąd nie blokuje panelu).
-7. `AV.renderAll()` → `renderAcademy()`, `renderBody()`.
+6. `AV.loadMacroEvents()` → `GET /api/macro-events` (błąd nie czyści ostatniego dobrego zestawu).
+7. `AV.loadWearables()` → `GET /api/wearables` (błąd nie blokuje panelu).
+8. `AV.renderAll()` → `renderAcademy()`, `renderBody()`.
 
 ### 11.3. Render Akademii
 
@@ -528,7 +550,8 @@ Skrypty mają `defer`; kolejność jest istotna.
 | 12 s | ticker |
 | 60 s | kalendarz makro, powiadomienia |
 | 300 s | `loadEvents()` |
-| `visibilitychange` | `loadEvents()` po powrocie do karty |
+| 300 s | `loadMacroEvents()` |
+| `visibilitychange` | `loadEvents()`, `loadMacroEvents()` po powrocie do karty |
 | 4 s po starcie | `checkLiveReminder()` |
 
 ### 11.5. Przypomnienia
@@ -666,11 +689,11 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Suita | Plik | Zakres | Wynik lokalny |
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
+| Makro DB/sync | `tests/macro-events.test.php` | normalizacja FF/TradingView, UTC, UPSERT, soft delete, okno źródła | 21/21 PASS |
 | Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
-| Notowania E2E | `tests/quotes.e2e.mjs` | HTTP, kształt JSON, cache, błąd dostawcy, pusty stan | 5/5 PASS |
-| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport, prop | 21/21 PASS |
-| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, pusty stan, zapisy, 8 odznak | 51/51 PASS |
+| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, macro, admin, eksport, prop | 23/23 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak | 52/52 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
 | PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |
@@ -690,8 +713,8 @@ npm run test:ui
 npm run test:ui:empty
 npm run test:pwa
 npm run test:events
+npm run test:macro
 npm run test:quotes
-npm run test:quotes:e2e
 npm run test:wearables
 npm run test:docs
 ```

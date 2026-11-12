@@ -249,5 +249,8 @@ node scripts/render-config.mjs | ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "umask 077; 
 log "Applying database schema..."
 ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "php '$APP_PATH/app/db/migrate.php'"
 
+log "Syncing macro calendar..."
+ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "php '$APP_PATH/bin/sync-macro-events.php' || echo 'macro sync failed; LH Cron will retry'"
+
 health_check
 log "Deployment finished successfully."
