@@ -98,10 +98,10 @@ npm run test:ui:empty
 
 `tests/ui-empty.e2e.mjs` przy poprawnym sync zwracającym `[]` sprawdza:
 
-- pusty tytuł, prowadzący i countdown,
+- pusty tytuł, prowadzący i ukryta karta live,
 - pustą kartę konsultacji,
 - puste pola w strip,
-- ukryty przycisk „Dołącz”,
+- ukryty link „Dołącz”,
 - 7 dni tygodnia bez wydarzeń,
 - `events.length === 0`,
 - dostępny stan synchronizacji.

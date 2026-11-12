@@ -508,7 +508,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     </div>
   </div>
 
-<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
+<div class="strip" data-go="akad"><svg class="i" style="color:var(--alpha)"><use href="#i-cap"/></svg><span id="liveTop"></span><span class="sep" id="liveSep"></span><span id="consultTopWrap"></span><span class="sep"></span><span>Kurs od A do Z: <b id="courseTop">64%</b></span><span class="link" style="margin-left:auto">Akademia <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div>
   <div class="grid sec" style="grid-template-columns:1.3fr 1fr">
     <div class="card ins alert" id="dashMentor"><div class="sech" style="margin:0"><span class="tag alert">Mentor · alarm</span><span class="link" data-go="mentor">Wszystkie uwagi <svg class="i" style="width:14px;height:14px"><use href="#i-arrow"/></svg></span></div><h3>To wygląda na odgrywanie się</h3><p>12 min po stracie na ETH pojawiła się pozycja SOL 2,3× większa niż zwykle. Rynek nie wie o stracie.</p><div class="step"><b>Krok na dziś:</b> zamknij platformę i zapisz, co było w głowie przy ostatnim wejściu.</div></div>
     <div class="card" style="cursor:pointer" data-go="stat"><div class="sech" style="margin:0"><div class="lbl">Kapitał · 30 dni</div><span class="win mono" style="font-weight:700" id="dash30">+8,2%</span></div>
@@ -807,10 +807,9 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
   <div id="akFull">
   <div class="head"><div><div class="eyebrow">Akademia Alpha Moves</div><h1>Twoja <span class="serif">Akademia.</span></h1><p>Live'y, konsultacje i materiały w jednym miejscu. Przypomnienia przychodzą same.</p></div><div style="display:flex;gap:10px"><span class="btn g" data-doc="ak">Czym jest Akademia?</span><a class="btn g" href="https://www.alphamoves.pl" target="_blank" rel="noopener">www.alphamoves.pl ↗</a></div></div>
   <div class="grid" style="grid-template-columns:1.3fr 1fr;align-items:start">
-<div class="card hl"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
+<div class="card hl" id="liveCard" style="display:none"><div class="sech" style="margin:0"><span class="tag alert" id="liveBadge"></span><span class="mono dim" style="font-size:12px" id="liveWhen"></span></div>
 <h2 style="font-size:28px;margin-top:14px;letter-spacing:-.6px" id="liveTitle"></h2><div class="mut" style="margin-top:6px" id="liveWho"></div>
-<div style="display:flex;align-items:flex-end;gap:24px;margin-top:20px;flex-wrap:wrap"><div><div class="lbl">Start za</div><div class="mono" style="font-size:40px;font-weight:700;margin-top:6px" id="liveCd"></div></div>
-<div style="display:flex;gap:10px;margin-left:auto"><button class="btn p" id="liveJoin"><svg class="i"><use href="#i-play"/></svg>Dołącz</button><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div></div>
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><a class="btn p" id="liveJoin" target="_blank" rel="noopener"><svg class="i"><use href="#i-play"/></svg>Dołącz</a><button class="btn g" id="liveRem"><svg class="i"><use href="#i-bell"/></svg>Przypomnij 15 min przed</button></div>
     </div>
 <div class="card"><div class="sech" style="margin:0"><h2>Konsultacje 1:1</h2><span class="mono dim" style="font-size:12px" id="consultMonth"></span></div>
 <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-top:14px"><span class="mut">Wykorzystane</span><b id="consultUsed"></b></div><div class="bar"><i id="consultBar" style="width:0;background:var(--alpha)"></i></div>
@@ -889,7 +888,6 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <!-- ================= GIEŁDY ================= -->
 <section class="view" id="gieldy">
   <div class="head"><div><div class="eyebrow">Giełdy, MetaTrader i API</div><h1>Podłącz giełdę <span class="serif">lub brokera.</span></h1><p>Po podłączeniu wszystkie Twoje transakcje kopiują się do dziennika same: wejście, wyjście, wielkość, wynik i opłaty.</p></div><button class="btn g" id="syncNow"><svg class="i"><use href="#i-sync"/></svg>Synchronizuj teraz</button></div>
-  <div class="note" style="margin-bottom:16px"><svg class="i" style="color:var(--win)"><use href="#i-shield"/></svg><div><b>Klucz tylko do odczytu.</b> Alpha Vault nie może otworzyć pozycji ani wypłacić środków. Widzi wyłącznie historię. Klucz jest zaszyfrowany i nikt z Alpha Moves go nie zobaczy.</div></div>
   <div class="ex">
     <div class="card exl" style="padding:10px">
       <button class="on" data-ex="weex"><span class="lg" style="background:#1f1f1f;color:#fff;border:1px solid #444">WX</span><span>WEEX<small class="win" data-exstate="weex">● połączona</small></span></button>
@@ -953,8 +951,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <div class="grid g2"><div><span class="label">Włącz po stratach</span><input class="input mono" id="maxLosses" value="2"></div><div><span class="label">albo po stracie dziennej</span><input class="input mono" id="maxDailyLoss" value="3%"></div></div>
         <span class="label">Blokada trwa</span><div class="chips sel" id="blockChips"><span class="chip on" data-block="midnight">do północy</span><span class="chip" data-block="4h">4 godziny</span><span class="chip" data-block="1h">1 godzinę</span></div>
         <div class="row" style="margin-top:8px"><div><b>Obejście wymaga powodu</b><span>mentor widzi każde obejście</span></div><div class="toggle on" data-setting="requireReason"></div></div>
-        <div class="row"><div><b>Push na telefon</b><span>„Limit osiągnięty, zamknij platformę”</span></div><div class="toggle on" data-setting="pushLimit"></div></div>
-        <div class="note r" style="margin-top:10px"><svg class="i"><use href="#i-lock"/></svg><div>Klucz API jest tylko do odczytu, więc Alpha Vault nie zablokuje samej giełdy. Blokuje dziennik, wysyła powiadomienie i zapisuje każde obejście.</div></div></div>
+        <div class="row"><div><b>Push na telefon</b><span>„Limit osiągnięty, zamknij platformę”</span></div><div class="toggle on" data-setting="pushLimit"></div></div></div>
       <div class="card"><h2>Twoje zasady</h2>
         <div class="grid g2"><div><span class="label">Kapitał łączny (z kont)</span><input class="input mono" id="totalCapital" value="2 412,80 USDT" readonly></div><div><span class="label">Max ryzyko na trade</span><input class="input mono" id="maxRisk" value="1%"></div></div>
         <span class="label">3 zasady, których nie łamiesz</span>

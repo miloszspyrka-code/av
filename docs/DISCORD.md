@@ -103,3 +103,14 @@ Automatyczne testy nie symulują logowania Discord. Wymagają interaktywnego udz
 | 403 „Weryfikacja roli nie jest skonfigurowana” | brak Guild ID / Role ID | ustaw sekrety |
 | 400 „Sesja logowania wygasła” | >10 min lub zły state | odśwież stronę |
 | brak cookie | inny origin/HTTPS | `APP_URL` musi być `https://alphavault.pl` |
+
+
+## 8. Linki wydarzeń
+
+Każde wydarzenie zwracane przez `/api/events` ma pole `url` w formacie:
+
+```
+https://discord.com/events/{guild_id}/{event_id}
+```
+
+`url` powstaje wyłącznie z numerycznych identyfikatorów Snowflake. Przycisk `Dołącz` w Akademii jest linkiem `<a target="_blank" rel="noopener">` do tego adresu — nie otwiera modala ani `discord.com/app`. Gdy wydarzenia brak, karta live i link są ukryte.

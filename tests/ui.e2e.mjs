@@ -67,7 +67,11 @@ try {
   const nextConsult = (await page.locator('#nextConsult').innerText()).trim();
   const acadText = (await page.locator('#acad').innerText()).trim();
   const liveTop = (await page.locator('#liveTop').innerText()).trim();
+  const liveHref = await page.locator('#liveJoin').getAttribute('href');
+  const liveCardText = await page.locator('#liveCard').innerText();
   log('Discord live z API', liveTitle.includes('AT - Marcin') && liveWho.includes('Marcin'), liveTitle + ' / ' + liveWho);
+  log('Discord live link', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/.test(liveHref || ''), liveHref || 'brak');
+  log('brak countdownu Start za', !liveCardText.includes('Start za'), liveCardText.replace(/\s+/g, ' ').slice(0, 80));
   log('Discord konsultacja z API', nextConsult.length > 0, nextConsult);
   log('Discord harmonogram tygodnia', acadText.includes('AT - Marcin'), acadText.slice(0, 120));
   log('Discord strip live', liveTop.length > 0, liveTop);
@@ -137,10 +141,9 @@ try {
 
   // akademia
   await page.click('.navg button[data-v="akad"]');
-  await page.click('#liveJoin');
-  await page.waitForSelector('#gModal.on');
-  log('akademia: modal live', true);
-  await page.evaluate(() => AV.closeModal());
+  const liveHrefAgain = await page.locator('#liveJoin').getAttribute('href');
+  assert.match(liveHrefAgain || '', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/);
+  log('akademia: link wydarzenia Discord', true, liveHrefAgain);
 
   // kalendarz
   await page.click('.navg button[data-v="kal"]');

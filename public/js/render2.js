@@ -278,7 +278,6 @@
     const s = AV.state;
     const data = AV.api.events || { live: [], consultations: [], unassigned: [], nextConsultation: null, sync: null };
     const live = AV.nextLiveEvent();
-    const info = AV.liveInfo();
     const todayKey = AV.warsawDateKey(new Date());
     const set = (sel, text) => AV.setText(sel, text || '');
     const showEl = (sel, visible) => {
@@ -289,20 +288,24 @@
     set('#liveTitle', live ? live.name : '');
     set('#liveWho', live ? (live.host || '') : '');
     set('#liveWhen', live ? (live.startLabel || '') : '');
-    set('#liveCd', live
-      ? (info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'))
-      : '');
-    $$('.liveIn').forEach((e) => {
-      e.textContent = live
-        ? (info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'))
-        : '';
-    });
     const isToday = !!(live && live.localDate === todayKey);
     set('#liveBadge', live ? (isToday ? 'Live dziś' : 'Najbliższy live') : '');
     set('#liveTop', live ? (isToday ? 'Live dziś ' + live.localTime : live.startLabel) : '');
+    showEl('#liveCard', !!live);
     showEl('#liveBadge', !!live);
     showEl('#liveWhen', !!live);
-    showEl('#liveJoin', !!live);
+    showEl('#liveTop', !!live);
+    showEl('#liveSep', !!live);
+    const join = document.querySelector('#liveJoin');
+    if (join) {
+      if (live && live.url) {
+        join.href = live.url;
+        join.style.display = '';
+      } else {
+        join.removeAttribute('href');
+        join.style.display = 'none';
+      }
+    }
     showEl('#liveRem', !!live);
 
     const c = data.nextConsultation;

@@ -489,7 +489,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 - `AV.nextLiveEvent()` — aktywne lub najbliższe przyszłe wydarzenie `live`.
 - `AV.nextConsultationEvent()` — z `nextConsultation`.
-- `AV.liveInfo()` — countdown, `liveNow`.
+- `AV.liveInfo()` - `liveNow` i pozostały czas (bez countdownu w UI).
 - `renderAcademy()` ustawia:
   - `#liveTitle`, `#liveWho`, `#liveWhen`, `#liveCd`,
   - `#nextConsult`, `#nextConsultWho`, `#consultMonth`,
@@ -503,7 +503,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 | Timer | Akcja |
 | --- | --- |
-| 1 s | countdown live |
+| 1 s | countdown blokady ochronnej |
 | 12 s | ticker |
 | 60 s | kalendarz makro, powiadomienia |
 | 300 s | `loadEvents()` |
