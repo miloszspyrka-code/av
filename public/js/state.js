@@ -691,6 +691,24 @@
     const run = badgeRuns(keys).find((r) => r.length >= target);
     return run ? run.end : null;
   };
+  const badgeBestFlagged = (keys, isGood) => {
+    let best = 0, run = 0;
+    badgeDayList(keys).forEach((k) => {
+      if (isGood(k)) { run++; best = Math.max(best, run); }
+      else run = 0;
+    });
+    return best;
+  };
+  const badgeFirstFlagged = (keys, isGood, target) => {
+    let run = 0;
+    for (const k of badgeDayList(keys)) {
+      if (isGood(k)) {
+        run++;
+        if (run >= target) return k;
+      } else run = 0;
+    }
+    return null;
+  };
   const badgeHintDate = (key) => key ? AV.dateShort(new Date(key + 'T12:00:00')) : '';
 
   AV.badgeSummary = (list) => {
@@ -725,21 +743,25 @@
     const bestJournal = badgeBest(journalDays);
     const firstJournal7 = badgeFirst(journalDays, 7);
 
+    // Dni bez transakcji (np. weekend) nie przerywają serii; przerywa ją dzień
+    // handlowy z FOMO. Liczymy tylko dni z transakcjami, nie check-iny.
     const fomoDays = new Set(closed.filter((t) => t.emotion === 'FOMO').map(badgeDay));
-    const cleanFomoDays = journalDays.filter((k) => !fomoDays.has(k));
-    const bestFomoFree = badgeBest(cleanFomoDays);
-    const firstFomo10 = badgeFirst(cleanFomoDays, 10);
+    const fomoClean = (k) => !fomoDays.has(k);
+    const bestFomoFree = badgeBestFlagged(tradeDays, fomoClean);
+    const firstFomo10 = badgeFirstFlagged(tradeDays, fomoClean, 10);
 
+    // Analogicznie: 5 kolejnych dni z zatwierdzonym planem i czystym handlem.
+    // Dni bez planu ani transakcji nie przerywają serii.
     const breakErrors = ['Bez SL', 'Przesunięty SL', 'Za duża pozycja', 'Handel przy danych', 'Wejście po stracie'];
     const activeDays = badgeDayList([...planDays, ...tradeDays]);
-    const cleanPlanDays = activeDays.filter((k) => {
+    const planDayClean = (k) => {
       if (!planDays.includes(k)) return false;
       return closed
         .filter((t) => badgeDay(t) === k)
         .every((t) => t.grade !== 'C' && t.plan !== false && !(t.errors || []).some((e) => breakErrors.includes(e)));
-    });
-    const bestCleanWeek = badgeBest(cleanPlanDays);
-    const firstCleanWeek = badgeFirst(cleanPlanDays, 5);
+    };
+    const bestCleanWeek = badgeBestFlagged(activeDays, planDayClean);
+    const firstCleanWeek = badgeFirstFlagged(activeDays, planDayClean, 5);
 
     const monthKey = (value) => {
       const d = new Date(value);
