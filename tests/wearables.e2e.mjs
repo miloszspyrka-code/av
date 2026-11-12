@@ -28,6 +28,12 @@ const php = process.env.PHP_BIN || (fs.existsSync('C:/Users/milos/.local/php83/p
   ? 'C:/Users/milos/.local/php83/php.exe'
   : 'php');
 
+function warsawDay(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(date);
+}
+
 const results = [];
 const serverLogs = [];
 let cookie = '';
@@ -147,6 +153,26 @@ async function clearCheckins() {
   assert.equal(put.res.status, 200, put.text);
 }
 
+async function ensureTodayTrade() {
+  const state = await req('/api/state');
+  assert.equal(state.res.status, 200, state.text);
+  const value = state.json.state;
+  const todayKey = warsawDay();
+  const trades = value.trades || [];
+  if (trades.some((t) => warsawDay(new Date(t.date)) === todayKey)) return;
+  const sample = trades[0] || {};
+  value.trades = [
+    ...trades,
+    { ...sample, id: 'e2e-sleep-' + Date.now(), date: warsawDay() + 'T12:00:00.000Z', result: 10 }
+  ];
+  const put = await req('/api/state', {
+    method: 'PUT',
+    headers: { Origin: ORIGIN },
+    body: JSON.stringify({ state: value, baseRevision: state.json.revision })
+  });
+  assert.equal(put.res.status, 200, put.text);
+}
+
 async function startFlow(provider) {
   const start = await req(`/auth/wearables/${provider}/start`);
   assert.equal(start.res.status, 302, 'start ' + provider + ': ' + start.text);
@@ -247,7 +273,7 @@ async function runUiChecks() {
     await page.waitForSelector('#gModal.on');
     const code = (await page.locator('#gBody .mono').innerText()).trim();
     assert.match(code, /^AV-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = warsawDay();
     const ingest = await req('/api/wearables/apple/ingest', {
       method: 'POST',
       body: JSON.stringify({
@@ -530,8 +556,8 @@ async function main() {
   assert.match(pair.json.code, /^AV-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
   log('Apple: kod parowania', true, pair.json.code);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today = warsawDay();
+  const yesterday = warsawDay(new Date(Date.now() - 86400000));
   const ingestBody = {
     code: pair.json.code,
     deviceName: 'iPhone E2E',
@@ -610,6 +636,7 @@ async function main() {
   log('Apple: odłączenie usuwa dane', true);
 
   await clearCheckins();
+  await ensureTodayTrade();
   await runUiChecks();
 
   const joinedLogs = serverLogs.join('');
