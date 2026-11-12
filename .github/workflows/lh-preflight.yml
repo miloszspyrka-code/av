@@ -268,4 +268,43 @@ jobs:
           REMOTE
           } | sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s'
 
+      - name: MySQL admin discovery
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+        run: |
+          set -euo pipefail
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
+          chmod 600 "$HOME/.ssh/known_hosts"
+          export SSHPASS="$LH_SSH_PASSWORD"
+          SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20)
+          sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -u
+          echo "MYSQL_CONFIG_FILES:"
+          ls -la "$HOME/.my.cnf" "$HOME/.mylogin.cnf" 2>/dev/null || true
+          echo "--- default mysql ---"
+          if mysql --connect-timeout=10 -N -e "SELECT 1" >/dev/null 2>&1; then
+            echo "MYSQL_DEFAULT=OK"
+            mysql -N -e "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME LIKE '%alpha%' OR SCHEMA_NAME LIKE '%vault%';" 2>/dev/null | sed -n '1,40p'
+            mysql -N -e "SHOW GRANTS FOR CURRENT_USER();" 2>/dev/null | sed -n '1,20p'
+          else
+            echo "MYSQL_DEFAULT=FAIL"
+          fi
+          echo "--- ssh user mysql ---"
+          if mysql -u "$USER" --connect-timeout=10 -N -e "SELECT 1" >/dev/null 2>&1; then
+            echo "MYSQL_SSHUSER=OK"
+            mysql -u "$USER" -N -e "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME LIKE '%alpha%' OR SCHEMA_NAME LIKE '%vault%';" 2>/dev/null | sed -n '1,40p'
+            mysql -u "$USER" -N -e "SHOW GRANTS FOR CURRENT_USER();" 2>/dev/null | sed -n '1,20p'
+          else
+            echo "MYSQL_SSHUSER=FAIL"
+          fi
+          echo "--- alphavault document root ---"
+          ls -la "$HOME/public_html/alphavault.pl" 2>/dev/null || true
+          REMOTE
+
+
 
