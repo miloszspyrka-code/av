@@ -261,7 +261,7 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 | AC-12 | Produkcyjne E2E przechodzi | health + events + login + sync na `alphavault.pl` |
 | AC-13 | Dokumentacja spójna i aktualna | `npm run test:docs` |
 | AC-14 | PWA jest instalowalna, a szybkie dodanie z powiadomienia zajmuje ≤ 10 s | `tests/pwa.e2e.mjs` 20/20 |
-| AC-15 | OAuth2 Garmin/Oura/Whoop kończy się zapisem metryk | `npm run test:wearables` 33/33 |
+| AC-15 | OAuth2 + PKCE Garmin/Oura/Whoop kończy się zapisem metryk lub statusem oczekiwania na specyfikację Garmin | `npm run test:wearables` 42/42 |
 | AC-16 | Apple Health przyjmuje dane po kodzie parowania i tokenie urządzenia | `npm run test:wearables` |
 | AC-17 | Gotowość łączy urządzenie z check-inem i czyści się po odłączeniu | test API + UI E2E |
 | AC-18 | Tokeny dostawców nie są widoczne w API ani logach | test odpowiedzi API + audyt |

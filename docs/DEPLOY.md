@@ -74,6 +74,9 @@ Zmienne repozytorium:
 - `APP_URL=https://alphavault.pl`
 - `DEPLOY_ENABLED=false` (ustaw `true` po odblokowaniu GitHub Actions)
 - `ADMIN_DISCORD_IDS` (opcjonalnie, zamiast sekretu)
+- `GARMIN_ACCESS_PLAN=starter|enterprise` (po zatwierdzeniu dostępu Garmin)
+- `GARMIN_DATA_DELIVERY=push` i `GARMIN_PUSH_READY=true` dopiero po wdrożeniu adaptera push
+- `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE`, `GARMIN_REVOKE_URL` (opcjonalne nadpisania domyślnych endpointów)
 
 ## 4. Discord
 

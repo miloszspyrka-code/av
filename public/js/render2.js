@@ -528,14 +528,15 @@
         btn.dataset.mode = d.connected && !reconnect ? 'disconnect' : 'connect';
       }
       if (stateEl) {
-        if (d.connected) {
+        if (d.connected && !reconnect) {
           const when = d.lastSyncAt ? new Date(d.lastSyncAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }) : '';
           const pendingSpec = d.status === 'awaiting_provider_spec';
-          stateEl.className = (d.lastSyncStatus === 'error' || d.status === 'token_expired' || pendingSpec) ? 'warnc' : 'win';
-          stateEl.textContent = '● połączony' + (pendingSpec ? ' · dane czekają na specyfikację Garmina' : (when ? ' · sync ' + when : ''));
+          const syncError = d.status === 'sync_error';
+          stateEl.className = (syncError || pendingSpec) ? 'warnc' : 'win';
+          stateEl.textContent = '● połączony' + (pendingSpec ? ' · dane czekają na specyfikację Garmina' : (syncError ? ' · błąd synchronizacji' : (when ? ' · sync ' + when : '')));
           stateEl.title = d.lastError || '';
         } else {
-          stateEl.className = d.status === 'token_expired' || d.status === 'revoked' ? 'warnc' : '';
+          stateEl.className = d.status === 'token_expired' || d.status === 'revoked' || d.status === 'sync_error' ? 'warnc' : '';
           stateEl.textContent = statusText[d.status] || ((d.canConnect ?? d.configured) ? (defaultDeviceText[key] || '') : statusText.not_configured);
           stateEl.title = '';
         }

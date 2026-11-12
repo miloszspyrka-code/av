@@ -157,6 +157,7 @@ jobs:
           ALLOW_DEMO_LOGIN: "false"
           MAX_STATE_BYTES: "12582912"
           WEARABLES_ENCRYPTION_KEY: ${{ secrets.WEARABLES_ENCRYPTION_KEY }}
+          WEARABLES_ENCRYPTION_KEY_PREVIOUS: ${{ secrets.WEARABLES_ENCRYPTION_KEY_PREVIOUS }}
           OURA_CLIENT_ID: ${{ secrets.OURA_CLIENT_ID }}
           OURA_CLIENT_SECRET: ${{ secrets.OURA_CLIENT_SECRET }}
           WHOOP_CLIENT_ID: ${{ secrets.WHOOP_CLIENT_ID }}
@@ -166,6 +167,10 @@ jobs:
           GARMIN_AUTHORIZE_URL: ${{ vars.GARMIN_AUTHORIZE_URL }}
           GARMIN_TOKEN_URL: ${{ vars.GARMIN_TOKEN_URL }}
           GARMIN_API_BASE: ${{ vars.GARMIN_API_BASE }}
+          GARMIN_REVOKE_URL: ${{ vars.GARMIN_REVOKE_URL }}
+          GARMIN_ACCESS_PLAN: ${{ vars.GARMIN_ACCESS_PLAN }}
+          GARMIN_DATA_DELIVERY: ${{ vars.GARMIN_DATA_DELIVERY }}
+          GARMIN_PUSH_READY: ${{ vars.GARMIN_PUSH_READY }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true && 'true' || 'false' }}
           ROLLBACK: ${{ github.event_name == 'workflow_dispatch' && inputs.rollback == true && 'true' || 'false' }}
         run: |
