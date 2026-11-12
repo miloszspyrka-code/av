@@ -302,6 +302,18 @@ jobs:
           else
             echo "MYSQL_SSHUSER=FAIL"
           fi
+          echo "--- sudo ---"
+          if sudo -n true 2>/dev/null; then
+            echo "SUDO=OK"
+            if sudo -n mysql -N -e "SELECT 1" >/dev/null 2>&1; then
+              echo "SUDO_MYSQL=OK"
+            else
+              echo "SUDO_MYSQL=FAIL"
+            fi
+          else
+            echo "SUDO=FAIL"
+          fi
+          ls -la /etc/mysql/debian.cnf 2>/dev/null || true
           echo "--- alphavault document root ---"
           ls -la "$HOME/public_html/alphavault.pl" 2>/dev/null || true
           REMOTE
