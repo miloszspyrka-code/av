@@ -37,13 +37,21 @@ API: `/api/*` · logowanie: `/auth/*` · UI: `/` · dokumentacja: `/docs/`.
    ```
 
 7. Brak członkostwa lub roli → HTTP 403, bez sesji.
-8. Sukces → upsert `users`, sesja w MySQL, cookie `av_session`, redirect `/#/pulpit`.
+8. Chwilowy błąd Discord (429 po 3 próbach, 5xx, timeout): konto już zweryfikowane (`role_verified=1`) dostaje sesję z grace; nowe konto → HTTP 503 z prośbą o ponowną próbę.
+9. Sukces → upsert `users`, sesja w MySQL, cookie `av_session`, redirect `/#/pulpit`.
 
 ### 2.2. Weryfikacja roli
 
 Wymagane są `DISCORD_GUILD_ID` i `DISCORD_REQUIRED_ROLE_ID`. Backend **fail closed**: brak konfiguracji oznacza odmowę dostępu.
 
-Do weryfikacji roli **nie jest używany** `DISCORD_BOT_TOKEN`; scope `guilds.members.read` pozwala odczytać członkostwo i role zalogowanego użytkownika. Token bota służy wyłącznie do synchronizacji scheduled events.
+Logowanie sprawdza rolę tokenem użytkownika (`guilds.members.read`). Cykliczna weryfikacja aktywnych sesji (co 5 min) używa `DISCORD_BOT_TOKEN`:
+
+```text
+GET https://discord.com/api/v10/guilds/{DISCORD_GUILD_ID}/members/{user_id}
+Authorization: Bot <DISCORD_BOT_TOKEN>
+```
+
+Brak roli lub członkostwa usuwa wszystkie sesje użytkownika (`access.role_revoked`). Błąd Discorda nie odbiera dostępu osobom już zweryfikowanym. Szczegóły: [DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md#3a-cykliczna-weryfikacja-roli-co-5-min).
 
 ### 2.3. Tryb demo
 
@@ -95,12 +103,25 @@ Publiczny. Sprawdza MySQL i konfigurację.
 {
   "ok": true,
   "service": "alpha-vault",
-  "version": "3.0.0",
+  "version": "3.8.0",
   "db": { "ok": true, "version": "11.8.6-MariaDB", "latencyMs": 1 },
   "uptime": 123,
   "now": "2026-11-12T14:30:00Z",
   "discordConfigured": true,
   "roleCheckConfigured": true,
+  "roleRecheckConfigured": true,
+  "roleRecheck": {
+    "configured": true,
+    "intervalSeconds": 300,
+    "status": "success",
+    "lastAttemptAt": "2026-11-12 18:20:01",
+    "lastSuccessAt": "2026-11-12 18:20:02",
+    "lastError": null,
+    "checked": 12,
+    "revoked": 0,
+    "errors": 0,
+    "stale": false
+  },
   "eventsConfigured": true,
   "demoAllowed": false,
   "sync": {
@@ -116,6 +137,8 @@ Baza niedostępna → `503 {"ok":false,"error":"db_unavailable"}`.
 
 `sync` to skrót stanu synchronizacji Discord: `status` (`success`/`error`/`never`), `lastSuccessAt` (UTC), `eventsCount` i `stale` (brak sukcesu > 15 min). Jest publiczny, bo zawiera wyłącznie metadane operacyjne — bez tokenów, treści wydarzeń i danych użytkowników.
 
+`roleRecheck` to stan cronu weryfikacji roli (co 5 min): `status` (`success`/`partial`/`error`/`never`/`skipped`), liczniki `checked`/`revoked`/`errors` i `stale`. `roleRecheckConfigured` jest `true`, gdy ustawiono guild, rolę i `DISCORD_BOT_TOKEN`.
+
 ### 3.2. `GET /api/me`
 
 Publiczny. Zawsze `200`, także bez sesji.
@@ -125,6 +148,8 @@ Publiczny. Zawsze `200`, także bez sesji.
   "authenticated": true,
   "discordConfigured": true,
   "roleCheckConfigured": true,
+  "roleRecheckConfigured": true,
+  "roleRecheckSeconds": 300,
   "eventsConfigured": true,
   "demoAllowed": false,
   "isAdmin": false,
@@ -495,7 +520,8 @@ Symbole: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
 | `DISCORD_REDIRECT_URI` | `https://alphavault.pl/auth/discord/callback` |
 | `DISCORD_GUILD_ID` | serwer Alpha Moves |
 | `DISCORD_REQUIRED_ROLE_ID` | rola Alpha |
-| `DISCORD_BOT_TOKEN` | bot read-only do scheduled events |
+| `DISCORD_BOT_TOKEN` | bot read-only do scheduled events i cyklicznej weryfikacji roli |
+| `DISCORD_ROLE_RECHECK_SECONDS` | próg rechecku roli; minimum 300 s, domyślnie 300 |
 | `ADMIN_DISCORD_IDS` | Discord ID administratorów (po przecinku) |
 | `DISCORD_DEFAULT_PLAN` | `solo` lub `full` |
 | `DISCORD_TRIAL_DAYS` | 0 = bez daty końca |

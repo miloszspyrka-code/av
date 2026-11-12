@@ -103,6 +103,15 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 - pusty sukces czyści listę i soft-deletuje rekordy,
 - powrót wydarzenia przywraca rekord.
 
+## Rola i recheck — 18 scenariuszy
+
+`npm run test:roles`:
+
+- `tests/role-guard.test.php` — interpretacja odpowiedzi Discord (`ok`, `missing`, `not_member`, 429, 5xx, 403 bota) i decyzje logowania (403, 503, grace dla zweryfikowanych, fail closed bez konfiguracji),
+- `tests/role-recheck.e2e.mjs` — lokalny mock Discord + MySQL: rola obecna utrzymuje sesję, brak roli usuwa sesję i dodaje `access.role_revoked`, błąd 500 nie odbiera dostępu, 404 odbiera, 429 jest ponawiane, blokada cronu pomija równoległy przebieg.
+
+Test nie używa prawdziwego Discorda ani danych klientów.
+
 ## Prop challenge — 27 scenariuszy
 
 `tests/prop.unit.mjs` (`npm run test:prop`) testuje czysty silnik `public/js/prop.js` bez serwera i bazy:
@@ -156,7 +165,7 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 52 scenariusze
+## UI - 53 scenariusze
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -243,6 +252,7 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 - dokumentacja (`docs:check` + `test:docs`),
 - PHP lint,
 - migracja,
+- rola: decyzje login + cron na mocku Discord,
 - Discord DB/sync,
 - API e2e,
 - UI e2e (systemowy Chrome),

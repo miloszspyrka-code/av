@@ -10,11 +10,12 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 
 | Tabela | Rola |
 | --- | --- |
-| `users` | konto Discord/demo, plan, dostęp, weryfikacja roli |
+| `users` | konto Discord/demo, plan, dostęp, weryfikacja roli (`role_verified`, `role_checked_at`, `role_check_status`, `role_check_error`) |
 | `sessions` | hash tokena sesji, IP, user agent, wygaśnięcie |
 | `oauth_states` | jednorazowe stany OAuth2 (CSRF), 10 min |
 | `user_states` | cały stan JSON + rewizja + rozmiar |
-| `audit_log` | logowania, zapisy stanu, usunięcie konta |
+| `audit_log` | logowania, zapisy stanu, usunięcie konta, `access.role_revoked` |
+| `role_check_state` | stan cronu weryfikacji roli: ostatni przebieg, liczniki, blokada |
 | `rate_limits` | limity per bucket/IP/window |
 | `discord_scheduled_events` | zsynchronizowane wydarzenia Discord (UPSERT, soft delete) |
 | `discord_sync_state` | ostatnia próba/sukces, licznik, błąd, blokada CRON |
@@ -70,8 +71,8 @@ Dokument zawiera m.in. `prop.challenges` (konfiguracje challenge'ów) i `prop.se
 1. Odczytaj schemat przez MySQL MCP / `SHOW CREATE TABLE`.
 2. Dodaj nowy plik w `db/migrations/` (jeśli projekt go używa) lub zmień `db/schema.sql` tylko dla nowych tabel.
 3. Przed destrukcyjną zmianą: backup i zgoda.
-4. Zastosuj `php app/db/migrate.php` (idempotentne `CREATE TABLE IF NOT EXISTS`).
-5. Zweryfikuj `/api/health` i testy.
+4. Zastosuj `php app/db/migrate.php` (idempotentne `CREATE TABLE IF NOT EXISTS` + `ensureColumn`/`ensureIndex` dla nowych kolumn istniejących tabel).
+5. Zweryfikuj `/api/health` (`roleRecheck`) i testy.
 
 Nie przechowuj dumpów produkcyjnych ani danych klientów w repo.
 

@@ -101,6 +101,11 @@ jobs:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php app/db/migrate.php
 
+      - name: Role recheck tests
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: npm run test:roles
+
       - name: Discord events tests
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
