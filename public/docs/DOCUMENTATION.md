@@ -1,0 +1,706 @@
+<!-- Wygenerowane z DOCUMENTATION.md przez scripts/sync-docs.mjs. Nie edytuj ręcznie. -->
+
+# DOCUMENTATION — Alpha Vault
+
+**Jak działa aplikacja, punkt po punkcie.**
+
+| Pole | Wartość |
+| --- | --- |
+| Wersja | 3.1 |
+| Data | 2026-11-12 |
+| Backend | PHP 8.3 |
+| Baza | MySQL / MariaDB |
+| Frontend | HTML/CSS/JS (bez frameworka) |
+| Produkcja | <https://alphavault.pl> (LH.pl) |
+
+**Dokumenty powiązane**
+
+- [PRD.md](PRD.md) — wymagania produktowe i kryteria akceptacji (FR-xx, AC-xx).
+- [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md) — kontrakt agenta AV-engineer.
+- [docs/API.md](API.md) — endpointy i przykłady.
+- [docs/ARCHITEKTURA.md](ARCHITEKTURA.md) — warstwy i decyzje.
+- [docs/BAZA-DANYCH.md](BAZA-DANYCH.md) — schemat i backup.
+- [docs/DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md) — OAuth2, bot, rola.
+- [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md) — wdrożenie.
+- [docs/TESTOWANIE.md](TESTOWANIE.md) — testy.
+- [docs/FUNKCJE.md](FUNKCJE.md) — stan funkcji.
+
+---
+
+## 1. Jak czytać ten dokument
+
+Dokument opisuje **rzeczywiste przepływy**, nie plan. Każdy rozdział ma tę samą strukturę:
+
+1. **Aktor i trigger** — kto zaczyna.
+2. **Żądanie** — metoda, ścieżka, dane.
+3. **Walidacja** — co musi być poprawne.
+4. **Skutki** — co zmienia się w bazie/UI.
+5. **Błąd** — co widzi użytkownik i co zostaje w systemie.
+6. **Gdzie sprawdzić** — log, tabela, endpoint.
+
+Jeśli szukasz wymagania produktowego, przejdź do [PRD.md](PRD.md). Jeśli szukasz komend i zasad pracy, przejdź do [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md).
+
+## 2. Mapa systemu i punkty styku
+
+```text
+Przeglądarka
+  │  HTTPS, cookie av_session
+  ▼
+Apache + PHP 8.3 (LH.pl)
+  ├── public/            document root: index.php, index.html, js/, docs/
+  ├── ~/alphavault-app/  app/, bin/, db/, config.json, logs/  (poza docrootem)
+  └── MySQL/MariaDB      users, sessions, user_states, wydarzenia Discord
+        ▲
+        │  co 5 minut
+  LH Cron → bin/sync-discord-events.php → Discord REST API
+```
+
+### 2.1. Macierz punktów styku
+
+| # | Punkt styku | Inicjator → odbiorca | Protokół | Uwierzytelnienie | Szczegóły |
+| --- | --- | --- | --- | --- | --- |
+| P1 | UI aplikacji | przeglądarka → Apache/PHP | HTTPS | brak (strona publiczna) | [§3](#3-cykl-życia-żądania-http) |
+| P2 | Stan użytkownika | przeglądarka → `/api/state` | JSON/HTTPS | cookie sesji + Origin | [§5](#5-stan-aplikacji) |
+| P3 | Wydarzenia | przeglądarka → `/api/events` | JSON/HTTPS | cookie sesji | [§6](#6-api--kontrakt-i-zachowanie) |
+| P4 | Start OAuth | przeglądarka → `/auth/discord` → Discord | 302 | cookie `av_oauth` + `state` | [§4](#4-uwierzytelnianie-sesje-i-csrf) |
+| P5 | Powrót OAuth | Discord → `/auth/discord/callback` | 302 + code | `state` w DB i cookie | [§4](#4-uwierzytelnianie-sesje-i-csrf) |
+| P6 | Profil i rola | PHP → Discord API | HTTPS | Bearer użytkownika | [§4](#4-uwierzytelnianie-sesje-i-csrf) |
+| P7 | Dane aplikacji | PHP → MySQL | PDO | dane z `config.json` | [§10](#10-baza-danych-i-transakcje) |
+| P8 | Uruchomienie sync | LH Cron → `bin/sync-discord-events.php` | CLI | użytkownik systemowy | [§9](#9-cron-i-niezawodność) |
+| P9 | Odczyt wydarzeń | sync → Discord REST | HTTPS | `Bot DISCORD_BOT_TOKEN` | [§7](#7-discord-scheduled-events--pełny-przepływ) |
+| P10 | Zapis wydarzeń | sync → MySQL | PDO + transakcja | dane z `config.json` | [§7](#7-discord-scheduled-events--pełny-przepływ) |
+| P11 | Administracja | admin → `/api/admin/events*` | JSON/HTTPS | cookie + `ADMIN_DISCORD_IDS` | [§13](#13-administracja-wydarzeniami) |
+| P12 | Offline | przeglądarka → `localStorage` | JS | brak | [§11](#11-frontend--od-bootstrapu-do-renderu) |
+| P13 | Deploy | GitHub Actions / WSL → LH | SSH + rsync | klucz ED25519 | [§14](#14-deployment) |
+| P14 | Migracja i health | deploy → PHP/MySQL/HTTP | CLI + HTTPS | config na serwerze | [§14](#14-deployment) |
+
+## 3. Cykl życia żądania HTTP
+
+**Aktor:** przeglądarka. **Trigger:** wejście na adres.
+
+1. Apache kieruje żądanie do `public/index.php` (front controller).
+2. `index.php` ustala katalog aplikacji:
+   - `public/app-path.php` (tworzony przy deployu) albo
+   - `dirname(__DIR__) . '/app'` lokalnie.
+3. Ładowany jest `app/bootstrap.php`:
+   - `Config::load()` — `config.json` lub zmienne środowiskowe,
+   - `Db` — PDO,
+   - `Auth` — sesje i CSRF,
+   - `Discord` — OAuth2.
+4. `Http::securityHeaders()` ustawia CSP, HSTS, `X-Frame-Options`, `nosniff`.
+5. Routing:
+   - `/` → `public/index.html`,
+   - `/docs` → `/docs/`, `/docs/` → strona indeksu,
+   - `/api/*` → `app/routes/api.php`,
+   - `/auth/*` → `app/routes/auth.php`,
+   - istniejący plik statyczny → `readfile`,
+   - inne → 404.
+6. Pliki `app-path.php`, `.env`, `config.json` są blokowane przed serwowaniem.
+
+**Błąd bootstrapu:** HTTP 500, `error_log('[bootstrap] ...')`, bez szczegółów konfiguracji w odpowiedzi.
+
+**Gdzie sprawdzić:** `public/index.php`, `app/bootstrap.php`, log Apache/PHP.
+
+## 4. Uwierzytelnianie, sesje i CSRF
+
+### 4.1. Logowanie Discord — krok po kroku
+
+**Aktor:** użytkownik bez sesji. **Trigger:** „Zaloguj przez Discord”.
+
+1. `GET /auth/discord?remember=1`.
+2. Rate limit `discord-start`: 30 żądań / 60 s.
+3. Serwer czyści wygasłe `oauth_states`.
+4. Generuje losowy `state`, zapisuje w `oauth_states` (`state`, `remember`, `redirect_to`, `expires_at` = +10 min).
+5. Ustawia cookie `av_oauth` (HttpOnly, krótki czas życia).
+6. Przekierowuje do `https://discord.com/api/oauth2/authorize` ze scope'ami:
+
+   ```text
+   identify guilds.members.read
+   ```
+
+7. Użytkownik akceptuje; Discord wraca na `GET /auth/discord/callback?code=...&state=...`.
+8. Rate limit `discord-callback`: 30 / 60 s.
+9. Serwer sprawdza `state` w DB i cookie; niezgodność → 400.
+10. Wymienia `code` na token (client ID + secret).
+11. Pobiera `GET https://discord.com/api/users/@me`.
+12. Pobiera członkostwo `GET /guilds/{guild.id}/member` i sprawdza rolę `DISCORD_REQUIRED_ROLE_ID`.
+13. Tworzy/aktualizuje użytkownika w `users`.
+14. Tworzy sesję: losowy token → hash w `sessions`, cookie `av_session`.
+15. `remember=1` → cookie 30 dni; `0` → sesja przeglądarki.
+
+**Błąd:** brak konfiguracji OAuth → 503; brak roli/członkostwa → odmowa i brak sesji; błąd Discord → komunikat, bez ujawniania szczegółów.
+
+**Powiązanie:** FR-01, FR-02; [docs/DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md), [docs/API.md](API.md).
+
+### 4.2. Sesja
+
+- Cookie: `av_session`, HttpOnly, SameSite=Lax, Secure przy HTTPS.
+- W bazie tylko hash tokena.
+- `Auth::readSession()` dołącza użytkownika i sprawdza wygaśnięcie.
+- `requireAuth()` zwraca 401 dla `/api/state`, `/api/events`, `/api/account`, `/api/me/export`.
+- Wylogowanie usuwa sesję z DB i czyści cookie.
+
+### 4.3. CSRF
+
+- Każde mutujące żądanie (`PUT`, `POST`, `DELETE`) sprawdza `Origin` (`requireSameOrigin`).
+- Niezgodny lub brakujący `Origin` → 403.
+- Cookie `SameSite=Lax` jest drugą linią obrony.
+
+### 4.4. Rate limiting
+
+| Bucket | Limit | Okno |
+| --- | --- | --- |
+| `discord-start` | 30 | 60 s |
+| `discord-callback` | 30 | 60 s |
+| `demo-login` | 20 | 60 s |
+| zapis stanu | limit w `Auth` | 60 s |
+
+Dane w `rate_limits` (bucket, IP, window_start, count). Przekroczenie → 429.
+
+### 4.5. Demo login
+
+- `POST /auth/demo` tylko gdy `ALLOW_DEMO_LOGIN=true`.
+- Konto `demo-local`, stan z `db/demo-state.json`.
+- Na produkcji `ALLOW_DEMO_LOGIN=false`; health check wymaga `demoAllowed=false`.
+- Demo nie jest produkcyjną metodą logowania.
+
+## 5. Stan aplikacji
+
+**Aktor:** zalogowany użytkownik. **Trigger:** zmiana w UI.
+
+1. Frontend trzyma cały stan w `AV.state`.
+2. `AV.schedulePush()` zbiera zmiany i wysyła `PUT /api/state` z `{ state, baseRevision }`.
+3. Serwer sprawdza sesję, `Origin`, rozmiar (`MAX_STATE_BYTES`, domyślnie 12 MiB) i typ JSON.
+4. `UPDATE user_states ... WHERE user_id = ? AND revision = ?`.
+5. Sukces → `revision + 1`, odpowiedź z nową rewizją.
+6. Konflikt → 409; frontend pobiera świeży stan i scala bez nadpisania.
+7. `GET /api/state` zwraca `{ state, revision, updatedAt }`.
+8. `DELETE /api/state` czyści stan (reset).
+9. `localStorage` jest fallbackiem offline; po zalogowaniu stan serwera ma pierwszeństwo.
+
+**Błąd:** brak sesji → 401; zły JSON → 400; za duży stan → 413; konflikt → 409.
+
+**Gdzie sprawdzić:** `user_states`, `audit_log`, `public/js/state.js`.
+
+## 6. API — kontrakt i zachowanie
+
+Pełny kontrakt: [docs/API.md](API.md). Specyfikacja: [docs/openapi.yaml](openapi.yaml).
+
+| Metoda | Ścieżka | Auth | Rola |
+| --- | --- | --- | --- |
+| GET | `/api/health` | nie | health, DB, konfiguracja |
+| GET | `/api/me` | nie | tożsamość, flagi konfiguracji, `isAdmin` |
+| GET | `/api/state` | tak | stan + rewizja |
+| PUT | `/api/state` | tak | zapis optymistyczny |
+| DELETE | `/api/state` | tak | reset stanu |
+| DELETE | `/api/account` | tak | usunięcie konta |
+| GET | `/api/me/export` | tak | eksport JSON |
+| GET | `/api/events` | tak | wydarzenia, live, konsultacje, sync |
+| GET | `/api/admin/events` | admin | wszystkie wydarzenia + sync |
+| PUT | `/api/admin/events/{id}/category` | admin | ręczne przypisanie |
+
+**Zasady:**
+
+- API jest tego samego originu co UI; brak CORS.
+- Odpowiedzi są JSON z `Content-Type: application/json; charset=utf-8`.
+- Błędy mają `{ error, message }`.
+- `/api/events` nie zwraca `raw_payload`.
+- `isAdmin` wynika wyłącznie z `ADMIN_DISCORD_IDS`.
+
+## 7. Discord Scheduled Events — pełny przepływ
+
+### 7.1. Cel
+
+Discord jest źródłem prawdy. MySQL jest lokalną, odpytywalną kopią. Panel nie pyta Discorda przy każdym otwarciu.
+
+### 7.2. Wywołanie API
+
+```http
+GET https://discord.com/api/v10/guilds/{guild.id}/scheduled-events?with_user_count=true
+Authorization: Bot <DISCORD_BOT_TOKEN>
+Accept: application/json
+User-Agent: AlphaVault/3.0 (https://alphavault.pl)
+```
+
+Timeouty: connect 10 s, całość 25 s. Maksymalnie 3 próby. `429` → `Retry-After` (1–30 s). `5xx` → backoff wykładniczy. `401/403/404` → natychmiastowy błąd bez retry.
+
+### 7.3. Walidacja odpowiedzi
+
+- HTTP 200,
+- poprawny JSON,
+- tablica (lista) wydarzeń,
+- każde wydarzenie ma numeryczne `id`,
+- `scheduled_start_time` jest poprawną datą ISO 8601,
+- `scheduled_end_time`, jeśli istnieje, jest poprawną datą,
+- `status` ∈ `{1,2,3,4}`,
+- `entity_type` ∈ `{1,2,3}` (inny typ nie wywala całej synchronizacji, ale trafia do `unassigned`).
+
+Błąd walidacji **całej odpowiedzi** przerywa sync przed transakcją — baza pozostaje nietknięta.
+
+### 7.4. Normalizacja pól
+
+| Pole Discord | Kolumna MySQL | Uwagi |
+| --- | --- | --- |
+| `id` | `discord_event_id` | unikalny, `VARCHAR(32)` |
+| `guild_id` | `guild_id` | |
+| `name` | `name` | |
+| `description` | `description` | może być `NULL` |
+| `entity_type` | `event_type` | 1/2/3 |
+| `status` | `status` | 1–4 |
+| `channel_id` | `channel_id` | może być `NULL` |
+| `scheduled_start_time` | `scheduled_start_time` + `scheduled_start_iso` | UTC + oryginał ISO |
+| `scheduled_end_time` | `scheduled_end_time` + `scheduled_end_iso` | może być `NULL` |
+| `creator` | `creator_id`, `creator_json` | może być `NULL` |
+| `user_count` | `user_count` | może być `NULL` |
+| `entity_metadata.location` | `location` | tylko `EXTERNAL` |
+| `entity_id` | `entity_id` | |
+| `entity_metadata` | `entity_metadata` | JSON |
+| `image` | `image` | |
+| `recurrence_rule` | `recurrence_rule` | JSON, bez uproszczeń |
+| całość | `raw_payload` | JSON, tylko do diagnostyki |
+
+Dodatkowo wyliczane:
+
+- `duration_minutes` — tylko gdy istnieje `scheduled_end_time`,
+- `host_name` — z nazwy `X - Host - Y` lub z `creator`, jeśli nie jest botem,
+- `category` i `category_source` — patrz §7.6.
+
+### 7.5. Zapis — krok po kroku
+
+**Aktor:** LH Cron. **Trigger:** harmonogram `*/5 * * * *`.
+
+1. `php ~/alphavault-app/bin/sync-discord-events.php`.
+2. `bootstrap.php` ładuje `config.json` (poza docrootem).
+3. **Blokada:** `UPDATE discord_sync_state SET lock_token=?, locked_until=UTC_TIMESTAMP()+INTERVAL 10 MINUTE WHERE id=1 AND (locked_until IS NULL OR locked_until < UTC_TIMESTAMP())`.
+4. Brak wiersza → inny sync trwa; skrypt kończy się kodem 0 i loguje `skipped`.
+5. `last_attempt_at = UTC_TIMESTAMP()`, `last_status='running'`.
+6. Pobranie i walidacja odpowiedzi (§7.2–7.3).
+7. Normalizacja wszystkich wydarzeń do tablicy.
+8. Odczyt `manual_category` dla istniejących ID.
+9. **Transakcja:**
+   - `INSERT ... ON DUPLICATE KEY UPDATE` dla każdego wydarzenia,
+   - `category = COALESCE(manual_category, VALUES(category))`,
+   - `is_deleted=0`, `deleted_at=NULL`, `last_seen_at=now`, `last_synced_at=now`,
+   - wydarzenia nieobecne w odpowiedzi → `is_deleted=1`, `deleted_at=now`,
+   - `discord_sync_state`: `last_success_at`, `events_count`, `updated_count`, `duration_ms`, `last_http_status=200`, czyszczenie błędu.
+10. `discord_sync_runs` — wpis `success`.
+11. Log `sync success: events=N updated=N duration=Xms`.
+12. Zwolnienie blokady w `finally`.
+
+**Puste wydarzenia:** poprawna odpowiedź `[]` jest sukcesem. Wszystkie dotychczasowe wydarzenia dostają `is_deleted=1`; UI pokazuje puste pola. To nie jest błąd.
+
+**Błąd:** żadne wydarzenie nie jest usuwane; `last_success_at` pozostaje bez zmian; `last_status='error'`, `last_error_code`, `last_error_message`, `last_http_status`; wpis `error` w `discord_sync_runs`; skrypt kończy się kodem 1.
+
+### 7.6. Klasyfikacja
+
+```text
+manual_category ustawione?           → ta kategoria (source=manual)
+reguła event_categories[id]?         → ta kategoria (source=rule)
+wzorzec name_patterns?               → ta kategoria (source=rule)
+"konsultacj" / "1:1" w tekście?      → consultation (source=rule)
+"live" / "webinar" / "warsztat" /
+"akademi" / "analiza" / "rynek"?     → live (source=rule)
+brak nazwy lub nieznany typ?         → unassigned (source=none)
+w pozostałych przypadkach             → live (source=default)
+```
+
+Reguły z pliku `config/discord_event_rules.json`:
+
+```json
+{
+  "event_categories": {
+    "1570153900022173746": "consultation"
+  },
+  "name_patterns": [
+    { "pattern": "/\\bkonsultacj/i", "category": "consultation" },
+    { "pattern": "/\\bQ&A\\b/i", "category": "live" }
+  ]
+}
+```
+
+Plik jest opcjonalny. Reguły biznesowe w kodzie działają także bez niego.
+
+### 7.7. Odczyt przez panel
+
+1. Po zalogowaniu frontend wywołuje `GET /api/events`.
+2. `DiscordEvents::listForApi()` pobiera rekordy `is_deleted=0`, sortuje po `scheduled_start_time ASC`.
+3. Buduje:
+   - `events` — wszystkie,
+   - `live` — kategoria `live`, status ≠ COMPLETED/CANCELED,
+   - `consultations` — kategoria `consultation`, status ≠ COMPLETED/CANCELED,
+   - `unassigned` — kategoria `unassigned`,
+   - `nextConsultation` — pierwsza przyszła konsultacja (z tolerancją −1 h),
+   - `sync` — stan synchronizacji.
+4. Każde wydarzenie ma `startAt` (UTC ISO), `startLocal` (z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`.
+
+**Wydajność:** panel nie odpytuje Discorda. Jedno zapytanie do MySQL na otwarcie i co 5 minut w tle.
+
+## 8. Czas, DST i recurrence
+
+### 8.1. Potok czasu
+
+```text
+Discord ISO 8601 (np. 2026-11-12T19:00:00+00:00)
+  → DateTimeImmutable (UTC)
+  → scheduled_start_time DATETIME (UTC)
+  → scheduled_start_iso VARCHAR (oryginał)
+  → DateTimeZone('Europe/Warsaw')
+  → startLocal (ISO z offsetem), startLabel, localDate, localTime, weekday
+```
+
+Nigdy nie zapisujemy samego lokalnego tekstu jako źródła. Frontend nie przelicza stref poza `Intl` dla nagłówków pomocniczych.
+
+### 8.2. Wymagane przypadki DST
+
+| Wejście UTC | Oczekiwana godzina PL | Offset |
+| --- | --- | --- |
+| `2026-10-25T00:30:00Z` | `02:30` | `+02:00` |
+| `2026-10-25T01:30:00Z` | `02:30` | `+01:00` |
+| `2027-03-28T00:30:00Z` | `01:30` | `+01:00` |
+| `2027-03-28T01:30:00Z` | `03:30` | `+02:00` |
+
+Testy: `tests/discord-events.test.php`. Sortowanie odbywa się po UTC, nie po tekście godziny lokalnej.
+
+### 8.3. Recurrence
+
+- `recurrence_rule` jest przechowywane jako JSON.
+- Aplikacja **nie generuje** wystąpień, których Discord nie zwrócił.
+- Brak obsługi wariantu nie może psuć harmonogramu; wydarzenie nadrzędne nadal jest widoczne.
+- Przyszłe rozszerzenie: pokazywanie kolejnych wystąpień na podstawie oficjalnego zestawu reguł, bez fikcyjnych danych.
+
+## 9. Cron i niezawodność
+
+### 9.1. Wpis w LH
+
+Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
+
+```text
+*/5 * * * * /usr/bin/php /home/platne/serwer445119/alphavault-app/bin/sync-discord-events.php
+```
+
+Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/alphavault-app`, katalog `logs/` z prawami 700.
+
+### 9.2. Blokada
+
+- Jedna kolumna `lock_token` i `locked_until` w `discord_sync_state`.
+- Blokada wygasa po 10 minutach (awaria procesu nie blokuje na zawsze).
+- Równoległe uruchomienie kończy się `skipped` i kodem 0.
+
+### 9.3. Obsługa błędów
+
+| Sytuacja | Zachowanie |
+| --- | --- |
+| 401 | błąd, brak retry, `last_error_code=http_401`, dane nietknięte |
+| 403 | błąd, brak retry, dane nietknięte |
+| 404 | błąd (zły guild ID), dane nietknięte |
+| 429 | retry po `Retry-After`, maks. 3 próby |
+| 5xx | retry z backoffem, maks. 3 próby |
+| timeout | retry, potem błąd `timeout` |
+| zły JSON | błąd `invalid_json`, dane nietknięte |
+| brak pól | błąd `invalid_payload`, dane nietknięte |
+| błąd MySQL | transakcja rollback, dane nietknięte, błąd w logu |
+| pusty wynik | sukces, soft delete wszystkich |
+
+### 9.4. Logi
+
+- `~/alphavault-app/logs/discord-sync.log` (700, poza docrootem),
+- `error_log('[discord-sync] ...')`,
+- token jest redagowany (`[redacted]`) przed zapisem,
+- historia w `discord_sync_runs` (30 dni).
+
+### 9.5. Monitoring
+
+- `/api/events` → `sync.stale=true` po 900 s od sukcesu,
+- `sync.status='error'` → UI pokazuje „błąd synchronizacji”,
+- health check deployu nie sprawdza wieku sync (tylko konfigurację).
+
+## 10. Baza danych i transakcje
+
+### 10.1. Tabele
+
+| Tabela | Rola | Klucz |
+| --- | --- | --- |
+| `users` | konto Discord/demo, plan, rola | `id`, `discord_id` |
+| `sessions` | hash sesji, IP, UA, wygaśnięcie | `token_hash` |
+| `oauth_states` | jednorazowe `state` OAuth | `state` |
+| `user_states` | JSON stanu + rewizja | `user_id` |
+| `audit_log` | logowania, zapisy, usunięcia | `id` |
+| `rate_limits` | limity | `(bucket, ip)` |
+| `discord_scheduled_events` | wydarzenia Discord | `discord_event_id` (UNIQUE) |
+| `discord_sync_state` | stan i blokada sync | `id=1` |
+| `discord_sync_runs` | historia sync (30 dni) | `id` |
+| `schema_migrations` | wersje migracji | `version` |
+
+### 10.2. Indeksy wydarzeń
+
+- `UNIQUE uq_discord_event_id (discord_event_id)`,
+- `idx_discord_guild (guild_id)`,
+- `idx_discord_status (status)`,
+- `idx_discord_type (event_type)`,
+- `idx_discord_start (scheduled_start_time)`,
+- `idx_discord_category (category)`,
+- `idx_discord_deleted (is_deleted)`.
+
+### 10.3. Soft delete
+
+- Brak fizycznego `DELETE` przy synchronizacji.
+- `is_deleted=1`, `deleted_at` ustawiane tylko po pełnej, poprawnej odpowiedzi HTTP 200.
+- Wydarzenie, które wróci, jest przywracane (`is_deleted=0`, `deleted_at=NULL`).
+- Historia i `raw_payload` pozostają do diagnostyki.
+
+### 10.4. Transakcja
+
+`Db::withTransaction()` obejmuje upsert, soft delete i update stanu. Błąd w dowolnym miejscu → rollback. `discord_sync_runs` jest zapisywane poza transakcją, żeby błąd historii nie wywrócił synchronizacji.
+
+## 11. Frontend — od bootstrapu do renderu
+
+### 11.1. Ładowanie
+
+```text
+index.html
+  → core.js       (AV, $, $$, esc, fmt)
+  → data.js       (dane demo/statyczne)
+  → state.js      (stan, API, rewizje, wydarzenia)
+  → render1.js    (widoki, pulpit, dziennik)
+  → render2.js    (statystyki, mentor, akademia, admin)
+  → actions.js    (zdarzenia, timery, modale)
+```
+
+Skrypty mają `defer`; kolejność jest istotna.
+
+### 11.2. Bootstrap
+
+1. `AV.bootstrap()` → `GET /api/me`.
+2. Brak sesji → ekran logowania.
+3. Sesja → `GET /api/state`; brak stanu → `buildEmpty()` lub `buildDemo()` dla demo.
+4. `AV.applyServerUser()`.
+5. `AV.loadEvents()` → `GET /api/events`.
+6. `AV.renderAll()` → `renderAcademy()`.
+
+### 11.3. Render Akademii
+
+- `AV.nextLiveEvent()` — aktywne lub najbliższe przyszłe wydarzenie `live`.
+- `AV.nextConsultationEvent()` — z `nextConsultation`.
+- `AV.liveInfo()` — countdown, `liveNow`.
+- `renderAcademy()` ustawia:
+  - `#liveTitle`, `#liveWho`, `#liveWhen`, `#liveCd`,
+  - `#nextConsult`, `#nextConsultWho`, `#consultMonth`,
+  - `#liveTop`, `#consultTopWrap`,
+  - `#acad` — 7 dni tygodnia, wydarzenia pogrupowane po `localDate`,
+  - `#acadUpdated` — czas ostatniego sukcesu / „nieaktualne” / „błąd synchronizacji”,
+  - `#adminEventsCard` — tylko dla admina i tylko gdy są `unassigned`.
+- Dni tygodnia: `PN WT ŚR CZW PT SB ND`; bieżący dzień: `· DZIŚ`.
+
+### 11.4. Odświeżanie
+
+| Timer | Akcja |
+| --- | --- |
+| 1 s | countdown live |
+| 12 s | ticker |
+| 60 s | kalendarz makro, powiadomienia |
+| 300 s | `loadEvents()` |
+| `visibilitychange` | `loadEvents()` po powrocie do karty |
+| 4 s po starcie | `checkLiveReminder()` |
+
+### 11.5. Przypomnienia
+
+- `liveReminder` w stanie użytkownika,
+- okno 15 minut przed startem (840–900 s),
+- jednorazowy `liveNotified`,
+- toast + `Notification` przeglądarki, jeśli dozwolone.
+
+### 11.6. Offline
+
+- `localStorage` przechowuje ostatni stan i sesję UI.
+- Po utracie sieci UI działa, ale zapisy są odkładane.
+- Po powrocie stan serwera ma pierwszeństwo; konflikt rewizji rozwiązuje 409.
+
+## 12. Puste pola i stany brzegowe
+
+To wymaganie produktowe (FR-08), realizowane w `renderAcademy()` i `state.js`:
+
+| Sytuacja | UI |
+| --- | --- |
+| brak live | `#liveTitle`, `#liveWho`, `#liveWhen`, `#liveCd`, `#liveTop` puste; przyciski ukryte |
+| brak konsultacji | `#nextConsult`, `#nextConsultWho`, `#consultMonth`, `#consultTopWrap` puste |
+| brak wydarzeń w tygodniu | 7 dni, zero wpisów |
+| sukces z `[]` | wszystkie pola puste, `sync.status=success` |
+| błąd API | ostatnie dane pozostają, `sync.status=error`, `stale=true` |
+| brak `user_count` | nie pokazuj „0 os.” |
+| brak `end_time` | nie pokazuj wymyślonych 60 min |
+| brak prowadzącego | puste, bez „Marcin” z nazwy na siłę |
+
+Zakazane teksty zastępcze: „Brak wydarzeń”, „Niedostępne”, „--”, „Wkrótce”, domyślne `20:00`.
+
+## 13. Administracja wydarzeniami
+
+**Aktor:** użytkownik z Discord ID w `ADMIN_DISCORD_IDS`.
+
+1. `GET /api/me` → `isAdmin=true`.
+2. `GET /api/admin/events` → wszystkie rekordy (także soft-deleted) + `sync`.
+3. UI pokazuje `#adminEventsCard` tylko gdy są `unassigned`.
+4. Klik „live” / „konsultacja” → `PUT /api/admin/events/{id}/category`.
+5. Serwer sprawdza sesję, admina i `Origin`.
+6. `manual_category`, `category`, `category_source='manual'`.
+7. Kolejne synchronizacje zachowują ręczne przypisanie (`COALESCE`).
+8. `loadEvents()` odświeża UI.
+
+**Błąd:** brak admina → 403; brak wydarzenia → 404; zła kategoria → 422.
+
+## 14. Deployment
+
+### 14.1. GitHub Actions
+
+Plik: `.github/workflows/deploy-alphavault.yml`.
+
+1. Checkout.
+2. PHP 8.3 + Node.
+3. Walidacja sekretów.
+4. Przygotowanie klucza SSH i `known_hosts`.
+5. `php -l` wszystkich plików.
+6. `scripts/deploy-alphavault.sh`:
+   - test SSH,
+   - backup `public` i `app` (5 ostatnich),
+   - `rsync public/` → `~/public_html/alphavault.pl`,
+   - `rsync app/`, `db/`, `bin/`, `config/` → `~/alphavault-app`,
+   - `app-path.php`,
+   - `config.json` z sekretów (600, poza docrootem),
+   - `php app/db/migrate.php`,
+   - health check,
+   - rollback przy błędzie.
+
+### 14.2. Health check
+
+`GET /api/health` musi zwrócić:
+
+```json
+{
+  "ok": true,
+  "db": { "ok": true },
+  "discordConfigured": true,
+  "roleCheckConfigured": true,
+  "eventsConfigured": true,
+  "demoAllowed": false
+}
+```
+
+Dodatkowo `/` musi zawierać „Alpha Vault”, a `/js/state.js` musi zwracać 200.
+
+### 14.3. Deploy lokalny (bez Actions)
+
+`scripts/local-deploy.sh` (WSL2) wykonuje test MySQL na LH i dopiero potem deleguje do `deploy-alphavault.sh`. Konfiguracja w `~/.config/alphavault/local.env` (600). Szczegóły: [docs/LOCAL-DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/LOCAL-DEPLOY.md).
+
+### 14.4. Rollback
+
+Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `public` i `app`, potem uruchamia health check.
+
+## 15. Bezpieczeństwo
+
+| Obszar | Mechanizm |
+| --- | --- |
+| Sekrety | `config.json` poza docrootem, 600; brak w repo; `.env` ignorowany |
+| Token bota | tylko PHP/CLI; redagowany w logach; nigdy w HTML/JS/URL |
+| Bot | `View Channels`, bez Manage Events, bez Privileged Intents |
+| Sesja | cookie HttpOnly, SameSite=Lax, Secure, hash w DB |
+| CSRF | `Origin` dla mutacji |
+| Rate limit | MySQL, per bucket/IP |
+| Nagłówki | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` |
+| Payloady | `raw_payload` niewysyłany do klienta |
+| Admin | lista Discord ID, nie rola w UI |
+| Logi | bez tokenów, haseł i pełnych danych osobowych |
+| WordPress | deploy nie dotyka innych katalogów ani baz |
+
+## 16. Testy i weryfikacja
+
+| Suita | Plik | Zakres | Wynik lokalny |
+| --- | --- | --- | --- |
+| Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
+| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
+| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy | 23/23 PASS |
+| UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
+| Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
+| Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
+
+Komendy:
+
+```powershell
+npm test
+npm run test:ui
+npm run test:ui:empty
+npm run test:events
+npm run test:docs
+```
+
+CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-state na osobnym porcie.
+
+**Ograniczenia:** Stage nie wystąpił w realnym API (tylko fixture); OAuth Discord nie był testowany interaktywnie bez udziału użytkownika.
+
+## 17. Zarządzanie dokumentacją
+
+### 17.1. Zasada jednego źródła
+
+- Wymagania: [PRD.md](PRD.md).
+- Działanie: ten dokument.
+- Kontrakt API: [docs/API.md](API.md) + [docs/openapi.yaml](openapi.yaml).
+- Schemat: [docs/BAZA-DANYCH.md](BAZA-DANYCH.md).
+- Deploy: [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md).
+- Zasady agenta: [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md).
+
+Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
+
+### 17.2. Co aktualizować przy jakiej zmianie
+
+| Zmiana | Dokumenty |
+| --- | --- |
+| nowy endpoint | `docs/API.md`, `docs/openapi.yaml`, §6, PRD (jeśli funkcja) |
+| nowa tabela/kolumna | `docs/BAZA-DANYCH.md`, §10, `db/schema.sql` |
+| nowa zmienna env | `.env.example`, `docs/DEPLOY.md`, `docs/API.md`, §4/§14, `scripts/render-config.mjs` |
+| nowa funkcja UI | `docs/FUNKCJE.md`, §11, PRD |
+| zmiana klasyfikacji | §7.6, `docs/DISCORD.md`, testy |
+| zmiana testów | `docs/TESTOWANIE.md`, §16, README |
+| zmiana deployu | `docs/DEPLOY.md`, §14, AGENTS.md |
+| nowy dokument | `docs/README.md`, ten rozdział, test linków |
+
+### 17.3. Automatyczna spójność
+
+```powershell
+npm run docs:sync   # generuje public/docs z docs/ i root
+npm run test:docs   # sprawdza linki, sekcje i brak dryfu
+```
+
+`public/docs/` jest generowane. Nie edytuj plików w `public/docs/` ręcznie — zmień źródło i uruchom `docs:sync`.
+
+## 18. Runbook
+
+| Objaw | Diagnoza | Działanie |
+| --- | --- | --- |
+| `https://alphavault.pl` → 403 | brak plików w docroot | deploy; sprawdź `~/public_html/alphavault.pl` |
+| `/api/health` → 503 | DB niedostępna | sprawdź `config.json`, login MySQL, `db.ok` |
+| health: `discordConfigured=false` | brak client ID/secret | uzupełnij sekrety i redeploy |
+| health: `eventsConfigured=false` | brak bota/guild ID | uzupełnij `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` |
+| brak wydarzeń w panelu | sync nie działa | `php bin/sync-discord-events.php`, log, `discord_sync_state` |
+| `sync.status=error`, `http_401` | zły token | rotacja tokenu, redeploy |
+| `sync.status=error`, `http_404` | zły guild ID | popraw `DISCORD_GUILD_ID` |
+| `stale=true` | brak sukcesu > 15 min | sprawdź Cron, log, blokadę |
+| duplikaty | brak UNIQUE / ręczne INSERT | sprawdź `uq_discord_event_id` |
+| złe godziny | stały offset zamiast strefy | sprawdź `DateTimeZone('Europe/Warsaw')` |
+| puste pola mimo wydarzeń | filtr kategorii/statusu | `/api/events`, `category`, `status` |
+| 409 przy zapisie | konflikt rewizji | odśwież stan, scal |
+| 403 przy zapisie | zły `Origin` | sprawdź domenę i proxy |
+| deploy: billing error | limit GitHub Actions | napraw billing lub użyj `local-deploy.sh` |
+| deploy: health fail | config/DB/Discord | przeczytaj odpowiedź health, popraw sekrety |
+
+## 19. Słownik
+
+| Pojęcie | Znaczenie |
+| --- | --- |
+| Scheduled Event | wydarzenie Discord z datą, typem i statusem |
+| `live` | wydarzenie trafiające do harmonogramu live'ów |
+| `consultation` | wydarzenie trafiające do karty konsultacji 1:1 |
+| `unassigned` | wydarzenie nierozpoznane, wymaga decyzji admina |
+| soft delete | oznaczenie `is_deleted=1` zamiast fizycznego usunięcia |
+| UPSERT | `INSERT ... ON DUPLICATE KEY UPDATE` |
+| `stale` | brak udanego sync od ponad 15 minut |
+| `manual_category` | ręczne przypisanie, ma pierwszeństwo nad regułami |
+| `raw_payload` | pełny JSON z Discorda, tylko do diagnostyki |
+| DST | zmiana czasu letni/zimowy |

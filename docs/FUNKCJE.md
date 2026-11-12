@@ -151,13 +151,20 @@ Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłącze
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Live dziś 20:00 + countdown | ✅ | strefa Warsaw |
+| Harmonogram live'ów | ✅ | synchronizacja Discord Scheduled Events → `/api/events`; grupowanie po `Europe/Warsaw`, `DZIŚ`, wiele wydarzeń dnia |
+| Najbliższy live + countdown | ✅ | wyłącznie z realnego wydarzenia `live`; brak wydarzenia = puste pola |
+| Liczba zainteresowanych | ✅ | z `user_count`, jeśli Discord je zwróci; brak = pole puste |
+| Konsultacje 1:1 | ✅ | karta „Najbliższa” z wydarzenia `consultation`; prowadzący i czas trwania tylko z danych wydarzenia |
+| Ręczne przypisanie kategorii | ✅ | admin `live` / `consultation` / `unassigned`; pierwszeństwo nad regułami |
+| Puste pola | ✅ | brak tekstów zastępczych, brak domyślnego 20:00 |
+| Błąd synchronizacji | ✅ | ostatni dobry zestaw pozostaje; UI pokazuje stan „błąd synchronizacji” |
+| Rezerwacja konsultacji | ✅ | niezależna od synchronizacji, zapis w stanie |
 | Dołącz / przypomnienie | ✅ | modal, powiadomienie przeglądarki (jeśli pozwolono) |
-| Konsultacje 1:1 | ✅ | rezerwacja lokalna, zapis w stanie |
-| Harmonogram live'ów | ✅ | |
-| Nagrania | 🟡 | karta i modal demo; brak player'a |
+| Nagrania | 🟡 | karta i modal demo; brak playera |
 | Materiały / postęp kursu | ✅ | postęp w stanie |
 | Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
+
+Szczegóły techniczne: [DOCUMENTATION.md §7](../DOCUMENTATION.md#7-discord-scheduled-events--pełny-przepływ), [DOCUMENTATION.md §12](../DOCUMENTATION.md#12-puste-pola-i-stany-brzegowe).
 
 ---
 

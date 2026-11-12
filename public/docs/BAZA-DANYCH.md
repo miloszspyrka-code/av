@@ -1,3 +1,5 @@
+<!-- Wygenerowane z docs/BAZA-DANYCH.md przez scripts/sync-docs.mjs. Nie edytuj ręcznie. -->
+
 # Baza danych
 
 Produkcja: MySQL/MariaDB na LH.pl (MariaDB 11.8). Lokalnie: MySQL 8.4 lub MariaDB.
