@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.2.0 — 2026-11-12
+
+### Dodane
+- Integracje Garmin Connect, Oura Ring i Whoop (OAuth2, szyfrowane tokeny, ręczny i cronowy sync).
+- Apple Watch · Zdrowie: kod parowania i ingest z tokenem urządzenia.
+- Gotowość łącząca sen, HRV, tętno, Body Battery, regenerację i check-in.
+- UI „Ciało”: urządzenia, metryki, wykres sen → wynik dnia, odłączenie z usunięciem danych.
+- `npm run test:wearables` — 33 scenariusze API + UI na lokalnym dostawcy OAuth.
+
+### Naprawione
+- `Db::migrate()` nie rozcina komentarzy SQL na bajcie `0x85` (litera ą/ń w UTF-8).
+
 ## 3.1.2 — 2026-11-12
 
 ### Zmienione

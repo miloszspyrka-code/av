@@ -287,9 +287,9 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | API 20/20, UI 37/37, empty 10/10, events 24/24 |
+| Testy lokalne | API 20/20, UI 37/37, empty 10/10, events 24/24, wearables 33/33, PWA 20/20 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
-| Baza LH | tabele utworzone (10), login OK |
+| Baza LH | tabele utworzone (14), w tym 4 tabele `wearable_*`, login OK |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
@@ -298,6 +298,9 @@ npm run test:docs
 | Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
+| Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; Oura/Whoop/Garmin czekają na sekrety OAuth |
+| Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
+| Cron urządzeń | `cron/sync-wearables.sh` wdrożony i uruchomiony ręcznie (0 połączeń); wpis w panelu LH do dodania |
 | LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
@@ -307,7 +310,9 @@ npm run test:docs
 
 1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
-3. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+3. Dodaj sekrety `OURA_*` i `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*`.
+4. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
+5. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego
 
