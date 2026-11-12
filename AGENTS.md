@@ -291,7 +291,7 @@ npm run test:docs
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
 | CI gate | `PHP + API + UI` wymagany; PR + branch protection na `main` |
-| Auto-deploy | merge/push do `main` przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
+| Auto-deploy | po zielonym CI na `main` (`workflow_run` CI → `deploy-alphavault.yml`) przy `DEPLOY_ENABLED=true`; environment `alphavault-production` tylko z `main` |
 | Repo / security | publiczne `miloszspyrka-code/av`; secret scanning + push protection + Dependabot |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
