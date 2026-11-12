@@ -266,7 +266,7 @@ jobs:
               WEEX_SPOT_BASE: "http://127.0.0.1:4191/weex",
               WEEX_FUTURES_BASE: "http://127.0.0.1:4191/weex",
               METAAPI_BASE: "http://127.0.0.1:4191/metaapi",
-              METAAPI_CLIENT_BASE: "http://127.0.0.1:4191/metaapi-client"
+              METAAPI_CLIENT_BASE: "http://127.0.0.1:4191/metaapi-client/us-east-1"
             });
             fs.writeFileSync("tests/config.integrations.json", JSON.stringify(config, null, 2));
           '
