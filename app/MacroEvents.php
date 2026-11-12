@@ -29,6 +29,16 @@ final class MacroEvents
         'auction', 'bill', 'bond', 'note', 'speaks', 'holiday', 'reopening',
         'settlement', 'redemption', 'allotted', 'bid-to-cover', 'total accepted',
     ];
+    private const TV_MEDIUM_KEYWORDS = [
+        'inflation', 'cpi', 'ppi', 'pce', 'gdp', 'retail sales', 'unemployment',
+        'employment', 'payroll', 'jobless', 'claimant', 'jolts', 'job openings',
+        'interest rate', 'rate decision', 'fomc', 'fed funds', 'ecb', 'boe', 'boj',
+        'pmi', 'confidence', 'sentiment', 'zew', 'ifo', 'industrial production',
+        'manufacturing production', 'manufacturing index', 'trade balance',
+        'building permits', 'housing starts', 'durable goods', 'personal spending',
+        'personal income', 'earnings', 'current account', 'factory orders',
+        'industrial orders', 'leading index',
+    ];
     private const FETCH_WINDOW_DAYS_BACK = 8;
     private const FETCH_WINDOW_DAYS_FORWARD = 21;
     private const STALE_AFTER_SECONDS = 1800;
@@ -295,6 +305,18 @@ final class MacroEvents
             foreach (self::TV_NOISE as $noise) {
                 if (str_contains($lower, $noise)) {
                     continue 2;
+                }
+            }
+            if ($importance === 0) {
+                $matched = false;
+                foreach (self::TV_MEDIUM_KEYWORDS as $keyword) {
+                    if (str_contains($lower, $keyword)) {
+                        $matched = true;
+                        break;
+                    }
+                }
+                if (!$matched) {
+                    continue;
                 }
             }
 

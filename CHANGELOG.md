@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.5.0 — 2026-11-12
+
+### Dodane
+- Kalendarz makro w MySQL: `macro_events` + `macro_sync_state` oraz `GET /api/macro-events`.
+- Sync `bin/sync-macro-events.php`: bieżący tydzień ForexFactory, następny tydzień TradingView; UPSERT, soft delete, tylko ★★/★★★.
+- Widget „MAKRO · ten tydzień” i strona kalendarza korzystają z tego samego API; usunięto demo z `data.js`.
+- Testy: `npm run test:macro` 21/21; API 23/23; UI 52/52.
+
+### Zmienione
+- Puste dane makro = puste pola (bez „Brak wydarzeń”, „spokojnie do końca tygodnia”).
+- Deploy uruchamia jednorazowy sync makro po migracji; LH Cron co 15 min.
+
 ## 3.4.0 — 2026-11-12
 
 ### Dodane

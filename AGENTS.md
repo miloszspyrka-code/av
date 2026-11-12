@@ -154,6 +154,7 @@ MySQL: serwer445119_alphavault
 | DB name/user | `serwer445119_alphavault` |
 | PHP CLI | `/usr/bin/php` (8.3) |
 | Cron (panel LH) | `*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh` |
+| Cron makro (panel LH) | `*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh` |
 | Cron (ręcznie) | `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
 | Log sync | `~/public_html/alphavault.pl/.app/logs/discord-sync.log` |
 
@@ -191,6 +192,7 @@ npm run test:ui          # UI 51/51 (Chrome/Edge)
 npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
+npm run test:macro       # kalendarz makro DB/sync
 npm run test:quotes      # notowania rynkowe 14/14 (bez sieci i bazy)
 npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
 npm run test:docs        # linki i spójność dokumentacji
@@ -298,11 +300,12 @@ npm run test:docs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy lokalne | prop 27/27, API 21/21, UI 51/51, empty 12/12, events 24/24, quotes 14/14, wearables 33/33, PWA 20/20, integracje 19/19, UI integracje 11/11 |
+| Testy lokalne | prop 27/27, API 23/23, UI 52/52, empty 12/12, events 24/24, macro 21/21, quotes 14/14, wearables 33/33, PWA 20/20, integracje 19/19, UI integracje 11/11 |
 | Realny Discord API | 3 wydarzenia VOICE, 3 unikalne ID, bez duplikatów |
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
 | Cron integracji | `success` 20:20:01, 0 połączeń, 0 importów (LH Cron co 5 min) |
+| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; zadanie LH Cron co 15 min do dodania w panelu |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |

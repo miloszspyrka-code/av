@@ -217,6 +217,16 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 - osobne statystyki, krzywa kapitału i status dla każdego challenge'u,
 - archiwum, duplikat i usuwanie konfiguracji bez wpływu na transakcje.
 
+### FR-20 — Kalendarz makro z bazy
+
+Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wspólnego zestawu publikacji zapisanego w MySQL i udostępnianego przez `GET /api/macro-events`.
+
+- bieżący tydzień z feedu ForexFactory, następny z TradingView,
+- tylko publikacje ★★ i ★★★ (Low/Holiday pomijane), czasy w UTC + oryginalne ISO,
+- UPSERT bez duplikatów i soft delete po braku w feedzie,
+- błąd API nie czyści ostatniego dobrego zestawu; sukces z `[]` czyści widok,
+- synchronizacja przez LH Cron co 15 minut i ręcznie `bin/sync-macro-events.php`.
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -255,6 +265,7 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 | AC-16 | Apple Health przyjmuje dane po kodzie parowania i tokenie urządzenia | `npm run test:wearables` |
 | AC-17 | Gotowość łączy urządzenie z check-inem i czyści się po odłączeniu | test API + UI E2E |
 | AC-18 | Tokeny dostawców nie są widoczne w API ani logach | test odpowiedzi API + audyt |
+| AC-19 | Kalendarz makro i widget korzystają z DB oraz są odporne na błąd feedu | `npm run test:macro` 21/21 + API/UI E2E |
 
 ## 9. Metryki sukcesu
 
