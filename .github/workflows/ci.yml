@@ -68,6 +68,9 @@ jobs:
       - name: Encoding guard
         run: npm run test:encoding
 
+      - name: Router unit tests
+        run: npm run test:router
+
       - name: PHP syntax check
         run: |
           set -euo pipefail
