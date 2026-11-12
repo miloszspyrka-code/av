@@ -24,6 +24,7 @@ const SESSIONS_FILE = path.join(ROOT, 'tests', 'mcp-test-sessions.json');
 const LOCAL_ENV = REMOTE ? {} : {
   APP_URL: BASE,
   SESSION_COOKIE: 'mcp_session',
+  DISCORD_REDIRECT_URI: BASE + '/oauth/discord/callback',
   MCP_ENABLED: 'true',
   MCP_WRITES_ENABLED: 'false',
   MCP_ISSUER: BASE,
