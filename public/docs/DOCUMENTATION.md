@@ -706,6 +706,7 @@ CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-s
 - Kontrakt API: [docs/API.md](API.md) + [docs/openapi.yaml](openapi.yaml).
 - Schemat: [docs/BAZA-DANYCH.md](BAZA-DANYCH.md).
 - Deploy: [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md).
+- MCP: [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md) — OAuth 2.1, narzędzia, walidacje, wdrożenie.
 - Zasady agenta: [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md).
 
 Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
@@ -732,11 +733,27 @@ npm run test:docs   # sprawdza linki, sekcje i brak dryfu
 
 `public/docs/` jest generowane. Nie edytuj plików w `public/docs/` ręcznie — zmień źródło i uruchom `docs:sync`.
 
-## 18. Runbook
+## 18. MCP
+
+MCP działa na `https://mcp.alphavault.pl/mcp` jako osobny front controller PHP 8.3. OAuth 2.1 (PKCE, DCR, consent, refresh, revocation) realizuje `league/oauth2-server`; protokół MCP i walidację tokenu — `mcp/sdk`. Discord jest wyłącznie upstream IdP; token Discord nie jest przekazywany do MCP.
+
+- 8 narzędzi read-only: profil, pulpit, transakcje, szczegół, statystyki, wydarzenia, plan dnia, playbook.
+- Narzędzia write są wyłączone przy `MCP_WRITES_ENABLED=false`.
+- Tożsamość: `sub` z tokenu → `users.id`; brak `user_id` w argumentach narzędzi.
+- Dostęp: Guild + wymagana rola; konto tworzone automatycznie po Discord User ID.
+- Tokeny: `mcp_access_tokens` / `mcp_refresh_tokens`; revocation i rotacja.
+- Panel połączeń: `/oauth/connected`.
+
+Pełny kontrakt i runbook: [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md).
+
+## 19. Runbook
 
 | Objaw | Diagnoza | Działanie |
 | --- | --- | --- |
 | `https://alphavault.pl` → 403 | brak plików w docroot | deploy; sprawdź `~/public_html/alphavault.pl` |
+| `https://mcp.alphavault.pl/mcp` → 403 `Invalid Host` | duplikat nagłówka Host z LH | sprawdź normalizację w `McpController`; nie wyłączaj walidacji Host |
+| `https://mcp.alphavault.pl/mcp` → 503 | `MCP_ENABLED=false` lub brak kluczy | włącz MCP, uruchom `bin/mcp-init.php` |
+| MCP OAuth 401 po tokenie | zły `aud`/`iss`, token wygasł lub unieważniony | sprawdź `mcp_access_tokens`, issuer/resource |
 | `/api/health` → 503 | DB niedostępna | sprawdź `config.json`, login MySQL, `db.ok` |
 | health: `discordConfigured=false` | brak client ID/secret | uzupełnij sekrety i redeploy |
 | health: `eventsConfigured=false` | brak bota/guild ID | uzupełnij `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` |

@@ -25,6 +25,13 @@
 - UI „Ciało”: urządzenia, metryki, wykres sen → wynik dnia, odłączenie z usunięciem danych.
 - `npm run test:wearables` — 33 scenariusze API + UI na lokalnym dostawcy OAuth.
 
+### MCP
+- `https://mcp.alphavault.pl/mcp` — MCP Streamable HTTP na PHP 8.3, bez Node.js.
+- OAuth 2.1: Authorization Code + PKCE S256, DCR, consent, refresh z rotacją, revocation, audience `mcp.alphavault.pl`.
+- Discord jako upstream IdP; automatyczne tworzenie konta po Discord User ID, bez duplikatów i bez listy pilotowej.
+- 8 narzędzi read-only; `MCP_WRITES_ENABLED=false` blokuje narzędzia zapisujące.
+- Nowe tabele `mcp_*`, `UserService`, `scripts/deploy-mcp.sh`, testy `test:mcp` i `test:mcp:login`.
+
 ### Naprawione
 - `Db::migrate()` nie rozcina komentarzy SQL na bajcie `0x85` (litera ą/ń w UTF-8).
 

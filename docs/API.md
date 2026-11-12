@@ -450,3 +450,23 @@ Pole `integrations` zawiera:
 | `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | endpointy przydzielone przez Garmin po zatwierdzeniu partnera |
 | `OURA_AUTHORIZE_URL`, `OURA_TOKEN_URL`, `OURA_API_BASE` | opcjonalne nadpisania endpointów Oura |
 | `WHOOP_AUTHORIZE_URL`, `WHOOP_TOKEN_URL`, `WHOOP_API_BASE` | opcjonalne nadpisania endpointów Whoop |
+| `SESSION_COOKIE` | `av_session` w aplikacji, `mcp_session` na domenie MCP |
+| `DISCORD_API_BASE` | domyślnie `https://discord.com`; nadpisywane w testach |
+| `MCP_ENABLED` | kill switch MCP |
+| `MCP_WRITES_ENABLED` | `false` w fazie 1; write tools nie są rejestrowane |
+| `MCP_ISSUER`, `MCP_RESOURCE` | `https://mcp.alphavault.pl`, `https://mcp.alphavault.pl/mcp` |
+| `MCP_ALLOWED_REDIRECT_HOSTS` | allowlista hostów DCR |
+| `MCP_ACCESS_TOKEN_TTL`, `MCP_REFRESH_TOKEN_TTL`, `MCP_AUTH_CODE_TTL` | TTL w sekundach |
+| `MCP_BODY_LIMIT` | limit body MCP (64 KiB) |
+| `MCP_LOG_FILE` | log MCP w `.app/logs/mcp.log` |
+
+## 6. MCP
+
+MCP działa na osobnym originie: `https://mcp.alphavault.pl`.
+
+- endpoint: `POST /mcp` (MCP Streamable HTTP, JSON-RPC 2.0, JSON),
+- OAuth 2.1: discovery, DCR, authorize/consent, token, refresh, revoke,
+- 8 narzędzi read-only; narzędzia zapisujące wyłączone przy `MCP_WRITES_ENABLED=false`,
+- pełny kontrakt, walidacje i wdrożenie: [MCP.md](MCP.md).
+
+MCP nie jest publicznym endpointem synchronizacji Discord. Czyta wyłącznie dane z bazy synchronizowanej przez LH Cron.

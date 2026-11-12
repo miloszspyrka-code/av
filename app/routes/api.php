@@ -31,12 +31,6 @@ function av_integration_sync_state(Config $config, Db $db): ?array
 
 function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string $method, string $path): void
 {
-    if (str_starts_with($path, '/api/mcp')) {
-        require_once __DIR__ . '/mcp.php';
-        av_handle_mcp_api($config, $db, $auth, $user, $method, $path);
-        return;
-    }
-
     try {
         if ($path === '/api/health' && $method === 'GET') {
             try {

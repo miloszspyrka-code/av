@@ -30,6 +30,7 @@ final class Config
         public readonly bool $integrationsConfigured,
         public readonly string $metaApiToken,
         public readonly array $integrationBases,
+        public readonly array $mcp,
         public readonly string $version,
     ) {
     }
@@ -107,6 +108,7 @@ final class Config
             'botToken' => (string) $env('DISCORD_BOT_TOKEN', ''),
             'defaultPlan' => $env('DISCORD_DEFAULT_PLAN') === 'solo' ? 'solo' : 'full',
             'trialDays' => $parseInt($env('DISCORD_TRIAL_DAYS'), 0),
+            'apiBase' => rtrim((string) $env('DISCORD_API_BASE', 'https://discord.com'), '/'),
         ];
 
         $discordConfigured = $discord['clientId'] !== ''
@@ -180,6 +182,28 @@ final class Config
             'metaapi_client' => (string) $env('METAAPI_CLIENT_BASE', 'https://mt-client-api-v1.{region}.agiliumtrade.agiliumtrade.ai'),
         ];
 
+        $mcp = [
+            'enabled' => $parseBool($env('MCP_ENABLED'), false),
+            'writesEnabled' => $parseBool($env('MCP_WRITES_ENABLED'), false),
+            'issuer' => rtrim((string) $env('MCP_ISSUER', $appUrl), '/'),
+            'resource' => rtrim((string) $env('MCP_RESOURCE', $appUrl . '/mcp'), '/'),
+            'privateKeyPath' => (string) $env('MCP_PRIVATE_KEY_PATH', $root . '/keys/oauth-private.pem'),
+            'publicKeyPath' => (string) $env('MCP_PUBLIC_KEY_PATH', $root . '/keys/oauth-public.pem'),
+            'encryptionKeyPath' => (string) $env('MCP_ENCRYPTION_KEY_PATH', $root . '/keys/oauth-encryption.key'),
+            'accessTokenTtl' => $parseInt($env('MCP_ACCESS_TOKEN_TTL'), 3600),
+            'refreshTokenTtl' => $parseInt($env('MCP_REFRESH_TOKEN_TTL'), 2592000),
+            'authCodeTtl' => $parseInt($env('MCP_AUTH_CODE_TTL'), 300),
+            'bodyLimit' => $parseInt($env('MCP_BODY_LIMIT'), 65536),
+            'allowedRedirectHosts' => array_values(array_filter(array_map(
+                static fn (string $value): string => strtolower(trim($value)),
+                explode(',', (string) $env(
+                    'MCP_ALLOWED_REDIRECT_HOSTS',
+                    'chatgpt.com,chat.openai.com,platform.openai.com,grok.com,x.ai,localhost,127.0.0.1'
+                ))
+            ), static fn (string $value): bool => $value !== '')),
+            'logFile' => (string) $env('MCP_LOG_FILE', $root . '/logs/mcp.log'),
+        ];
+
         return new self(
             root: $root,
             appUrl: $appUrl,
@@ -187,7 +211,7 @@ final class Config
             isProd: $isProd,
             secureCookies: str_starts_with($appUrl, 'https://'),
             sessionSecret: $sessionSecret,
-            sessionCookie: 'av_session',
+            sessionCookie: (string) $env('SESSION_COOKIE', 'av_session'),
             oauthCookie: 'av_oauth',
             sessionDays: 30,
             maxStateBytes: $parseInt($env('MAX_STATE_BYTES'), 12 * 1024 * 1024),
@@ -205,6 +229,7 @@ final class Config
             integrationsConfigured: strlen($integrationsKey) >= 32,
             metaApiToken: $metaApiToken,
             integrationBases: $integrationBases,
+            mcp: $mcp,
             version: '3.4.0',
         );
     }

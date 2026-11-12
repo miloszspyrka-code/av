@@ -21,6 +21,13 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
 | `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) |
 | `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
+| `mcp_clients` | klienci MCP (DCR), redirect URI, opcjonalny secret hash |
+| `mcp_auth_codes` | kody autoryzacyjne OAuth 2.1, TTL, revocation |
+| `mcp_access_tokens` | `jti`, user, scope, audience, expiry, revocation |
+| `mcp_refresh_tokens` | refresh tokeny i rotacja |
+| `mcp_login_requests` | stan logowania Discord na domenie MCP |
+| `mcp_consents` | ekran zgody OAuth i CSRF |
+| `mcp_idempotency` | klucze idempotencji przyszłych zapisów MCP |
 | `schema_migrations` | wersje migracji |
 | `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu |
 | `exchange_imports` | deduplikacja transakcji po `(user_id, provider, external_id)` |

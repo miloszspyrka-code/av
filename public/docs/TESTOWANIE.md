@@ -226,6 +226,49 @@ Wykonane na `https://alphavault.pl`:
 
 Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
 
+## MCP
+
+```powershell
+$env:PHP_BIN = "C:\Users\milos\.local\php83\php.exe"
+$env:PHP_ARGS = "-d extension=sodium -d extension=zip"
+$env:ALPHA_VAULT_CONFIG = "tests/config.test.json"
+npm run test:mcp
+npm run test:mcp:login
+```
+
+`test:mcp` sprawdza:
+
+- DCR, authorize, consent, PKCE, token, refresh, rotację i revoke,
+- 8 narzędzi read-only w `tools/list`,
+- brak narzędzi `create_trade`/`close_trade` przy `MCP_WRITES_ENABLED=false`,
+- izolację danych dwóch użytkowników,
+- `get_profile`, `get_dashboard`, `list_trades`, `get_trade`, `get_stats`, `get_events`, `get_day_plan`, `list_setups`,
+- handshake `2025-06-18` i stateless `2026-07-28`,
+- odrzucenie złych parametrów,
+- 401 bez tokenu, 401 po revoke, 400 po ponownym użyciu refresh tokenu.
+
+`test:mcp:login` używa lokalnego fake Discord IdP i sprawdza:
+
+- pierwsze logowanie tworzy konto,
+- kolejne logowanie nie tworzy duplikatu,
+- brak roli → 403 bez konta,
+- brak członkostwa → 403 bez konta,
+- istniejące konto jest aktualizowane po Discord User ID.
+
+Produkcyjny E2E (test users, pełny OAuth i 8 narzędzi):
+
+```powershell
+$env:MCP_E2E_REMOTE = "1"
+$env:MCP_BASE = "https://mcp.alphavault.pl"
+node tests/mcp.e2e.mjs
+```
+
+MCP Inspector CLI:
+
+```powershell
+node tests/prod-inspector.mjs
+```
+
 ## Czego testy nie obejmują
 
 - prawdziwego logowania Discord (wymaga interakcji użytkownika),

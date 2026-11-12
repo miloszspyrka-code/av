@@ -19,12 +19,12 @@ final class Discord
             'state' => $state,
             'prompt' => 'consent',
         ];
-        return 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
+        return $this->config->discord['apiBase'] . '/api/oauth2/authorize?' . http_build_query($params);
     }
 
     public function exchangeCode(string $code): array
     {
-        return $this->request('POST', 'https://discord.com/api/oauth2/token', [
+        return $this->request('POST', $this->config->discord['apiBase'] . '/api/oauth2/token', [
             'Content-Type: application/x-www-form-urlencoded',
         ], http_build_query([
             'client_id' => $this->config->discord['clientId'],
@@ -37,7 +37,7 @@ final class Discord
 
     public function fetchProfile(string $accessToken): array
     {
-        return $this->request('GET', 'https://discord.com/api/users/@me', [
+        return $this->request('GET', $this->config->discord['apiBase'] . '/api/users/@me', [
             'Authorization: Bearer ' . $accessToken,
         ]);
     }
@@ -45,7 +45,7 @@ final class Discord
     public function fetchMember(string $accessToken): array
     {
         $guildId = rawurlencode($this->config->discord['guildId']);
-        return $this->request('GET', 'https://discord.com/api/v10/users/@me/guilds/' . $guildId . '/member', [
+        return $this->request('GET', $this->config->discord['apiBase'] . '/api/v10/users/@me/guilds/' . $guildId . '/member', [
             'Authorization: Bearer ' . $accessToken,
         ]);
     }

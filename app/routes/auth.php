@@ -10,38 +10,7 @@ function av_auth_error(int $status, string $title, string $text, string $detail 
 
 function av_upsert_discord_user(Config $config, Db $db, array $profile, bool $roleVerified): array
 {
-    $existing = $db->queryOne('SELECT * FROM users WHERE discord_id = ? LIMIT 1', [(string) $profile['id']]);
-    $trialUntil = null;
-    if ((int) $config->discord['trialDays'] > 0) {
-        $trialUntil = gmdate('Y-m-d', time() + ((int) $config->discord['trialDays'] * 86400));
-    }
-    if ($existing !== null) {
-        $db->execute(
-            'UPDATE users SET username = ?, global_name = ?, avatar_url = ?, email = ?, role_verified = 1, last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [
-                (string) ($profile['username'] ?? $existing['username']),
-                $profile['global_name'] ?? null,
-                $profile['avatar_url'] ?? $existing['avatar_url'],
-                $profile['email'] ?? $existing['email'],
-                (int) $existing['id'],
-            ]
-        );
-        return $db->queryOne('SELECT * FROM users WHERE id = ?', [(int) $existing['id']]) ?? $existing;
-    }
-    $db->execute(
-        'INSERT INTO users (discord_id, username, global_name, avatar_url, email, is_demo, plan, access_until, role_verified, last_login_at)
-         VALUES (?, ?, ?, ?, ?, 0, ?, ?, 1, CURRENT_TIMESTAMP)',
-        [
-            (string) $profile['id'],
-            (string) ($profile['username'] ?? 'Trader'),
-            $profile['global_name'] ?? null,
-            $profile['avatar_url'] ?? null,
-            $profile['email'] ?? null,
-            $config->discord['defaultPlan'],
-            $trialUntil,
-        ]
-    );
-    return $db->queryOne('SELECT * FROM users WHERE id = ?', [$db->lastInsertId()]) ?? [];
+    return UserService::upsertDiscord($config, $db, $profile, $roleVerified);
 }
 
 function av_handle_auth(Config $config, Db $db, Auth $auth, Discord $discord, ?array $user, string $method, string $path): void

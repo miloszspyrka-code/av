@@ -50,3 +50,47 @@ jobs:
               ;;
           esac
           echo "UI responds with Alpha Vault."
+
+      - name: Check MCP health
+        run: |
+          set -euo pipefail
+          body="$(curl -fsS --max-time 25 https://mcp.alphavault.pl/health)"
+          echo "$body" | jq .
+          echo "$body" | jq -e '
+            .ok == true and
+            .db.ok == true and
+            .mcp.enabled == true and
+            .mcp.writesEnabled == false and
+            .mcp.resource == "https://mcp.alphavault.pl/mcp"
+          ' >/dev/null
+          echo "MCP health is OK."
+
+      - name: Check MCP OAuth discovery
+        run: |
+          set -euo pipefail
+          prm="$(curl -fsS --max-time 25 https://mcp.alphavault.pl/.well-known/oauth-protected-resource)"
+          echo "$prm" | jq -e '
+            .resource == "https://mcp.alphavault.pl/mcp" and
+            (.authorization_servers | index("https://mcp.alphavault.pl")) != null and
+            (.scopes_supported | index("alphavault.read")) != null
+          ' >/dev/null
+          as="$(curl -fsS --max-time 25 https://mcp.alphavault.pl/.well-known/oauth-authorization-server)"
+          echo "$as" | jq -e '
+            .issuer == "https://mcp.alphavault.pl" and
+            .registration_endpoint == "https://mcp.alphavault.pl/oauth/register" and
+            (.code_challenge_methods_supported | index("S256")) != null
+          ' >/dev/null
+          curl -fsS --max-time 25 https://mcp.alphavault.pl/oauth/jwks.json | jq -e '.keys[0].kty == "RSA"' >/dev/null
+          echo "MCP OAuth discovery is OK."
+
+      - name: Check MCP unauthenticated challenge
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"
+          status="$(curl -sS -o /dev/null -D "$headers" -w '%{http_code}' --max-time 25 \
+            -X POST https://mcp.alphavault.pl/mcp \
+            -H 'Content-Type: application/json' \
+            -d '{}')"
+          [ "$status" = "401" ] || { echo "MCP returned $status, expected 401"; exit 1; }
+          grep -qi '^www-authenticate: Bearer ' "$headers" || { echo "Missing WWW-Authenticate"; exit 1; }
+          echo "MCP auth challenge is OK."

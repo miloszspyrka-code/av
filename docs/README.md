@@ -15,7 +15,7 @@
 | [TESTOWANIE.md](TESTOWANIE.md) | testy prop, API i UI, checklisty | tak |
 | [DISCORD.md](DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
 | [DEPLOY.md](DEPLOY.md) | produkcja, reverse proxy, backup | nie |
-| [MCP.md](MCP.md) | mapa narzędzi MCP, walidacje, OAuth, plan wdrożenia | nie |
+| [MCP.md](MCP.md) | OAuth 2.1, narzędzia MCP, walidacje, wdrożenie | nie |
 | [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md) | deploy z WSL2 bez GitHub Actions | nie |
 | [CHANGELOG.md](../CHANGELOG.md) | historia zmian | nie |
 

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   test:
-    name: PHP + API + UI
+    name: PHP + API + UI + MCP
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -48,7 +48,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_mysql, curl, mbstring
+          extensions: pdo_mysql, curl, mbstring, sodium, zip
           coverage: none
 
       - name: Setup Node.js
@@ -60,6 +60,9 @@ jobs:
       - name: Install test dependencies
         run: npm ci
 
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
       - name: Documentation
         run: |
           node scripts/sync-docs.mjs --check
@@ -68,7 +71,7 @@ jobs:
       - name: PHP syntax check
         run: |
           set -euo pipefail
-          find app public -name '*.php' -print0 | xargs -0 -n1 php -l
+          find app public mcp bin -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Create test configuration
         run: |
@@ -132,6 +135,15 @@ jobs:
         env:
           APP_URL: http://127.0.0.1:4173
         run: node tests/api.e2e.mjs
+
+      - name: MCP E2E
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+          PHP_BIN: php
+          MCP_TEST_PORT: "4175"
+        run: |
+          npm run test:mcp
+          npm run test:mcp:login
 
       - name: Seed Discord events for UI
         env:

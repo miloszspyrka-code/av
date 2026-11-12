@@ -1,6 +1,6 @@
 # Alpha Vault
 
-Prywatna strefa tradera Alpha Moves. Produkcja: <https://alphavault.pl>. Repozytorium: <https://github.com/miloszspyrka-code/av> (publiczne).
+Prywatna strefa tradera Alpha Moves. Produkcja: <https://alphavault.pl>. MCP: <https://mcp.alphavault.pl/mcp>. Repozytorium: <https://github.com/miloszspyrka-code/av> (publiczne).
 
 Aplikacja działa na hostingu współdzielonym LH.pl:
 
@@ -25,8 +25,9 @@ Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerz
 
 ```text
 public/            # document root: index.php, index.html, js/, docs/
-app/               # PHP: Config, Db, Auth, Discord, DiscordEvents, routes
-bin/               # sync-discord-events.php (LH Cron)
+mcp/public/        # front controller mcp.alphavault.pl
+app/               # PHP: Config, Db, Auth, Discord, DiscordEvents, routes, Mcp/
+bin/               # sync-discord-events.php (LH Cron), MCP init/maintenance
 config/            # przykładowe reguły klasyfikacji wydarzeń
 db/                # schema.sql, demo-state.json, migrations
 tests/             # API, UI, empty-state, Discord, dokumentacja
@@ -56,6 +57,8 @@ npm run test:pwa         # PWA mobile: 20 scenariuszy
 npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze
 npm run test:wearables   # urządzenia zdrowotne API + UI: 33 scenariusze
+npm run test:mcp         # OAuth 2.1 + 8 narzędzi + izolacja
+npm run test:mcp:login   # fake Discord: rola, brak roli, duplikat konta
 npm run test:docs        # linki i spójność dokumentacji
 ```
 

@@ -89,6 +89,10 @@ Nie zaczynaj od zgadywania. Najpierw ustal, który punkt styku zmieniasz.
 - Endpointy wydarzeń za istniejącą autoryzacją.
 - `raw_payload` nie jest publiczny.
 - Nie dodawaj publicznego endpointu uruchamiającego synchronizację.
+- MCP: token MCP nigdy nie jest tokenem Discord; brak `DISCORD_BOT_TOKEN` na domenie MCP.
+- MCP: każde narzędzie działa w kontekście `sub` z tokenu; nie przyjmuj `user_id` od klienta.
+- MCP: `MCP_WRITES_ENABLED=false` oznacza brak narzędzi write w `tools/list`, nie tylko ukrycie w UI.
+- MCP: nie loguj tokenów, notatek, `raw_payload` ani danych screenów.
 
 ### Prawda w raportach
 
@@ -114,13 +118,19 @@ app/
   Http.php               JSON/HTML, nagłówki, błędy
   routes/api.php         /api/*
   routes/auth.php        /auth/*
+  UserService.php        idempotentne konta Discord (wspólne dla app i MCP)
   bootstrap.php          składanie zależności
+  Mcp/                   OAuth 2.1 + narzędzia MCP + serwer MCP
+mcp/public/              front controller mcp.alphavault.pl
 bin/sync-discord-events.php   LH Cron co 5 min
+bin/mcp-init.php         klucze RSA/szyfrowania MCP
+bin/mcp-maintenance.php  czyszczenie wygasłych tokenów MCP
 db/schema.sql            schemat
 db/migrations/           migracje
 scripts/deploy-alphavault.sh  deploy SSH/rsync
+scripts/deploy-mcp.sh    deploy mcp.alphavault.pl
 scripts/local-deploy.sh  deploy bez GitHub Actions (WSL2)
-tests/                   PHP + Playwright + docs
+tests/                   PHP + Playwright + docs + MCP E2E
 docs/                    dokumentacja źródłowa
 ```
 
@@ -129,6 +139,8 @@ Produkcja:
 ```text
 ~/public_html/alphavault.pl   ← public/
 ~/public_html/alphavault.pl/.app/             ← app/, bin/, db/, config.json, logs/
+~/public_html/mcp.alphavault.pl   ← mcp/public/
+~/public_html/mcp.alphavault.pl/.app/         ← app/, bin/, db/, vendor/, config.json, keys/
 ~/alphavault-backups/         ← backupy public/app
 MySQL: serwer445119_alphavault
 ```
@@ -147,6 +159,9 @@ MySQL: serwer445119_alphavault
 | Cron (panel LH) | `*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh` |
 | Cron (ręcznie) | `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
 | Log sync | `~/public_html/alphavault.pl/.app/logs/discord-sync.log` |
+| MCP endpoint | `https://mcp.alphavault.pl/mcp` |
+| MCP docroot/app | `~/public_html/mcp.alphavault.pl` / `.app` |
+| MCP log | `~/public_html/mcp.alphavault.pl/.app/logs/mcp.log` |
 
 `open_basedir` LH nie pozwala PHP czytać katalogu poza docrootem; dlatego kod i `config.json` są w `~/public_html/alphavault.pl/.app`, zablokowanym przez `.htaccess` (`Require all denied` + `^\.app`). Nie zmieniaj tej ścieżki bez testu health checku.
 
@@ -183,10 +198,12 @@ npm run test:pwa         # PWA mobile 20/20 (emulacja iPhone 14)
 npm run test:ui:empty    # puste pola 10/10 (osobny serwer, guild bez wydarzeń)
 npm run test:events      # Discord DB/sync + DST
 npm run test:wearables   # urządzenia zdrowotne API + UI 33/33
+npm run test:mcp         # OAuth 2.1 + 8 tools + izolacja + refresh/revoke
+npm run test:mcp:login   # fake Discord: rola, brak roli, duplikat konta
 npm run test:docs        # linki i spójność dokumentacji
 ```
 
-UI wymaga uruchomionego serwera PHP i `APP_URL`. PWA używa tego samego serwera i Chrome/Edge. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`.
+UI wymaga uruchomionego serwera PHP i `APP_URL`. PWA używa tego samego serwera i Chrome/Edge. Empty-state wymaga serwera z `DISCORD_GUILD_ID=empty-guild`. MCP wymaga `PHP_BIN`, `PHP_ARGS` (sodium, zip) i configu z DB/kluczami.
 
 ### Deploy
 
@@ -205,17 +222,29 @@ Alternatywa bez Actions (WSL2):
 
 Konfiguracja: `~/.config/alphavault/local.env` (600). Szczegóły: [docs/LOCAL-DEPLOY.md](docs/LOCAL-DEPLOY.md).
 
+MCP (osobny docroot, `MCP_WRITES_ENABLED=false`):
+
+```bash
+LH_MCP_DEPLOY_PATH=~/public_html/mcp.alphavault.pl \
+LH_MCP_APP_PATH=~/public_html/mcp.alphavault.pl/.app \
+MCP_APP_URL=https://mcp.alphavault.pl \
+./scripts/deploy-mcp.sh
+```
+
 ### Weryfikacja produkcji
 
 ```powershell
 curl.exe -sS https://alphavault.pl/api/health
 curl.exe -sS -I https://alphavault.pl
+curl.exe -sS https://mcp.alphavault.pl/health
+curl.exe -sS https://mcp.alphavault.pl/.well-known/oauth-protected-resource
+curl.exe -sS -i -X POST https://mcp.alphavault.pl/mcp -H "Content-Type: application/json" -d "{}"
 ssh serwer445119@serwer445119.lh.pl "php ~/public_html/alphavault.pl/.app/bin/sync-discord-events.php"
 ssh serwer445119@serwer445119.lh.pl "tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log"
 gh workflow run monitor-production.yml --repo miloszspyrka-code/av
 ```
 
-`/api/events` wymaga sesji — nie testuj go bez logowania.
+`/api/events` wymaga sesji — nie testuj go bez logowania. `POST /mcp` bez tokenu musi zwrócić 401 z `WWW-Authenticate`, nie 200.
 
 ## 7. Testy i Definition of Done
 
@@ -308,15 +337,20 @@ npm run test:docs
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
+| MCP `mcp.alphavault.pl` | **wdrożony** — TLS Let's Encrypt, `/health` 200, `/mcp` bez tokenu 401 |
+| MCP auth | OAuth 2.1 + PKCE, DCR, refresh/revoke; `MCP_WRITES_ENABLED=false` |
+| MCP tools | 8 read-only; izolacja po `sub`; brak `user_id` w API |
+| MCP tests | `test:mcp`, `test:mcp:login`, produkcyjny E2E i Inspector CLI — PASS |
 
 **Pozostałe czynności:**
 
 1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
-3. Dodaj sekrety `OURA_*` i `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*`.
-4. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
-5. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+4. Dodaj sekrety `OURA_*` i `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*`.
+5. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
+6. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+7. MCP: interaktywne połączenie ChatGPT/Grok przez OAuth; zapisy pozostają wyłączone do fazy 2.
 
 ## 11. Format raportu końcowego
 

@@ -217,6 +217,10 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 - osobne statystyki, krzywa kapitału i status dla każdego challenge'u,
 - archiwum, duplikat i usuwanie konfiguracji bez wpływu na transakcje.
 
+### FR-20 — MCP dla klientów AI
+
+`POST https://mcp.alphavault.pl/mcp` udostępnia 8 narzędzi read-only po OAuth 2.1 + PKCE. Dostęp wynika z tej samej polityki co aplikacja: Discord Guild + wymagana rola; konto jest tworzone automatycznie po Discord User ID. Token jest powiązany z użytkownikiem i audience MCP; narzędzia nie przyjmują `user_id`. Narzędzia zapisujące są wyłączone przy `MCP_WRITES_ENABLED=false`. Szczegóły: [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md).
+
 ## 7. Wymagania niefunkcjonalne
 
 | Obszar | Wymaganie |
@@ -298,7 +302,9 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 | LH Cron | **działa** — co 5 min, logi 18:05:05 i 18:10:02 |
 | Monitoring | `monitor-production.yml` — co 15 min |
 | Stage | niezweryfikowany |
-| OAuth Discord w przeglądarce | nieprzetestowany interaktywnie |
+| OAuth Discord w przeglądarce | potwierdzony dla aplikacji: konto z rolą → sesja, bez roli → 403 |
+| MCP `mcp.alphavault.pl` | **200/401** — OAuth 2.1, 8 narzędzi read-only, write wyłączone |
+| MCP E2E | PASS — DCR, PKCE, consent, refresh, revoke, izolacja, Inspector CLI |
 
 ## 12. Otwarte decyzje
 
@@ -320,4 +326,7 @@ Panel prowadzi wiele challenge'ów prop firm równolegle i pilnuje ich limitów 
 | FR-14 | [DOCUMENTATION.md §15](DOCUMENTATION.md#15-bezpieczeństwo) |
 | FR-15 | [docs/API.md](API.md) |
 | FR-16 | [DOCUMENTATION.md §17](DOCUMENTATION.md#17-zarządzanie-dokumentacją), [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md) |
+| FR-17 | [docs/FUNKCJE.md](FUNKCJE.md), [docs/ARCHITEKTURA.md](ARCHITEKTURA.md) |
+| FR-18 | [docs/FUNKCJE.md](FUNKCJE.md), [docs/ARCHITEKTURA.md](ARCHITEKTURA.md) |
 | FR-19 | [docs/PROP.md](PROP.md), [docs/FUNKCJE.md](FUNKCJE.md) |
+| FR-20 | [docs/MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md), [docs/API.md](API.md) |

@@ -89,7 +89,7 @@ final class Db
             }
             $clean[] = $line;
         }
-        $statements = preg_split('/;\s*(?:\R|$)/', implode("\n", $clean)) ?: [];
+        $statements = preg_split('/;\s*(?:\r\n|\r|\n|$)/', implode("\n", $clean)) ?: [];
         foreach ($statements as $statement) {
             $statement = trim($statement);
             if ($statement === '') {

@@ -308,3 +308,19 @@ To celowy fallback, nie drugi równoległy backend.
 | Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
 
 Powiadomienie o zamknięciu powstaje po stronie klienta, więc działa, gdy panel jest otwarty albo gdy transakcję zamyka się w panelu. Powiadomienie „po zamknięciu na giełdzie” przy zamkniętej aplikacji wymaga workera giełdowego i Web Push z VAPID — to osobny zakres.
+
+---
+
+## 18. MCP dla klientów AI
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Endpoint MCP | ✅ | `https://mcp.alphavault.pl/mcp`, OAuth 2.1 + PKCE |
+| Logowanie Discord | ✅ | ta sama rola i członkostwo co aplikacja; konto tworzone automatycznie |
+| 8 narzędzi read-only | ✅ | profil, pulpit, transakcje, szczegóły, statystyki, wydarzenia, plan, playbook |
+| Narzędzia zapisujące | ⛔ | `MCP_WRITES_ENABLED=false`; brak w `tools/list` |
+| Izolacja danych | ✅ | token → `sub` → wyłącznie `user_states` tego użytkownika |
+| Połączone aplikacje | ✅ | `/oauth/connected`, unieważnienie tokenów klienta |
+| DCR + consent | ✅ | ChatGPT/Grok/Inspektor; redirect URI tylko z allowlisty |
+
+Szczegóły: [MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md).

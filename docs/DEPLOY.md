@@ -302,3 +302,27 @@ Plik `integrations/mt5/AlphaVault.mq5` kompiluje się w MetaEditorze. Wymaga:
 1. `WebRequest` dla `https://alphavault.pl`,
 2. kodu parowania z panelu,
 3. włączonego MetaTradera (lub VPS) — EA nie handluje.
+## 20. MCP — mcp.alphavault.pl
+
+Osobny docroot i `.app`, ta sama baza MySQL. Nie dotyka `alphavault.pl` ani innych domen.
+
+```bash
+LH_MCP_DEPLOY_PATH=~/public_html/mcp.alphavault.pl \
+LH_MCP_APP_PATH=~/public_html/mcp.alphavault.pl/.app \
+MCP_APP_URL=https://mcp.alphavault.pl \
+MCP_WRITES_ENABLED=false \
+./scripts/deploy-mcp.sh
+```
+
+Wymagane: `LH_SSH_*`, `SESSION_SECRET`, `DB_*`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_GUILD_ID`, `DISCORD_REQUIRED_ROLE_ID`.
+
+Deploy:
+
+1. backup `mcp.alphavault.pl` i `.app`,
+2. sync `mcp/public`, `app`, `db`, `bin`, `config`, `vendor`,
+3. `config.json` 600 + `SESSION_COOKIE=mcp_session`,
+4. `php .app/app/db/migrate.php`,
+5. `php .app/bin/mcp-init.php` (klucze RSA i szyfrowania),
+6. health, PRM i `POST /mcp` bez tokenu → 401.
+
+Rollback: `MCP_ENABLED=false`, unieważnienie tokenów, restore `.app`. Szczegóły: [MCP.md](MCP.md).

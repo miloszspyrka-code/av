@@ -92,3 +92,11 @@ app/Integrations/
 ```
 
 Przepływ: UI → `/api/connections` → provider → `ConnectionStore`; worker → `ExchangeSync` → `exchange_imports` + `user_states.trades`.
+
+## MCP
+
+`mcp.alphavault.pl` to osobny origin i docroot, ale ta sama baza MySQL. `app/Mcp/OAuth` realizuje OAuth 2.1 (league/oauth2-server), `app/Mcp/Http` routing i consent, `app/Mcp/Tools` 8 narzędzi read-only, `app/Mcp/Support` usługi stanu/statystyk. `mcp/sdk` obsługuje Streamable HTTP, walidację tokenu i scope policy. Discord jest upstream IdP; token Discord nie trafia do MCP.
+
+- kontrakt: [MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md)
+- deploy: [DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md)
+- tabela: [BAZA-DANYCH.md](BAZA-DANYCH.md)
