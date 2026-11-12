@@ -509,8 +509,14 @@ final class DiscordEvents
     {
         $start = self::localParts((string) $row['scheduled_start_iso']);
         $end = $row['scheduled_end_iso'] !== null ? self::localParts((string) $row['scheduled_end_iso']) : null;
+        $guildId = (string) ($row['guild_id'] ?? '');
+        $eventId = (string) $row['discord_event_id'];
+        $url = preg_match('/^\d{17,20}$/', $guildId) === 1 && preg_match('/^\d{17,20}$/', $eventId) === 1
+            ? 'https://discord.com/events/' . $guildId . '/' . $eventId
+            : null;
         return [
-            'id' => (string) $row['discord_event_id'],
+            'id' => $eventId,
+            'url' => $url,
             'name' => (string) $row['name'],
             'description' => $row['description'],
             'entityType' => self::TYPES[(int) $row['event_type']] ?? 'UNKNOWN',

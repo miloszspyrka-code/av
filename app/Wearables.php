@@ -361,7 +361,7 @@ final class Wearables
                 'SELECT provider, metric_date, sleep_minutes, hrv_ms, resting_hr, body_battery, provider_score, synced_at
                    FROM wearable_daily_metrics
                   WHERE user_id = ? AND metric_date >= ?
-                  ORDER BY metric_date ASC, synced_at ASC',
+                  ORDER BY metric_date ASC, synced_at DESC',
                 [$userId, $from]
             );
         } catch (\Throwable $err) {
@@ -618,10 +618,11 @@ final class Wearables
         };
         $stored = 0;
         foreach ($days as $day) {
-            if ($this->normalizeDay($day, $provider) === null) {
+            $normalized = $this->normalizeDay($day, $provider);
+            if ($normalized === null) {
                 continue;
             }
-            $this->storeMetric($userId, $provider, $day, $day);
+            $this->storeMetric($userId, $provider, $normalized, $day);
             $stored++;
         }
         return $stored;
@@ -796,6 +797,11 @@ final class Wearables
     {
         $date = $this->dateOnly($day['date'] ?? '');
         if ($date === null) {
+            return null;
+        }
+        $timestamp = strtotime($date . ' 12:00:00 UTC');
+        $today = strtotime($this->todayKey() . ' 12:00:00 UTC');
+        if ($timestamp === false || $today === false || $timestamp < $today - (400 * 86400) || $timestamp > $today + 86400) {
             return null;
         }
         $out = ['date' => $date];

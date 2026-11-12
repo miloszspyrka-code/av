@@ -19,7 +19,7 @@ Legenda:
 | Wylogowanie | ✅ | usuwa sesję z DB i cookie |
 | „Nie wylogowuj mnie” | ✅ | zapis w stanie; cookie 30 dni |
 | Profil (imię, e-mail, avatar) | ✅ | imię i avatar zapisują się w stanie; avatar Discord jest domyślny |
-| Subskrypcja (plan, data) | ✅ | z tabeli `users`; ekran wygasłej subskrypcji |
+| Subskrypcja (plan, data) | ✅ | z tabeli `users`; data pokazywana tylko, gdy jest ustawiona; ekran wygasłej subskrypcji |
 | Zmiana planu demo | ✅ | przyciski podglądu; nadpisanie serwerowe po odświeżeniu |
 | Usunięcie konta | ✅ | `DELETE /api/account` (kaskada) |
 | Eksport danych ZIP | ✅ | JSON, CSV transakcji, CSV podatków, plany, screeny, avatar |
@@ -33,7 +33,6 @@ Legenda:
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Powitanie z porą dnia | ✅ | ustawienie „Powitanie” |
 | Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie; bez sekcji gotowości i bez integracji ze sprzętem |
 | Wynik dnia | ✅ | z transakcji dzisiejszych, przeliczony na walutę wyników |
 | Limity strat/transakcji/ryzyka | ✅ | z planu dnia i ustawień |
@@ -135,50 +134,30 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Eksport kontekstu | ✅ | transakcje z 90 dni, plan, check-iny, gotowość, makro — czysty tekst do wklejenia |
-| Instrukcje Grok / ChatGPT / Claude | ✅ | kroki wklejenia kontekstu u każdego dostawcy |
-| Kopiowanie kontekstu | ✅ | schowek z fallbackiem, odświeżanie |
+| 5 tematów rozmowy | ✅ | gotowe odpowiedzi (bez API LLM) |
 | Uwagi mentora | ✅ | generowane z danych (limit strat, odgrywanie, MFE, ocena A, sesja) |
+| Analiza rynku | ✅ | najbliższe ★★★, instrument, ryzyko tygodnia |
+| Raport tygodnia | ✅ | z ostatnich 7 dni |
+| Odświeżenie analizy | ✅ | |
 | Proaktywna wiadomość przy limicie strat | ✅ | po zalogowaniu |
 
-Mentor jest **regułowy** — nie wysyła danych do OpenAI, xAI ani Anthropic i nie przyjmuje kluczy API. Integracja polega na wyeksportowaniu kontekstu i wklejeniu go w Grok, ChatGPT albo Claude. Gotowość liczy się z check-inu i podłączonych urządzeń, jeśli są dostępne.
+Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłączenie LLM to przyszły krok.
 
 ---
 
-## 9. Prop challenge
-
-| Funkcja | Stan | Opis |
-|---|---|---|
-| Szablony FTMO (2-Step/1-Step/Swing), FundedNext, FundingPips, Topstep, Apex, Breakout, własne | ✅ | limity, typ obsunięcia i min. dni; każde pole edytowalne |
-| Nowy challenge | ✅ | nazwa, firma, konto źródłowe, rozmiar, saldo startowe, cel, limity, daty |
-| Wybór challenge'u | ✅ | osobne metryki dla każdego challenge'u |
-| Cel zysku | ✅ | liczone z zamkniętych transakcji na koncie |
-| Dzienny limit straty | ✅ | podstawa: saldo startowe / początek dnia; alerty 75/90/100% |
-| Max obsunięcie | ✅ | statyczne od salda startowego lub trailing od szczytu |
-| Dni do końca i min. dni handlowych | ✅ | termin opcjonalny; firmy bez limitu czasu |
-| Krzywa kapitału i wynik dzienny | ✅ | SVG, linia celu i linia stopu |
-| Statusy | ✅ | aktywny / cel / zaliczony / limit / czas minął |
-| Alerty + banner na pulpicie | ✅ | toast, powiadomienie, deduplikacja raz dziennie |
-| Edycja, duplikat, archiwum, usuwanie | ✅ | widok archiwum w selektorze |
-| Zapis w MySQL | ✅ | `prop.challenges` + `selectedId` w JSON stanu |
-
-Limity liczone są z **zamkniętych** transakcji. Silnik nie zna ruchów śróddziennych ani equity z platformy. Szablony są punktem startowym — potwierdź aktualne zasady w regulaminie firmy. Szczegóły: [PROP.md](PROP.md).
-
----
-
-## 10. Akademia
+## 9. Akademia
 
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Harmonogram live'ów | ✅ | synchronizacja Discord Scheduled Events → `/api/events`; grupowanie po `Europe/Warsaw`, `DZIŚ`, wiele wydarzeń dnia |
-| Najbliższy live + countdown | ✅ | wyłącznie z realnego wydarzenia `live`; brak wydarzenia = puste pola |
+| Najbliższy live (bez countdownu) | ✅ | wyłącznie z realnego wydarzenia `live`; karta ukryta, gdy brak wydarzenia |
 | Liczba zainteresowanych | ✅ | z `user_count`, jeśli Discord je zwróci; brak = pole puste |
 | Konsultacje 1:1 | ✅ | karta „Najbliższa” z wydarzenia `consultation`; prowadzący i czas trwania tylko z danych wydarzenia |
 | Ręczne przypisanie kategorii | ✅ | admin `live` / `consultation` / `unassigned`; pierwszeństwo nad regułami |
 | Puste pola | ✅ | brak tekstów zastępczych, brak domyślnego 20:00 |
 | Błąd synchronizacji | ✅ | ostatni dobry zestaw pozostaje; UI pokazuje stan „błąd synchronizacji” |
 | Rezerwacja konsultacji | ✅ | niezależna od synchronizacji, zapis w stanie |
-| Dołącz / przypomnienie | ✅ | modal, powiadomienie przeglądarki (jeśli pozwolono) |
+| Dołącz / przypomnienie | ✅ | link do `https://discord.com/events/{guild}/{event}`; przypomnienie przeglądarki bez zmian |
 | Nagrania | 🟡 | karta i modal demo; brak playera |
 | Materiały / postęp kursu | ✅ | postęp w stanie |
 | Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
@@ -187,7 +166,7 @@ Szczegóły techniczne: [DOCUMENTATION.md §7](../DOCUMENTATION.md#7-discord-sch
 
 ---
 
-## 11. Podatki PIT-38
+## 10. Podatki PIT-38
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -202,7 +181,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 ---
 
-## 12. Kalendarz makro
+## 11. Kalendarz makro
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -213,6 +192,23 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Twoje dane w dni makro | ✅ | z transakcji |
 | Powiadomienia 30 min | ✅ | toast + Notification API, jeśli pozwolono |
 | Widget MAKRO | ✅ | |
+
+---
+
+## 12. Ciało i głowa
+
+| Funkcja | Stan | Opis |
+|---|---|---|
+| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na gotowość oraz podpowiedzi mentora |
+| Garmin Connect | 🟡 | OAuth2 + backfill `dailies`/`sleeps`/`hrv`; wymaga zatwierdzenia Garmin Health API i konfiguracji `GARMIN_*` |
+| Apple Watch · Zdrowie | ✅ | kod parowania + `POST /api/wearables/apple/ingest` z tokenem urządzenia; aplikacja iPhone poza repo |
+| Oura Ring | ✅ | OAuth2, `daily_readiness` + `sleep`; wystarczy `OURA_CLIENT_ID`/`OURA_CLIENT_SECRET` |
+| Whoop | ✅ | OAuth2, `recovery` + `activity/sleep`; wystarczy `WHOOP_CLIENT_ID`/`WHOOP_CLIENT_SECRET` |
+| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
+| Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
+| Odłączenie urządzenia | ✅ | usuwa tokeny i metryki z bazy (wycofanie zgody) |
+
+Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca OAuth, bez prawdziwych danych zdrowotnych).
 
 ---
 
@@ -234,40 +230,24 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy nie wracają do przeglądarki. Panel pokazuje wyłącznie maskę klucza i status.
 
-## 14. Giełdy i API
+## 14. Konto i zasady
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| WEEX/OKX/BingX — formularz klucza | 🟡 | walidacja, zapis zamaskowanego klucza |
-| Połączenie/odłączenie | 🟡 | status w UI, `lastSync` |
-| Synchronizuj teraz | 🟡 | aktualizuje czas; nie pobiera transakcji z giełdy |
-| MetaTrader — hasło inwestora | 🟡 | walidacja, zapis loginu/serwera (bez hasła) |
-| Kod parowania EA | ✅ | generowany, kopiowanie, instrukcja TXT |
-| Import CSV | ✅ | prawdziwy parser i zapis transakcji |
-| Import XLS | ⚪ | komunikat „zapisz jako CSV” |
-
-Realne pobieranie transakcji z giełd wymaga kluczy API i serwerowego workera — poza zakresem tego MVP.
-
----
-
-## 15. Konto i zasady
-
-| Funkcja | Stan | Opis |
-|---|---|---|
-| Profil (imię, waluta, cel, motto) | ✅ | |
-| Personalizacja (płeć mentora, styl, rynki, akcent, strefa, godziny) | ✅ | |
+| Profil (imię, waluta, cel) | ✅ | |
+| Personalizacja (rynki, akcent, strefa, godziny) | ✅ | |
 | Wyłącznik bezpieczeństwa | ✅ | limit strat, limit dzienny, czas blokady, wymóg powodu |
 | 3 zasady + punkty checklisty | ✅ | własny punkt checklisty |
 | Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
-| Odznaki | ✅ | postęp z danych |
+| Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
 | 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
-| Aplikacja na telefonie | ⚪ | instrukcja PWA; manifest nie jest jeszcze dodany |
+| Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
 
-## 16. Dokumenty prawne
+## 15. Dokumenty prawne
 
 | Funkcja | Stan | Opis |
 |---|---|---|
@@ -280,7 +260,7 @@ Treści prawne zawierają placeholdery `[data publikacji]` i wymagają weryfikac
 
 ---
 
-## 17. Tryb offline
+## 16. Tryb offline
 
 Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 
@@ -291,16 +271,17 @@ Gdy API/MySQL nie odpowiada (np. otwarcie `index.html` bez serwera):
 
 To celowy fallback, nie drugi równoległy backend.
 
-## 18. Agent MCP
+---
 
-| Funkcja | Stan | Opis |
+## 17. Aplikacja na telefonie (PWA)
+
+| Element | Stan | Opis |
 |---|---|---|
-| Tokeny agenta | ✅ | `panel:read`, `panel:propose`; token widoczny raz, unieważnianie |
-| 8 narzędzi odczytu | ✅ | profil, pulpit, transakcje, statystyki, wydarzenia, plan, setupy |
-| 4 propozycje zmian | ✅ | ręczna transakcja, recenzja, plan dnia, check-in |
-| Zatwierdzanie w panelu | ✅ | diff przed/po, zatwierdź/odrzuć, konflikt rewizji 409 |
-| Audyt | ✅ | propozycje, decyzje, tokeny |
-| Ochrona danych giełdowych | ✅ | tylko odczyt; metadane w osobnym rekordzie `tradeReviews` |
-| OAuth 2.1 (DCR, PKCE) | ⏳ | plan; teraz tokeny wydawane w panelu |
+| Manifest | ✅ | `/manifest.webmanifest`: `display: standalone`, ikony 192/512/maskable, skrót `/?qa=1` |
+| Instalacja bez App Store | ✅ | Chrome/Edge: `beforeinstallprompt`; iPhone: Safari → Udostępnij → Do ekranu początkowego |
+| Service worker | ✅ | `/sw.js`: cache powłoki, offline fallback, `notificationclick` → `/?qa=<id>` |
+| Powiadomienie po zamknięciu | ✅ | po zamknięciu pozycji w panelu i zapisie stanu; treść: para, kierunek, wynik; klik otwiera szybkie dodanie |
+| Szybkie dodanie | ✅ | emocja + ocena + zdjęcie wykresu (`capture="environment"`), zapis do stanu i MySQL; E2E 0,6–0,7 s |
+| Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
 
-Zasady: `MCP_ENABLED=true`, `MCP_WRITES_ENABLED=false` domyślnie; agent nie ma narzędzia zatwierdzającego. Szczegóły: [MCP.md](MCP.md).
+Powiadomienie o zamknięciu powstaje po stronie klienta, więc działa, gdy panel jest otwarty albo gdy transakcję zamyka się w panelu. Powiadomienie „po zamknięciu na giełdzie” przy zamkniętej aplikacji wymaga workera giełdowego i Web Push z VAPID — to osobny zakres.

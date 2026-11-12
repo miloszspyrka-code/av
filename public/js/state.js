@@ -52,18 +52,6 @@
     });
     if (!s.plans || typeof s.plans !== 'object') s.plans = {};
     s.version = 2;
-    if (!s.settings || typeof s.settings !== 'object') s.settings = {};
-    if (!s.settings.connections || typeof s.settings.connections !== 'object') s.settings.connections = {};
-    ['weex', 'okx', 'bingx'].forEach((k) => {
-      if (!s.settings.connections[k] || typeof s.settings.connections[k] !== 'object') s.settings.connections[k] = { connected: false };
-    });
-    if (!s.settings.connections.mt || typeof s.settings.connections.mt !== 'object') s.settings.connections.mt = { connected: false, platform: 'mt5' };
-    if (!s.settings.connections.file || typeof s.settings.connections.file !== 'object') s.settings.connections.file = { connected: false };
-    if (!s.prop || typeof s.prop !== 'object') s.prop = { challenges: [], selectedId: null };
-    if (!Array.isArray(s.prop.challenges)) s.prop.challenges = [];
-    s.prop.challenges = s.prop.challenges
-      .filter((c) => c && typeof c === 'object')
-      .map((c) => (AV.prop ? AV.prop.normalize(c) : c));
     return s;
   };
   AV.normalizeServer = (raw) => AV.normalize(raw, AV.buildEmpty());
@@ -96,7 +84,6 @@
       start: 0, date: AV.dateLabel(new Date()), lev: '10×', goal: '', balance: 0, include: true, primary: true
     }];
     s.setups = [];
-    s.prop = { challenges: [], selectedId: null };
     s.meta.consultation = null;
     s.meta.consultationUsed = 0;
     s.user.name = 'Trader';
@@ -842,74 +829,6 @@
     };
   };
 
-  AV.mentorExport = (state) => {
-    const s = state;
-    const now = new Date();
-    const L = ['MENTOR AI - KONTEKST Z ALPHA VAULT'];
-    L.push('Wygenerowano: ' + now.toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' }) + ' ' + now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }));
-
-    const name = String(s.user.name || '').trim();
-    const plan = s.subscription && s.subscription.plan === 'full' ? 'Akademia Alpha + Vault' : 'Alpha Vault';
-    L.push('', 'KIM JESTEM');
-    if (name) L.push('Imię: ' + name + '.');
-    L.push('Plan: ' + plan + '.');
-
-    const set = s.settings || {};
-    const rules = [];
-    if (set.maxLosses) rules.push('limit strat ' + set.maxLosses + '/dzień');
-    if (set.maxDailyLoss) rules.push('limit straty dziennej ' + AV.fmt(set.maxDailyLoss, 1) + '%');
-    if (set.maxRisk) rules.push('ryzyko na transakcję ' + AV.fmt(set.maxRisk, 1) + '%');
-    if (rules.length) L.push('', 'MOJE ZASADY', 'Ustalone w panelu: ' + rules.join(', ') + '.');
-
-    const cutoff = AV.startOfDay(AV.addDays(now, -90));
-    const trades = AV.closedTrades(s).filter((t) => new Date(t.date) >= cutoff);
-    if (trades.length) {
-      const st = AV.computeStats(trades, s);
-      const a = st.byGrade.find((g) => g.grade === 'A');
-      const rows = ['Transakcje (90 dni): ' + st.n + ', wynik ' + AV.signed(st.net, 2, ' USDT') + ', skuteczność ' + Math.round(st.winRate) + '%.'];
-      if (a && a.n) rows.push('Ocena A: ' + a.n + ' transakcji, skuteczność ' + Math.round(a.wr) + '%.');
-      const worst = st.bySession.filter((x) => x.n >= 3).sort((x, y) => (x.wins / x.n) - (y.wins / y.n))[0];
-      if (worst) rows.push('Najsłabsza sesja: ' + worst.key + ' (' + Math.round(worst.wins / worst.n * 100) + '% na ' + worst.n + ' transakcjach).');
-      if (st.full.n && st.part.n) rows.push('Checklista: ' + Math.round(st.full.wr) + '% z pełną, ' + Math.round(st.part.wr) + '% bez.');
-      if (st.errors.length) rows.push('Najdroższy błąd: ' + st.errors[0].key + ' (' + AV.signed(st.errors[0].cost, 2, ' USDT') + ').');
-      L.push('', 'TRANSAKCJE', ...rows);
-    }
-
-    const plans = Object.keys(s.plans || {}).length;
-    const todayPlan = (s.plans || {})[AV.dateKey(now)];
-    const planRows = [];
-    if (plans) planRows.push('Zatwierdzone plany dnia: ' + plans + '.');
-    if (todayPlan) planRows.push('Plan na dziś: ' + (todayPlan.approvedAt ? 'zatwierdzony' : 'szkic') + '.');
-    if (planRows.length) L.push('', 'PLAN DNIA', ...planRows);
-
-    const checkins = s.checkins || [];
-    if (checkins.length) {
-      const rows = ['Check-iny: ' + checkins.length + '.'];
-      const today = checkins.filter((c) => c.date === AV.dateKey(now)).sort((a, b) => b.score - a.score)[0];
-      if (today) rows.push('Dziś: nastrój ' + today.mood + ', energia ' + today.energy + '/5' + (today.note ? ', notatka: ' + today.note : '') + '.');
-      L.push('', 'EMOCJE I CHECK-INY', ...rows);
-    }
-
-    const r = AV.readiness(s);
-    if (r.score != null) {
-      L.push('', 'GOTOWOŚĆ', 'Gotowość: ' + r.score + '/100' + (r.title ? ' · ' + r.title.toLowerCase() : '') + (r.desc ? '. ' + r.desc : '.'));
-    }
-    const day = r.today || {};
-    const body = [];
-    if (day.sleepMinutes != null) body.push('Sen: ' + AV.sleepLabel(day.sleepMinutes));
-    if (day.hrvMs != null) body.push('HRV: ' + Math.round(Number(day.hrvMs)) + ' ms');
-    if (day.restingHr != null) body.push('Tętno spoczynkowe: ' + day.restingHr);
-    if (body.length) L.push('', 'SEN I HRV', body.join('. ') + '.');
-
-    const events = AV.buildEvents();
-    const next = events.filter((e) => e.imp === 3 && new Date(e.date) > now).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-    if (next) L.push('', 'KALENDARZ MAKRO', 'Najbliższe ★★★: ' + next.name + ', ' + AV.eventStatus(next.date)[1] + ' ' + AV.timeFmt(next.date, s) + '.');
-
-    L.push('', 'PYTANIA', '1. Co psuje moje wyniki?', '2. Oceń mój dzień.', '3. Jak trzymam się zasad?');
-    L.push('', 'ZASADA: analiza edukacyjna, bez sygnałów i bez zleceń.');
-    return L.join('\n');
-  };
-
   AV.fill = (text, state, extra = {}) => {
     const d = { ...AV.mentorData(state), ...extra };
     return String(text).replace(/\{(\w+)\}/g, (_, k) => d[k] != null ? d[k] : '');
@@ -926,6 +845,45 @@
   };
 
   /* ---------- badge ---------- */
+  const badgeDay = (t) => AV.dateKey(new Date(t.date));
+  const badgeDayList = (values) => [...new Set(values.filter(Boolean))].sort();
+  const badgeRuns = (keys) => {
+    const runs = [];
+    let start = null, prev = null, length = 0;
+    badgeDayList(keys).forEach((k) => {
+      const d = new Date(k + 'T12:00:00');
+      if (prev && Math.round((d - prev) / 86400000) === 1) length++;
+      else { start = k; length = 1; }
+      runs.push({ start, end: k, length });
+      prev = d;
+    });
+    return runs;
+  };
+  const badgeBest = (keys) => badgeRuns(keys).reduce((best, run) => Math.max(best, run.length), 0);
+  const badgeFirst = (keys, target) => {
+    const run = badgeRuns(keys).find((r) => r.length >= target);
+    return run ? run.end : null;
+  };
+  const badgeBestFlagged = (keys, isGood) => {
+    let best = 0, run = 0;
+    badgeDayList(keys).forEach((k) => {
+      if (isGood(k)) { run++; best = Math.max(best, run); }
+      else run = 0;
+    });
+    return best;
+  };
+  const badgeFirstFlagged = (keys, isGood, target) => {
+    let run = 0;
+    for (const k of badgeDayList(keys)) {
+      if (isGood(k)) {
+        run++;
+        if (run >= target) return k;
+      } else run = 0;
+    }
+    return null;
+  };
+  const badgeHintDate = (key) => key ? AV.dateShort(new Date(key + 'T12:00:00')) : '';
+
   AV.badgeSummary = (list) => {
     const badges = Array.isArray(list) ? list : [];
     const done = badges.filter((b) => b.done).length;
@@ -933,37 +891,123 @@
   };
 
   AV.badges = (state) => {
-    const closed = AV.closedTrades(state);
-    const plans = Object.values(state.plans);
-    const approved = plans.filter((p) => p.approvedAt).length;
-    const days = new Set(AV.includedTrades(state).map((t) => AV.dateKey(new Date(t.date)))).size;
-    const sl = closed.filter((t) => t.sl && t.sl !== 'brak').length;
-    const aTrades = closed.filter((t) => t.grade === 'A').length;
-    const fomoFree = (() => {
-      let n = 0, d = AV.startOfDay(new Date());
-      for (let i = 0; i < 10; i++) {
-        const k = AV.dateKey(d);
-        const day = closed.filter((t) => AV.dateKey(new Date(t.date)) === k);
-        if (day.length && !day.some((t) => t.emotion === 'FOMO')) n++;
-        d = AV.addDays(d, -1);
-      }
-      return n;
-    })();
-    const cFree = (() => {
-      const now = new Date();
-      const month = closed.filter((t) => new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear());
-      const net = month.reduce((s, t) => s + t.result, 0);
-      return { net, hasC: month.some((t) => t.grade === 'C') };
-    })();
+    const s = state || {};
+    const trades = Array.isArray(s.trades) ? s.trades : [];
+    const checkins = Array.isArray(s.checkins) ? s.checkins : [];
+    const accounts = Array.isArray(s.accounts) ? s.accounts : [];
+    const closed = AV.closedTrades({ ...s, trades, accounts });
+    const plans = Object.values(s.plans || {}).filter((p) => p && typeof p === 'object');
+    const approvedPlans = plans
+      .filter((p) => p.approvedAt)
+      .sort((a, b) => new Date(a.approvedAt) - new Date(b.approvedAt));
+    const planDays = badgeDayList(approvedPlans.map((p) => p.date || badgeDay({ date: p.approvedAt })));
+    const tradeDays = badgeDayList(closed.map(badgeDay));
+    const journalDays = badgeDayList([
+      ...trades.map(badgeDay),
+      ...checkins.map((c) => c.date)
+    ]);
+    const slTrades = closed
+      .filter((t) => t.sl != null && String(t.sl).trim() !== '' && String(t.sl).toLowerCase() !== 'brak')
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const aTrades = closed
+      .filter((t) => t.grade === 'A')
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const bestJournal = badgeBest(journalDays);
+    const firstJournal7 = badgeFirst(journalDays, 7);
+
+    // Dni bez transakcji (np. weekend) nie przerywają serii; przerywa ją dzień
+    // handlowy z FOMO. Liczymy tylko dni z transakcjami, nie check-iny.
+    const fomoDays = new Set(closed.filter((t) => t.emotion === 'FOMO').map(badgeDay));
+    const fomoClean = (k) => !fomoDays.has(k);
+    const bestFomoFree = badgeBestFlagged(tradeDays, fomoClean);
+    const firstFomo10 = badgeFirstFlagged(tradeDays, fomoClean, 10);
+
+    // Analogicznie: 5 kolejnych dni z zatwierdzonym planem i czystym handlem.
+    // Dni bez planu ani transakcji nie przerywają serii.
+    const breakErrors = ['Bez SL', 'Przesunięty SL', 'Za duża pozycja', 'Handel przy danych', 'Wejście po stracie'];
+    const activeDays = badgeDayList([...planDays, ...tradeDays]);
+    const planDayClean = (k) => {
+      if (!planDays.includes(k)) return false;
+      return closed
+        .filter((t) => badgeDay(t) === k)
+        .every((t) => t.grade !== 'C' && t.plan !== false && !(t.errors || []).some((e) => breakErrors.includes(e)));
+    };
+    const bestCleanWeek = badgeBestFlagged(activeDays, planDayClean);
+    const firstCleanWeek = badgeFirstFlagged(activeDays, planDayClean, 5);
+
+    const monthKey = (value) => {
+      const d = new Date(value);
+      return d.getFullYear() + '-' + AV.pad(d.getMonth() + 1);
+    };
+    const nowMonth = monthKey(new Date());
+    const months = {};
+    closed.forEach((t) => {
+      const k = monthKey(t.date);
+      if (!k || k === 'NaN-NaN' || k === nowMonth) return;
+      if (!months[k]) months[k] = { net: 0, hasC: false, n: 0 };
+      months[k].net += Number(t.result) || 0;
+      months[k].n++;
+      if (t.grade === 'C') months[k].hasC = true;
+    });
+    const monthKeys = Object.keys(months).sort();
+    const lastMonth = monthKeys.length ? monthKeys[monthKeys.length - 1] : null;
+    const lastMonthData = lastMonth ? months[lastMonth] : null;
+    const monthDone = !!lastMonthData && lastMonthData.net > 0 && !lastMonthData.hasC;
+    const monthLabel = lastMonth ? new Date(lastMonth + '-01T12:00:00').toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }) : '';
+    const monthProgress = lastMonthData
+      ? (lastMonthData.net > 0 ? 50 : 0) + (lastMonthData.hasC ? 0 : 40) + 10
+      : 0;
+
     return [
-      { icon: 'plan', name: 'Pierwszy plan dnia', done: approved > 0, hint: approved > 0 ? AV.dateShort(new Date(plans.find((p) => p.approvedAt)?.approvedAt || Date.now())) : '0 / 1' },
-      { icon: 'book', name: '7 dni z dziennikiem', done: days >= 7, hint: 'teraz: ' + days + ' dni', progress: AV.clamp(days / 7 * 100, 0, 100) },
-      { icon: 'shield', name: '50 × ze stop lossem', done: sl >= 50, hint: sl + ' / 50', progress: AV.clamp(sl / 50 * 100, 0, 100) },
-      { icon: 'check', name: 'Tydzień bez złamania zasad', done: plans.filter((p) => p.approvedAt).length >= 4, hint: approved + ' planów' },
-      { icon: 'plan', name: '30 planów dnia', done: approved >= 30, hint: approved + ' / 30', progress: AV.clamp(approved / 30 * 100, 0, 100) },
-      { icon: 'star', name: '100 transakcji A', done: aTrades >= 100, hint: aTrades + ' / 100', progress: AV.clamp(aTrades / 100 * 100, 0, 100) },
-      { icon: 'pulse', name: '10 dni bez FOMO', done: fomoFree >= 10, hint: fomoFree + ' / 10', progress: fomoFree * 10 },
-      { icon: 'stats', name: 'Miesiąc na plusie bez C', done: cFree.net > 0 && !cFree.hasC, hint: cFree.net > 0 && !cFree.hasC ? 'zaliczone' : 'w trakcie', progress: cFree.hasC ? 15 : 60 }
+      {
+        icon: 'plan', name: 'Pierwszy plan dnia',
+        done: approvedPlans.length > 0,
+        hint: approvedPlans.length ? badgeHintDate(planDays[0]) : '0 / 1',
+        progress: approvedPlans.length ? 100 : 0
+      },
+      {
+        icon: 'book', name: '7 dni z dziennikiem',
+        done: bestJournal >= 7,
+        hint: bestJournal >= 7 ? badgeHintDate(firstJournal7) : 'najdłużej: ' + bestJournal + ' dni',
+        progress: AV.clamp(bestJournal / 7 * 100, 0, 100)
+      },
+      {
+        icon: 'shield', name: '50 × ze stop lossem',
+        done: slTrades.length >= 50,
+        hint: slTrades.length >= 50 ? badgeHintDate(badgeDay(slTrades[49])) : slTrades.length + ' / 50',
+        progress: AV.clamp(slTrades.length / 50 * 100, 0, 100)
+      },
+      {
+        icon: 'check', name: 'Tydzień bez złamania zasad',
+        done: bestCleanWeek >= 5,
+        hint: bestCleanWeek >= 5 ? badgeHintDate(firstCleanWeek) : bestCleanWeek + ' / 5 dni',
+        progress: AV.clamp(bestCleanWeek / 5 * 100, 0, 100)
+      },
+      {
+        icon: 'plan', name: '30 planów dnia',
+        done: approvedPlans.length >= 30,
+        hint: approvedPlans.length >= 30 ? badgeHintDate(planDays[29]) : approvedPlans.length + ' / 30',
+        progress: AV.clamp(approvedPlans.length / 30 * 100, 0, 100)
+      },
+      {
+        icon: 'star', name: '100 transakcji A',
+        done: aTrades.length >= 100,
+        hint: aTrades.length >= 100 ? badgeHintDate(badgeDay(aTrades[99])) : aTrades.length + ' / 100',
+        progress: AV.clamp(aTrades.length / 100 * 100, 0, 100)
+      },
+      {
+        icon: 'pulse', name: '10 dni bez FOMO',
+        done: bestFomoFree >= 10,
+        hint: bestFomoFree >= 10 ? badgeHintDate(firstFomo10) : bestFomoFree + ' / 10',
+        progress: AV.clamp(bestFomoFree / 10 * 100, 0, 100)
+      },
+      {
+        icon: 'stats', name: 'Miesiąc na plusie bez C',
+        done: monthDone,
+        hint: monthDone ? monthLabel : 'w trakcie',
+        progress: monthDone ? 100 : AV.clamp(monthProgress, 0, 100)
+      }
     ];
   };
 

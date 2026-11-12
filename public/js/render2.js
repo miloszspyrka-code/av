@@ -1,4 +1,4 @@
-﻿/* Alpha Vault — renderowanie widoków (część 2) */
+/* Alpha Vault — renderowanie widoków (część 2) */
 (function () {
   'use strict';
   const AV = window.AV, $ = AV.$, $$ = AV.$$;
@@ -22,17 +22,17 @@
     AV.setText('#stResultHint', st.n + ' ' + AV.plural(st.n, 'transakcja', 'transakcje', 'transakcji'));
     setVal('stWr', Math.round(st.winRate) + '%', '');
     AV.setText('#stWrHint', st.wins + ' zyski · ' + st.losses + ' straty');
-    setVal('stPf', st.pf >= 99 ? '' : AV.fmt(st.pf, 2), '');
+    setVal('stPf', st.pf >= 99 ? '∞' : AV.fmt(st.pf, 2), '');
     AV.setText('#stPfHint', AV.fmt(st.gp, 2) + ' ÷ ' + AV.fmt(st.gl, 2));
     setVal('stExp', AV.signed(st.expR, 2, 'R'), 'al');
-    AV.setText('#stExpHint', ' ' + AV.dispMoney(st.n ? st.net / st.n : 0, 2) + ' na transakcję');
+    AV.setText('#stExpHint', '≈ ' + AV.dispMoney(st.n ? st.net / st.n : 0, 2) + ' na transakcję');
     setVal('stDd', AV.fmt(st.maxDDpct, 1) + '%', 'loss');
     AV.setText('#stDdHint', AV.dispMoney(st.maxDD, 2));
     setVal('stSl', Math.round(st.withSL) + '%', st.withSL >= 80 ? 'win' : 'warnc');
     AV.setText('#stSlHint', st.withSLCount + ' z ' + st.n + ' transakcji');
     setVal('stPlan', Math.round(st.planRate) + '%', '');
     AV.setText('#stPlanHint', 'cel: 85% · ' + st.planCount + ' z planem');
-    setVal('stFees', '' + AV.fmt(st.fees, 2), 'warnc');
+    setVal('stFees', '−' + AV.fmt(st.fees, 2), 'warnc');
     AV.setText('#stFeesHint', st.gp ? Math.round(st.fees / st.gp * 100) + '% zysków brutto' : 'brak zysków');
     AV.renderEquity(st);
     AV.renderPnlCal(st);
@@ -152,20 +152,27 @@
   /* ---------- mentor ---------- */
   AV.renderMentor = () => {
     const s = AV.state;
-    const cutoff = AV.startOfDay(AV.addDays(new Date(), -90));
+    const d = AV.mentorData(s);
     AV.setText('#notesCount', AV.mentorNotes(s).length);
     AV.setText('#mentorSees', '');
     AV.setHTML('#mentorSees',
-      '<div class="kv" style="margin-top:6px"><span>Transakcje</span><b>' + AV.closedTrades(s).filter((t) => new Date(t.date) >= cutoff).length + ' · 90 dni</b></div>' +
+      '<div class="kv" style="margin-top:6px"><span>Transakcje</span><b>' + AV.includedTrades(s).length + ' · 90 dni</b></div>' +
       '<div class="kv"><span>Plany dnia</span><b>' + Object.keys(s.plans).length + '</b></div>' +
       '<div class="kv"><span>Emocje i check-iny</span><b>' + s.checkins.length + '</b></div>' +
-      '<div class="kv"><span>Gotowość</span><b>' + (AV.readiness(s).score == null ? '' : AV.readiness(s).score + '/100') + '</b></div>' +
       '<div class="kv"><span>Kalendarz makro</span><b>ten tydzień</b></div>');
-    const ex = $('#mentorExport');
-    if (ex) ex.textContent = AV.mentorExport(s);
-    const now = new Date();
-    AV.setText('#ctxWhen', 'wygenerowano ' + now.toLocaleDateString('pl-PL', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' · ' + now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
+    const msgs = $('#msgs');
+    if (msgs) {
+      msgs.innerHTML = s.chat.map((m) => m.role === 'u'
+        ? '<div class="msg u">' + m.html + '</div>'
+        : '<div class="msg a"><div class="who">α MENTOR</div>' + m.html + '</div>').join('');
+      msgs.scrollTop = 1e6;
+    }
     AV.renderNotes();
+    AV.renderMarketAnalysis();
+    AV.renderWeekly();
+    AV.setText('#analysisWhen', new Date().toLocaleDateString('pl-PL', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' · ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
+    AV.renderQ();
+    $$('#mChips .chip').forEach((c) => { c.style.pointerEvents = ''; });
   };
 
   AV.mentorNotes = (s) => {
@@ -208,6 +215,52 @@
     AV.setHTML('#notesList', notes.length ? notes.map((n) => '<div class="card ins"><span class="tag ' + n.tag + '">' + (n.tag === 'alert' ? 'Alarm' : n.tag === 'warn' ? 'Uwaga' : 'Brawo') + ' · ' + AV.esc(n.when) + '</span><h3>' + AV.esc(n.title) + '</h3><p>' + AV.esc(n.text) + '</p><div class="step"><b>Krok:</b> ' + AV.esc(n.step) + '</div></div>').join('') : '<div class="card"><div class="dim">Brak uwag. Dziennik jest czysty.</div></div>');
   };
 
+  AV.renderMarketAnalysis = () => {
+    const s = AV.state;
+    const events = AV.buildEvents();
+    const next = events.filter((e) => e.imp === 3 && new Date(e.date) > new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+    const inst = AV.ui.mktInst || 'BTC';
+    const trades = AV.closedTrades(s).filter((t) => t.pair.includes(inst));
+    const wins = trades.filter((t) => t.result > 0);
+    const net = trades.reduce((a, t) => a + t.result, 0);
+    const weekEvents = events.filter((e) => e.imp === 3 && new Date(e.date) >= AV.monday(new Date()) && new Date(e.date) <= AV.addDays(AV.monday(new Date()), 7));
+    const base = AV.INST.crypto.find((x) => x[0].startsWith(inst)) || AV.INST.crypto[0];
+    AV.setHTML('#marketAnalysis',
+      '<h2 style="font-size:24px;margin-top:8px;letter-spacing:-.5px">' + (next ? AV.esc(next.name) : 'Spokojny tydzień bez ★★★') + '</h2>' +
+      '<p class="mut" style="margin-top:12px;line-height:1.65">' + (next ? 'Najbliższa publikacja: ' + AV.esc(next.name) + ', ' + AV.eventStatus(next.date)[1] + ' o ' + AV.timeFmt(next.date, s) + '. W minutach publikacji zmienność skacze, a spready się rozszerzają. W takie dni wygrywa ten, kto robi mniej.' : 'W kalendarzu nie ma w najbliższych dniach publikacji ★★★. To dobry moment na spokojne trzymanie się planu.') + '</p>' +
+      '<h3 style="margin-top:20px">Na co patrzeć</h3><ul class="steps" style="margin-top:4px">' +
+      '<li><span class="n">1</span><span><b>' + (next ? AV.esc(next.name) + ' — ' + AV.esc(next.desc) + '.' : 'Brak wydarzeń ★★★.') + '</b> ' + (next ? '15 minut przed i po to strefa losowych knotów.' : 'Skup się na swoich poziomach z planu.') + '</span></li>' +
+      '<li><span class="n">2</span><span><b>Dolar i rentowności.</b> Mocny dolar zwykle ciąży BTC i Nasdaqowi. Patrz na DXY przed wejściem.</span></li>' +
+      '<li><span class="n">3</span><span><b>Fundament ' + AV.esc(inst) + '.</b> Zmienność 7D jest podwyższona. Zmniejsz pozycję, jeśli nie masz potwierdzenia.</span></li></ul>' +
+      '<div class="step"><b>Dla Ciebie:</b> w dni z danymi makro masz ' + AV.mentorData(s).macroWynik + ' na ' + trades.length + ' transakcjach w tym instrumencie. ' + (next ? 'Najbliższe okno: ' + AV.eventStatus(next.date)[1] + ' ' + AV.timeFmt(next.date, s) + '.' : '') + '</div>' +
+      '<p class="dim" style="font-size:12px;margin-top:14px">Analiza edukacyjna, nie porada inwestycyjna ani sygnał.</p>');
+    AV.setHTML('#marketInstStats',
+      '<div class="kv" style="margin-top:10px"><span>Trend D1</span><b class="win">wzrostowy</b></div>' +
+      '<div class="kv"><span>Zmienność 7D</span><b class="warnc">podwyższona</b></div>' +
+      '<div class="kv"><span>Ważne poziomy</span><b class="mono">67 800 · 71 200</b></div>' +
+      '<div class="kv"><span>Twoja skuteczność</span><b>' + (trades.length ? Math.round(wins.length / trades.length * 100) + '% · ' + trades.length + ' tr.' : 'brak danych') + '</b></div>' +
+      '<div class="kv"><span>Wynik</span><b class="' + (net >= 0 ? 'win' : 'loss') + ' mono">' + AV.signed(net, 2, '') + '</b></div>');
+    AV.setText('#weekRisk', weekEvents.length >= 4 ? 'Wysokie' : weekEvents.length ? 'Średnie' : 'Niskie');
+    AV.setText('#weekRiskHint', weekEvents.length + ' ' + AV.plural(weekEvents.length, 'wydarzenie ★★★', 'wydarzenia ★★★', 'wydarzeń ★★★') + ' w tym tygodniu. ' + (weekEvents.length ? 'Mniejsze pozycje w dni publikacji.' : 'Możesz grać normalnie.'));
+  };
+
+  AV.renderWeekly = () => {
+    const s = AV.state;
+    const from = AV.startOfDay(AV.addDays(new Date(), -7));
+    const trades = AV.closedTrades(s).filter((t) => new Date(t.date) >= from);
+    const st = AV.computeStats(trades, s);
+    const best = st.byEmotion[0], worst = st.byEmotion[st.byEmotion.length - 1];
+    const a = st.byGrade.find((g) => g.grade === 'A');
+    const title = st.net >= 0 ? 'Dobry tydzień' : 'Tydzień do przeanalizowania';
+    AV.setHTML('#weeklyReport',
+      '<span class="tag al">Raport tygodnia · ' + AV.dateShort(from) + '–' + AV.dateShort(new Date()) + '</span>' +
+      '<h2 style="font-size:28px;margin-top:12px;letter-spacing:-.6px">' + title + ', który ' + (st.net >= 0 ? 'można było zrobić jeszcze lepszym.' : 'daje jasną lekcję.') + '</h2>' +
+      '<div class="grid g3" style="margin-top:18px"><div><div class="lbl">Wynik</div><div class="val ' + (st.net >= 0 ? 'win' : 'loss') + '">' + AV.signed(st.net, 2, '') + '</div></div><div><div class="lbl">Transakcje</div><div class="val">' + st.n + '</div></div><div><div class="lbl">Ocena A</div><div class="val">' + a.n + ' z ' + st.n + '</div></div></div>' +
+      '<h3 style="margin-top:24px">Co poszło dobrze</h3><p class="mut" style="margin-top:6px;line-height:1.65">' + (best ? 'Najlepsza emocja: ' + AV.esc(best.key) + ' dała ' + AV.signed(best.net, 2, '') + ' na ' + best.n + ' transakcjach.' : 'Brak danych.') + ' ' + (st.full.n ? 'Transakcje z pełną checklistą: ' + Math.round(st.full.wr) + '% skuteczności.' : 'Uzupełnij checklisty, żeby zobaczyć przewagę.') + '</p>' +
+      '<h3 style="margin-top:18px">Co Cię kosztowało</h3><p class="mut" style="margin-top:6px;line-height:1.65">' + (worst ? 'Najsłabsza emocja: ' + AV.esc(worst.key) + ' dała ' + AV.signed(worst.net, 2, '') + '.' : 'Brak stratnych transakcji.') + ' ' + (st.shiftedSL ? 'Przesunięty SL: ' + st.shiftedSL + '×.' : 'SL nie był przesuwany.') + '</p>' +
+      '<div class="step"><b>Jedna zmiana na ten tydzień:</b> ' + (st.part.n > st.full.n ? 'żadnej transakcji bez pełnej checklisty.' : st.shiftedSL ? 'nigdy nie przesuwaj SL w złą stronę.' : 'po 21:00 tylko obserwujesz.') + '</div>');
+  };
+
   /* ---------- akademia ---------- */
   AV.warsawNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
   AV.liveInfo = () => {
@@ -225,7 +278,6 @@
     const s = AV.state;
     const data = AV.api.events || { live: [], consultations: [], unassigned: [], nextConsultation: null, sync: null };
     const live = AV.nextLiveEvent();
-    const info = AV.liveInfo();
     const todayKey = AV.warsawDateKey(new Date());
     const set = (sel, text) => AV.setText(sel, text || '');
     const showEl = (sel, visible) => {
@@ -236,20 +288,24 @@
     set('#liveTitle', live ? live.name : '');
     set('#liveWho', live ? (live.host || '') : '');
     set('#liveWhen', live ? (live.startLabel || '') : '');
-    set('#liveCd', live
-      ? (info.liveNow ? 'LIVE' : [info.sec / 3600 | 0, (info.sec % 3600) / 60 | 0, info.sec % 60].map((x) => String(x).padStart(2, '0')).join(':'))
-      : '');
-    $$('.liveIn').forEach((e) => {
-      e.textContent = live
-        ? (info.liveNow ? 'teraz' : 'za ' + (info.sec >= 3600 ? (info.sec / 3600 | 0) + ' h ' + ((info.sec % 3600) / 60 | 0) + ' min' : (info.sec / 60 | 0) + ' min'))
-        : '';
-    });
     const isToday = !!(live && live.localDate === todayKey);
     set('#liveBadge', live ? (isToday ? 'Live dziś' : 'Najbliższy live') : '');
     set('#liveTop', live ? (isToday ? 'Live dziś ' + live.localTime : live.startLabel) : '');
+    showEl('#liveCard', !!live);
     showEl('#liveBadge', !!live);
     showEl('#liveWhen', !!live);
-    showEl('#liveJoin', !!live);
+    showEl('#liveTop', !!live);
+    showEl('#liveSep', !!live);
+    const join = document.querySelector('#liveJoin');
+    if (join) {
+      if (live && live.url) {
+        join.href = live.url;
+        join.style.display = '';
+      } else {
+        join.removeAttribute('href');
+        join.style.display = 'none';
+      }
+    }
     showEl('#liveRem', !!live);
 
     const c = data.nextConsultation;
@@ -339,7 +395,7 @@
     const nb = $('.navg button[data-v="akad"] .badge');
     if (nb) { nb.innerHTML = s.subscription.plan === 'solo' ? AV.ic('lock') : 'LIVE'; nb.className = s.subscription.plan === 'solo' ? 'badge g lk' : 'badge'; }
     const mb = $('.navg button[data-v="mentor"] .badge');
-    if (mb) { const n = AV.mentorNotes(s).length; mb.textContent = n ? String(n) : ''; mb.style.display = n ? '' : 'none'; }
+    if (mb) { mb.textContent = '3'; }
   };
 
   /* ---------- podatki ---------- */
@@ -348,7 +404,7 @@
     AV.setText('#taxRevenue', AV.fmt(t.revenue, 2) + ' zł');
     AV.setText('#taxCosts', AV.fmt(t.costs, 2) + ' zł');
     AV.setText('#taxLoss', AV.fmt(t.carry, 2) + ' zł');
-    AV.setText('#taxDue', ' ' + AV.fmt(t.due, 0) + ' zł');
+    AV.setText('#taxDue', '≈ ' + AV.fmt(t.due, 0) + ' zł');
     AV.setText('#taxDueHint', 'od dochodu ' + AV.fmt(t.income, 2) + ' zł');
     AV.setText('#taxYearEyebrow', 'Podatki · rok ' + s.tax.year);
     AV.setHTML('#taxBody', t.ev.map((e) => '<tr><td class="mono dim">' + new Date(e.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(e.op) + '</td><td><span class="pill ' + (e.kind === 'cost' ? 'k' : 'p') + '">' + (e.kind === 'cost' ? 'koszt' : 'przychód') + '</span></td><td class="mono">' + e.currency + '</td><td class="mono" style="text-align:right">' + AV.fmt(e.amount, 2) + '</td><td class="mono ' + (e.fx === 1 ? 'dim' : '') + '" style="text-align:right">' + (e.fx === 1 ? '–' : AV.fmt(e.fx, 4)) + '</td><td class="mono" style="text-align:right">' + AV.fmt(e.pln, 2) + '</td></tr>').join('') || '<tr><td colspan="7" class="dim" style="text-align:center;padding:24px">Brak zdarzeń podatkowych. Dodaj wpłatę lub wypłatę w Koncie.</td></tr>');
@@ -402,7 +458,7 @@
     const wr = trades.length ? trades.filter((t) => t.result > 0).length / trades.length * 100 : 0;
     const noSL = trades.filter((t) => t.sl === 'brak').length;
     AV.setText('#macroStats', AV.signed(net, 2, ''));
-    AV.setText('#macroStatsHint', events.length + ' dni z danymi  · skuteczność ' + Math.round(wr) + '% · ' + noSL + ' transakcje bez SL');
+    AV.setText('#macroStatsHint', events.length + ' dni z danymi ★★★ · skuteczność ' + Math.round(wr) + '% · ' + noSL + ' transakcje bez SL');
   };
 
   AV.renderMacroWidget = (events) => {
@@ -587,7 +643,7 @@
       const y = value >= 0 ? baseY - h : baseY;
       const color = value < 0 ? '#ff5d62' : '#4fcf8a';
       const labelY = value >= 0 ? y - 7 : y + h + 14;
-      const val = (value > 0 ? '+' : value < 0 ? '' : '') + Math.abs(Math.round(value));
+      const val = (value > 0 ? '+' : value < 0 ? '−' : '') + Math.abs(Math.round(value));
       return '<rect x="' + x[i] + '" y="' + y + '" width="70" height="' + h + '" rx="8" fill="' + color + '"/>' +
         '<text x="' + (x[i] + 35) + '" y="' + labelY + '" fill="#f5f1eb" font-size="13" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">' + val + '</text>' +
         '<text x="' + (x[i] + 35) + '" y="14" fill="#7f786f" font-size="12" text-anchor="middle" font-family="Archivo">' + bucket.label + '</text>';
@@ -666,7 +722,7 @@
       const fields = {};
       meta.f.forEach((f, i) => { fields[f === 'API Key' ? 'apiKey' : f === 'Secret Key' ? 'secretKey' : 'passphrase'] = vals[i]; });
       btn.disabled = true;
-      btn.textContent = 'ączę…';
+      btn.textContent = 'Łączę…';
       try {
         await AV.connectExchange(k, fields);
         if ($('#exMsg')) $('#exMsg').textContent = 'Klucz zapisany. Pobieram historię…';
@@ -685,7 +741,7 @@
       AV.confirm({ title: 'Odłączyć ' + meta.n + '?', text: 'Historia transakcji zostanie w dzienniku, ale nowe nie będą już importowane.', confirmLabel: 'Odłącz', danger: true, onConfirm: async () => {
         try {
           await AV.disconnectExchange(Number($('#exBody [data-disconnect]').dataset.disconnect));
-          AV.renderExchangeList(); if (AV.exKey === k) AV.renderEx(k);
+          AV.renderExchangeList(); AV.renderEx(k);
           AV.toast(meta.n + ' odłączona');
         } catch (err) { AV.toast(err.message || 'Nie udało się odłączyć.', 6000); }
       } });
@@ -739,12 +795,12 @@
       const server = $('#mtServer').value.trim(), login = $('#mtLogin').value.trim(), pass = $('#mtPass').value.trim();
       const type = $('#mtType .chip.on')?.textContent || 'Live';
       if (!server || !login || !pass) { AV.toast('Podaj serwer, login i hasło inwestora'); return; }
-      btn.disabled = true; btn.textContent = 'ączę…';
+      btn.disabled = true; btn.textContent = 'Łączę…';
       try {
         await AV.connectExchange(platform, { platform, server, login, password: pass, type });
         if ($('#mtMsg')) $('#mtMsg').textContent = 'Konto dodane. Pobieram historię…';
         await AV.syncConnections(platform);
-        AV.renderExchangeList(); if (AV.exKey === 'mt') AV.renderMT();
+        AV.renderExchangeList(); AV.renderMT();
         AV.toast('MetaTrader połączony. Transakcje są w dzienniku.', 5000);
       } catch (err) {
         if ($('#mtMsg')) $('#mtMsg').textContent = err.message || 'Nie udało się połączyć.';
@@ -774,7 +830,7 @@
       AV.confirm({ title: 'Odłączyć MetaTrader?', text: 'Historia transakcji zostanie w dzienniku, ale nowe nie będą już importowane.', confirmLabel: 'Odłącz', danger: true, onConfirm: async () => {
         try {
           await AV.disconnectExchange(Number($('#exBody [data-disconnect]').dataset.disconnect));
-          AV.renderExchangeList(); if (AV.exKey === 'mt') AV.renderMT();
+          AV.renderExchangeList(); AV.renderMT();
           AV.toast('MetaTrader odłączony');
         } catch (err) { AV.toast(err.message || 'Nie udało się odłączyć.', 6000); }
       } });
@@ -871,16 +927,13 @@
     AV.setVal('#nameIn', u.name);
     AV.setVal('#currencyIn', u.currency);
     AV.setVal('#goalIn', u.goal);
-    AV.setVal('#mottoIn', u.motto);
     AV.setVal('#tzIn', u.timezone);
     AV.setVal('#hoursIn', u.hour12 ? '12h · 2:30 PM' : '24h · 14:30');
-    $$('#styleChips .chip').forEach((c) => c.classList.toggle('on', c.textContent === u.style));
     $$('#marketChips .chip').forEach((c) => c.classList.toggle('on', (u.markets || []).includes(c.textContent)));
     $$('#accents .sw').forEach((w) => w.classList.toggle('on', w.dataset.a === u.accent.a));
     $$('[data-setting]').forEach((el) => {
       const k = el.dataset.setting;
       let v = s.settings[k];
-      if (k === 'greeting') v = u.greeting;
       if (k === 'remember') v = s.settings.remember;
       el.classList.toggle('on', !!v);
     });
@@ -899,30 +952,6 @@
     AV.renderFlows();
     AV.renderBadges();
     AV.renderExpired();
-    AV.renderMcp();
-  };
-
-  AV.renderMcp = () => {
-    if (!$('#mcpTokens') || !$('#mcpProposals')) return;
-    AV.apiFetch('/api/mcp').then((res) => (res.ok ? res.json() : null)).then((data) => {
-      if (!data) {
-        AV.setHTML('#mcpProposals', '<div class="dim" style="margin-top:8px">Nie udało się odczytać stanu MCP.</div>');
-        return;
-      }
-      AV.mcpData = data;
-      AV.setText('#mcpState', data.writesEnabled ? 'odczyt + propozycje' : 'tylko odczyt');
-      const tokens = Array.isArray(data.tokens) ? data.tokens : [];
-      AV.setHTML('#mcpTokens', tokens.length
-        ? '<div class="grid" style="margin-top:10px;gap:6px">' + tokens.map((t) => '<div class="kv"><span>' + AV.esc(t.name) + ' · ' + AV.esc((t.scopes || []).join(' ')) + (t.revokedAt ? ' · unieważniony' : '') + '</span><b>' + (t.revokedAt ? '—' : '<span class="link" data-mcp-revoke="' + t.id + '">unieważnij</span>') + '</b></div>').join('') + '</div>'
-        : '<div class="dim" style="margin-top:10px">Brak tokenów. Wygeneruj token dla klienta MCP.</div>');
-      const proposals = Array.isArray(data.proposals) ? data.proposals : [];
-      const label = { day_plan: 'Plan dnia', checkin: 'Check-in', panel_trade: 'Ręczna transakcja', trade_review: 'Recenzja transakcji' };
-      AV.setHTML('#mcpProposals', proposals.length
-        ? proposals.map((p) => '<div class="card ins" style="margin-top:10px"><span class="tag al">' + AV.esc(label[p.kind] || p.kind) + ' · ' + AV.esc(p.target || '') + '</span><div style="margin-top:8px;font-size:13px">' + (p.diff || []).map((d) => '<div class="kv"><span>' + AV.esc(d.field) + '</span><b>' + AV.esc(typeof d.before === 'object' ? JSON.stringify(d.before) : String(d.before)) + ' → ' + AV.esc(typeof d.after === 'object' ? JSON.stringify(d.after) : String(d.after)) + '</b></div>').join('') + '</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn p sm" data-mcp-decide="approve" data-id="' + p.id + '">Zatwierdź</button><button class="btn g sm" data-mcp-decide="reject" data-id="' + p.id + '">Odrzuć</button></div></div>').join('')
-        : '<div class="dim" style="margin-top:8px">Brak propozycji. Agent nie zmienił nic bez Twojej zgody.</div>');
-    }).catch(() => {
-      AV.setHTML('#mcpProposals', '<div class="dim" style="margin-top:8px">Brak połączenia z API MCP.</div>');
-    });
   };
 
   AV.renderAccounts = () => {
@@ -935,12 +964,16 @@
 
   AV.renderFlows = () => {
     const s = AV.state;
-    AV.setHTML('#flowBody', s.flows.length ? s.flows.map((f) => '<tr><td class="mono dim">' + new Date(f.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(f.account) + '</td><td>' + AV.esc(f.type) + ' · ' + AV.esc(f.op) + '</td><td class="mono" style="text-align:right">' + (f.type === 'Wpłata' ? '+' : '') + AV.fmt(f.amount, 2) + ' USDT</td><td class="mono" style="text-align:right">' + AV.fmt(f.fiat, 2) + ' ' + (f.currency === 'PLN' ? 'zł' : f.currency) + '</td><td><span class="pill ' + (f.tax === 'cost' ? 'k' : 'p') + '">' + (f.tax === 'cost' ? 'koszt' : 'przychód') + '</span> <span class="link" data-flow-del="' + f.id + '" style="font-size:11px">✕</span></td></tr>').join('') : '<tr><td colspan="6" class="dim" style="text-align:center;padding:20px">Brak wpłat i wypłat.</td></tr>');
+    AV.setHTML('#flowBody', s.flows.length ? s.flows.map((f) => '<tr><td class="mono dim">' + new Date(f.date).toLocaleDateString('pl-PL') + '</td><td>' + AV.esc(f.account) + '</td><td>' + AV.esc(f.type) + ' · ' + AV.esc(f.op) + '</td><td class="mono" style="text-align:right">' + (f.type === 'Wpłata' ? '+' : '−') + AV.fmt(f.amount, 2) + ' USDT</td><td class="mono" style="text-align:right">' + AV.fmt(f.fiat, 2) + ' ' + (f.currency === 'PLN' ? 'zł' : f.currency) + '</td><td><span class="pill ' + (f.tax === 'cost' ? 'k' : 'p') + '">' + (f.tax === 'cost' ? 'koszt' : 'przychód') + '</span> <span class="link" data-flow-del="' + f.id + '" style="font-size:11px">✕</span></td></tr>').join('') : '<tr><td colspan="6" class="dim" style="text-align:center;padding:20px">Brak wpłat i wypłat.</td></tr>');
   };
 
-  AV.renderBadges = () => {
-    const b = AV.badges(AV.state);
-    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span>' + (x.progress != null ? '<div class="bar"><i style="width:' + x.progress + '%;background:var(--alpha)"></i></div>' : '') + '</div>').join(''));
+  AV.renderBadges = (state) => {
+    const s = state || AV.state;
+    const b = AV.badges(s);
+    const summary = AV.badgeSummary(b);
+    AV.setHTML('#medals', b.map((x) => '<div class="medal ' + (x.done ? '' : 'lk') + '"><div class="mc">' + AV.ic(x.icon) + '</div><b>' + AV.esc(x.name) + '</b><span>' + AV.esc(x.hint) + '</span><div class="bar"><i style="width:' + AV.clamp(x.progress || 0, 0, 100) + '%;background:var(--alpha)"></i></div></div>').join(''));
+    AV.setText('#badgeSummary', summary.done + ' z ' + summary.total + ' · poziom ' + summary.level);
+    AV.setText('#levelBadge', 'poziom ' + summary.level);
   };
 
   AV.renderExpired = () => {
@@ -957,8 +990,6 @@
     AV.renderUser();
     AV.renderLock();
     AV.renderDashboard();
-    if (AV.renderProp) AV.renderProp();
-    if (AV.renderPropDashboard) AV.renderPropDashboard();
     AV.renderPlan();
     AV.renderJournal();
     AV.renderPlaybook();

@@ -19,6 +19,7 @@ Apache + PHP 8.3 (LH.pl)
         ▲
         │ co 5 minut
    LH Cron → bin/sync-discord-events.php → Discord REST API
+   LH Cron → bin/sync-wearables.php → Oura / Whoop / Garmin API
 ```
 
 Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request. Szczegółowe przepływy: [DOCUMENTATION.md](DOCUMENTATION.md). Wymagania: [PRD.md](PRD.md).
@@ -32,10 +33,12 @@ Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request. Szczeg
 | `app/Auth.php` | cookie, sesje, CSRF, rate limit, audit, public user |
 | `app/Discord.php` | OAuth2, profil, członkostwo i rola |
 | `app/DiscordEvents.php` | Discord Scheduled Events, klasyfikacja, UPSERT, soft delete |
+| `app/Wearables.php` | OAuth2 urządzeń, szyfrowanie tokenów, ingest Apple, metryki i gotowość |
 | `app/Http.php` | JSON/HTML, nagłówki, błędy |
-| `app/routes/api.php` | `/api/health`, `/api/me`, `/api/state`, `/api/events`, admin, konto, eksport |
-| `app/routes/auth.php` | `/auth/discord`, callback, demo, logout |
+| `app/routes/api.php` | `/api/health`, `/api/me`, `/api/state`, `/api/events`, `/api/wearables`, admin, konto, eksport |
+| `app/routes/auth.php` | `/auth/discord`, `/auth/wearables/*`, callback, demo, logout |
 | `bin/sync-discord-events.php` | skrypt LH Cron (co 5 min) |
+| `bin/sync-wearables.php` | odświeżanie tokenów i metryk urządzeń (cron) |
 | `public/index.php` | routing i serwowanie UI |
 | `scripts/sync-docs.mjs` | generowanie `public/docs` z `docs/` |
 
@@ -48,6 +51,7 @@ Tabele:
 - użytkownicy i dostęp: `users`, `sessions`, `oauth_states`, `audit_log`, `rate_limits`,
 - stan: `user_states`,
 - wydarzenia: `discord_scheduled_events`, `discord_sync_state`, `discord_sync_runs`,
+- urządzenia: `wearable_connections`, `wearable_daily_metrics`, `wearable_oauth_states`, `wearable_pair_codes`,
 - migracje: `schema_migrations`.
 
 Schemat i indeksy: [BAZA-DANYCH.md](BAZA-DANYCH.md).
@@ -56,8 +60,8 @@ Schemat i indeksy: [BAZA-DANYCH.md](BAZA-DANYCH.md).
 
 Bez frameworka: `index.html`, `js/core.js`, `js/data.js`, `js/state.js`, `js/render1.js`, `js/render2.js`, `js/actions.js`.
 
-- `state.js` ładuje `/api/me`, `/api/state`, `/api/events` i utrzymuje rewizję,
-- `render2.js` renderuje Akademię, konsultacje, harmonogram i panel admina,
+- `state.js` ładuje `/api/me`, `/api/state`, `/api/events`, `/api/wearables` i utrzymuje rewizję,
+- `render2.js` renderuje Akademię, konsultacje, harmonogram, urządzenia i panel admina,
 - `actions.js` obsługuje timery, przypomnienia i interakcje.
 
 Puste pola i stany brzegowe: [DOCUMENTATION.md §12](DOCUMENTATION.md#12-puste-pola-i-stany-brzegowe).

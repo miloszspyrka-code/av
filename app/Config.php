@@ -158,7 +158,8 @@ final class Config
         ];
 
         $rules = [];
-        $rulesFile = $root . '/config/discord_event_rules.json';        if (is_file($rulesFile)) {
+        $rulesFile = $root . '/config/discord_event_rules.json';
+        if (is_file($rulesFile)) {
             $rawRules = file_get_contents($rulesFile);
             if ($rawRules !== false) {
                 $decodedRules = json_decode($rawRules, true);

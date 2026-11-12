@@ -103,7 +103,10 @@ async function main() {
   assert.equal(events.res.status, 200, events.text);
   assert.ok(Array.isArray(events.json.events));
   assert.ok(events.json.sync && typeof events.json.sync.status === 'string');
-  log('events z sesją', true, events.json.events.length + ' wydarzeń');
+  for (const event of events.json.events) {
+    assert.match(event.url || '', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/);
+  }
+  log('events z sesją', true, events.json.events.length + ' wydarzeń · ' + events.json.events.filter((e) => e.url).length + ' z linkiem');
 
   const adminEvents = await req('/api/admin/events');
   assert.equal(adminEvents.res.status, 403);
@@ -116,30 +119,6 @@ async function main() {
   log('GET /api/state', true, `rewizja ${state.json.revision}, transakcje ${state.json.state.trades.length}`);
 
   const originalState = state.json.state;
-  const propBefore = JSON.parse(JSON.stringify(originalState.prop || null));
-  const propFixture = {
-    id: 'prop_e2e_' + Date.now(),
-    name: 'E2E Prop 10K',
-    firm: 'FTMO',
-    templateId: 'ftmo-2step',
-    phase: 'Phase 1',
-    account: 'WEEX',
-    currency: 'USD',
-    accountSize: 10000,
-    startBalance: 10000,
-    targetPct: 10,
-    dailyLossPct: 5,
-    maxLossPct: 10,
-    drawdownType: 'static',
-    dailyBasis: 'initial',
-    minDays: 4,
-    startDate: '2026-01-01',
-    endDate: '2026-12-31',
-    notes: 'fixture',
-    archived: false,
-    createdAt: new Date().toISOString()
-  };
-  originalState.prop = { challenges: [propFixture], selectedId: propFixture.id };
   const marker = 'e2e-' + Date.now();
   originalState.meta = originalState.meta || {};
   originalState.meta.e2e = marker;
@@ -156,16 +135,6 @@ async function main() {
   assert.equal(saved.json.state.meta.e2e, marker);
   assert.equal(saved.json.revision, put.json.revision);
   log('odczyt po zapisie (MySQL)', true);
-
-  const savedProp = saved.json.state.prop?.challenges?.[0];
-  assert.equal(savedProp?.id, propFixture.id);
-  assert.equal(savedProp?.name, 'E2E Prop 10K');
-  assert.equal(savedProp?.account, 'WEEX');
-  assert.equal(savedProp?.targetPct, 10);
-  assert.equal(savedProp?.drawdownType, 'static');
-  assert.equal(savedProp?.startBalance, 10000);
-  assert.equal(saved.json.state.prop.selectedId, propFixture.id);
-  log('prop challenge zapisany w MySQL', true, savedProp.name);
 
   const conflict = await req('/api/state', {
     method: 'PUT',
@@ -198,9 +167,8 @@ async function main() {
   assert.ok(exportRes.json.state);
   log('GET /api/me/export', true);
 
-  // przywróć stan bez markera i bez fixture prop
+  // przywróć stan bez markera
   delete originalState.meta.e2e;
-  originalState.prop = propBefore;
   const restore = await req('/api/state', {
     method: 'PUT',
     body: JSON.stringify({ state: originalState, baseRevision: saved.json.revision }),

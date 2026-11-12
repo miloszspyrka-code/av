@@ -20,6 +20,7 @@ npm ci
 $env:APP_URL = "http://127.0.0.1:4173"
 npm test
 npm run test:ui
+npm run test:pwa
 ```
 
 Test pustych pól wymaga drugiego serwera z gildią bez wydarzeń:
@@ -34,6 +35,24 @@ php -S 127.0.0.1:4174 -t public public/router.php
 $env:APP_URL = "http://127.0.0.1:4174"
 npm run test:ui:empty
 ```
+
+## Urządzenia zdrowotne — 33 scenariusze
+
+`npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
+
+Zakres:
+
+- `GET /api/wearables` bez sesji = 401,
+- OAuth2 Garmin/Oura/Whoop: start → authorize → callback → token → dane → gotowość,
+- poprawność snu (312 min), HRV (38 ms), tętna (61), Body Battery (34) i baseline (HRV 52),
+- ręczna synchronizacja zwraca 14 dni,
+- odłączenie usuwa połączenie, metryki i baseline,
+- Apple: jednorazowy kod parowania, ingest dwóch dni, token urządzenia, odrzucenie powtórzonego kodu i złego tokenu,
+- gotowość łączy urządzenie i check-in (73/100),
+- UI: puste pola bez urządzenia, check-in 80/100, połączenie i metryki dla Garmin/Oura/Whoop, odłączenie czyści pola, Apple przez kod parowania, brak błędów JS,
+- brak tokenów dostawców w odpowiedziach API.
+
+Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przechodzi, a część UI jest jawnie pominięta.
 
 ## Discord DB/sync — 24 scenariusze
 
@@ -56,20 +75,7 @@ npm run test:ui:empty
 - pusty sukces czyści listę i soft-deletuje rekordy,
 - powrót wydarzenia przywraca rekord.
 
-## Prop challenge — 27 scenariuszy
-
-`tests/prop.unit.mjs` (`npm run test:prop`) testuje czysty silnik `public/js/prop.js` bez serwera i bazy:
-
-- katalog szablonów i normalizację danych,
-- filtr konta i zakresu dat (włącznie z końcem),
-- cel zysku, brak 1 centa, min. dni handlowe,
-- dzienny limit 75/90/100%, podstawę initial/dayStart, limit 0,
-- obsunięcie static i trailing, linię stopu i bufor,
-- termin, brak terminu, min. dni przed deadlinem,
-- statystyki, serię strat, najlepszy/najgorszy dzień,
-- archiwum poza metrykami i zachowanie waluty.
-
-## API — 21 scenariuszy
+## API — 20 scenariuszy
 
 `tests/api.e2e.mjs` sprawdza:
 
@@ -83,7 +89,6 @@ npm run test:ui:empty
 - `/api/events` z sesją,
 - `/api/admin/events` bez uprawnień = 403,
 - GET/PUT state + MySQL,
-- round-trip `prop.challenges` i `selectedId` przez MySQL,
 - konflikt rewizji = 409,
 - CSRF / złe `Origin` = 403,
 - UI `/`,
@@ -92,7 +97,7 @@ npm run test:ui:empty
 - przywrócenie stanu,
 - logout + unieważnienie sesji.
 
-## UI — 32 scenariusze
+## UI — 37 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -101,30 +106,45 @@ npm run test:ui:empty
 - 47 transakcji z MySQL,
 - live i konsultacja z `/api/events`,
 - harmonogram tygodnia i strip,
-- nawigacja 15 widoków (w tym prop),
+- nawigacja 14 widoków,
 - plan dnia, filtry dziennika, szczegóły transakcji,
 - kalkulator, statystyki, mentor, akademia,
-- prop: 9 szablonów, nowy challenge + 4 KPI,
-- prop: walidacja formularza i XSS w nazwie,
-- prop: alarm limitu + banner na pulpicie,
-- prop: archiwum, empty state i przywrócenie,
-- prop: zapis w MySQL, reload i usunięcie,
 - kalendarz, check-in, profil,
+- 8 odznak niezależnie (próg, podpowiedź, pusty stan, poziom z licznika),
 - nowa transakcja i zamknięcie,
 - przywrócenie stanu demo,
 - wylogowanie.
 
-## UI empty-state — 10 scenariuszy
+## UI empty-state — 12 scenariuszy
 
 `tests/ui-empty.e2e.mjs` przy poprawnym sync zwracającym `[]` sprawdza:
 
-- pusty tytuł, prowadzący i countdown,
+- pusty tytuł, prowadzący i ukryta karta live,
 - pustą kartę konsultacji,
 - puste pola w strip,
-- ukryty przycisk „Dołącz”,
+- ukryty link „Dołącz”,
 - 7 dni tygodnia bez wydarzeń,
 - `events.length === 0`,
 - dostępny stan synchronizacji.
+
+## PWA mobile — 20 scenariuszy
+
+`tests/pwa.e2e.mjs` używa Playwright + systemowego Chrome w emulacji iPhone 14 (390×844, touch, iOS UA). Sprawdza:
+
+- manifest: `display=standalone`, `start_url`, ikony 192/512/maskable,
+- meta iOS i `apple-touch-icon`,
+- rejestrację service workera i przejęcie kontroli nad stroną,
+- `Page.getAppManifest` i `Page.getInstallabilityErrors` bez błędów,
+- brak poziomego przewijania na pulpicie,
+- przycisk instalacji i stan powiadomień,
+- zamknięcie transakcji → powiadomienie systemowe z deep linkiem `?qa=<id>`,
+- deep link otwiera modal z prawdziwą transakcją,
+- emocja + ocena + zdjęcie zapisane w ≤ 10 s (mierzone `AV.ui.qaLastSeconds`),
+- stały przycisk zapisu na telefonie,
+- push przez CDP `ServiceWorker.deliverPushMessage`,
+- offline: powłoka aplikacji z cache service workera.
+
+To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu początkowego) i powiadomienia iOS wymagają testu ręcznego; patrz „Czego testy nie obejmują”.
 
 ## Dokumentacja — 16 scenariuszy
 
@@ -162,6 +182,7 @@ npm run test:ui:empty
 - Discord DB/sync,
 - API e2e,
 - UI e2e (systemowy Chrome),
+- PWA e2e (emulacja iPhone 14, Chrome),
 - empty-state na osobnym porcie.
 
 ## Produkcja — 2026-11-12
@@ -181,20 +202,22 @@ Wykonane na `https://alphavault.pl`:
 | LH Cron | logi `18:05:05` i `18:10:02` — uruchomienie co 5 min |
 | Monitoring | `monitor-production.yml` — health + `sync.status`/`stale`, co 15 min |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
+| PWA manifest/SW/ikony | 200, `application/manifest+json`, ikony `/assets/pwa/*`, installability bez błędów |
+| PWA mobile E2E | 20/20 lokalnie i w CI; fizyczny telefon — do potwierdzenia |
 
 Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
 
 ## Czego testy nie obejmują
 
 - prawdziwego logowania Discord (wymaga interakcji użytkownika),
+- instalacji PWA na fizycznym telefonie i powiadomień iOS (wymaga urządzenia),
 - realnego Stage (brak wydarzenia w API — tylko fixture),
 - produkcyjnego SSH/rsync (sprawdzane przez dry run deployu),
 - LH Cron (wymaga panelu LH),
 - testów obciążeniowych.
 
 Testy Discord wykonuj ręcznie na koncie z rolą Alpha, bez roli i spoza serwera. Nie deklaruj wyniku bez rzeczywistego udziału użytkownika.
-
-## Integracje giełd, MetaTrader i API
+﻿## Integracje giełd, MetaTrader i API
 
 ```powershell
 npm run test:integrations      # API + mocki OKX/BingX/WEEX/MetaApi/EA
@@ -203,11 +226,4 @@ npm run test:ui:integrations   # Playwright: formularze i dziennik
 
 Wymagania: `tests/config.integrations.json` (kopiuj z `config.test.json` i dodaj `INTEGRATIONS_KEY`, `METAAPI_TOKEN` oraz adresy `*_BASE` na lokalny mock). Testy uruchamiają własny serwer mocków na `127.0.0.1:4191` i aplikację na `4175`.
 
-Zakres:
-
-- OKX: klucz read-only akceptowany, klucz z handlem odrzucony, import 2 pozycji, deduplikacja,
-- BingX: `apiPermissions`, import pozycji, odrzucenie handlu,
-- WEEX: bezpieczna próba uprawnień, rekonstrukcja transakcji z fills,
-- MetaApi: hasło inwestora, odrzucenie hasła z handlem, import deali,
-- EA: kod parowania, ingest, deduplikacja, zły kod = 401,
-- UI: formularze, statusy, licznik transakcji, brak sekretów w DOM.
+Zakres: OKX read-only i odrzucenie handlu, BingX `apiPermissions`, WEEX probe + rekonstrukcja fills, MetaApi `investorMode` i odrzucenie hasła z handlem, EA kod parowania + ingest + deduplikacja, UI formularze i licznik transakcji.

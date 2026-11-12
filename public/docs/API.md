@@ -2,7 +2,7 @@
 
 # Alpha Vault — API i logowanie
 
-Wersja: **3.0.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord**
+Wersja: **3.1.0** · backend: **PHP 8.3** · baza: **MySQL/MariaDB** · sesje: **HttpOnly cookie** · OAuth: **Discord, Garmin, Oura, Whoop**
 
 Aplikacja jest serwowana z tego samego originu co API. Frontend zapisuje cały stan użytkownika przez `PUT /api/state`; `localStorage` jest tylko fallbackiem offline.
 
@@ -225,7 +225,7 @@ Wymaga sesji. Zwraca wydarzenia Discord zsynchronizowane przez CRON oraz stan sy
 }
 ```
 
-Każde wydarzenie zawiera m.in. `id`, `name`, `description`, `entityType`, `status`, `startAt` (UTC ISO), `startLocal` (`Europe/Warsaw` z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`. `raw_payload` nie jest udostępniany.
+Każde wydarzenie zawiera m.in. `id`, `url` (kanoniczny link `https://discord.com/events/{guild_id}/{event_id}`), `name`, `description`, `entityType`, `status`, `startAt` (UTC ISO), `startLocal` (`Europe/Warsaw` z offsetem), `startLabel`, `localDate`, `localTime`, `weekday`, `endAt`, `durationMinutes`, `host`, `userCount`, `category`, `categorySource`, `recurrenceRule`. `url` jest `null` wyłącznie dla rekordów z identyfikatorem spoza formatu Snowflake (fixtury testowe). `raw_payload` nie jest udostępniany.
 
 ### 3.9. `GET /api/admin/events`
 
@@ -241,7 +241,64 @@ Wymaga administratora i poprawnego `Origin`.
 
 Dozwolone: `live`, `consultation`, `unassigned`. Ręczne przypisanie (`manual_category`) ma pierwszeństwo przed regułami i przetrwa kolejne synchronizacje.
 
-### 3.11. `GET /api/connections`
+### 3.11. Urządzenia zdrowotne
+
+Wszystkie endpointy poza ingestem Apple wymagają sesji. Tokeny dostawców są szyfrowane AES-256-GCM i nigdy nie trafiają do odpowiedzi API.
+
+```text
+GET    /api/wearables                       lista urządzeń, dzisiejsze metryki, baseline, seria 90 dni, gotowość
+POST   /api/wearables/{provider}/sync       ręczna synchronizacja (Garmin/Oura/Whoop/Apple)
+DELETE /api/wearables/{provider}            odłączenie + usunięcie danych zdrowotnych
+POST   /api/wearables/apple/pair            jednorazowy kod parowania dla iPhone (15 min)
+POST   /api/wearables/apple/ingest          ingest z iPhone: kod parowania albo Bearer <deviceToken>
+```
+
+`GET /api/wearables` zwraca:
+
+```json
+{
+  "devices": {
+    "garmin": { "provider": "garmin", "label": "Garmin Connect", "configured": true, "connected": true, "lastSyncAt": "2026-11-12T19:48:00Z", "lastSyncStatus": "ok", "lastError": null },
+    "apple": { "provider": "apple", "label": "Apple Watch · Zdrowie", "configured": true, "connected": false },
+    "oura": { "provider": "oura", "label": "Oura Ring", "configured": true, "connected": false },
+    "whoop": { "provider": "whoop", "label": "Whoop", "configured": true, "connected": false }
+  },
+  "today": {
+    "date": "2026-11-12", "sleepMinutes": 312, "hrvMs": 38, "restingHr": 61,
+    "bodyBattery": 34, "providerScore": null, "readiness": 65
+  },
+  "baseline": { "days": 14, "sleepMinutes": 450, "hrvMs": 52, "restingHr": 56 },
+  "series": [ { "date": "2026-10-14", "sleepMinutes": 450, "hrvMs": 52, "restingHr": 56 } ],
+  "readiness": {
+    "score": 65, "title": "Dobra forma", "class": "win", "source": "devices",
+    "components": { "sleep": 65, "hrv": 73, "restingHr": 75, "bodyBattery": 34, "physiology": 65 }
+  }
+}
+```
+
+Gotowość urządzenia to ważona średnia dostępnych składników: sen 40%, HRV 25%, tętno 10%, wynik regeneracji dostawcy 15%, Body Battery 10%. Wagi są renormalizowane do dostępnych danych. Check-in (jeśli istnieje) wnosi 30%: `0,7 × urządzenie + 0,3 × check-in`.
+
+Apple ingest:
+
+```text
+POST /api/wearables/apple/ingest
+Authorization: Bearer avw_...        # od drugiego żądania
+
+{"deviceName":"iPhone","days":[{"date":"2026-11-12","sleepMinutes":312,"hrvMs":38,"restingHr":61,"bodyBattery":null,"providerScore":null}]}
+```
+
+Pierwsze żądanie zawiera `"code":"AV-XXXX-XXXX"` zamiast Bearer. Odpowiedź zawiera `deviceToken` tylko raz. Kod parowania jest jednorazowy, ważny 15 minut. Zakres pól: sen 0–1440 min, HRV 0–400 ms, tętno 20–220, Body Battery i wynik dostawcy 0–100; maks. 90 dni na żądanie.
+
+Synchronizacja OAuth2:
+
+```text
+GET /auth/wearables/{garmin|oura|whoop}/start
+GET /auth/wearables/{garmin|oura|whoop}/callback?code=...&state=...
+```
+
+`state` jest jednorazowy (10 min), powiązany z użytkownikiem i dostawcą. Po sukcesie redirect na `/?connected={provider}#cialo`; błąd synchronizacji nie blokuje połączenia i jest widoczny w `lastError`.
+
+### 3.12. `GET /api/connections`
 
 Wymaga sesji. Zwraca połączenia użytkownika bez sekretów — tylko maskę klucza, status, uprawnienia i licznik importu.
 
@@ -271,7 +328,7 @@ Wymaga sesji. Zwraca połączenia użytkownika bez sekretów — tylko maskę kl
 
 `configured:false` oznacza brak `INTEGRATIONS_KEY` na serwerze. Endpoint nie zwraca poświadczeń, pełnych kluczy ani hasła inwestora.
 
-### 3.12. `POST /api/connections`
+### 3.13. `POST /api/connections`
 
 Wymaga sesji i poprawnego `Origin`. Body:
 
@@ -293,25 +350,25 @@ Serwer:
 
 MetaTrader jest akceptowany wyłącznie przez MetaApi, gdy `investorMode:true`. Hasło z prawem handlu jest odrzucane, a konto usuwane z MetaApi.
 
-### 3.13. `POST /api/connections/sync`
+### 3.14. `POST /api/connections/sync`
 
 Wymaga sesji i `Origin`. Synchronizuje wszystkie połączenia użytkownika (opcjonalnie `{"provider":"okx"}`). Zwraca podsumowanie per połączenie: `fetched`, `imported`, `skipped`, `done`, `error`.
 
 Import jest idempotentny — deduplikacja po `external_id` w `exchange_imports` i `extId` w stanie dziennika.
 
-### 3.14. `POST /api/connections/{id}/sync`
+### 3.15. `POST /api/connections/{id}/sync`
 
 Synchronizuje jedno połączenie. Używane po podłączeniu klucza i przez przycisk „Synchronizuj teraz”.
 
-### 3.15. `DELETE /api/connections/{id}`
+### 3.16. `DELETE /api/connections/{id}`
 
 Wymaga sesji i `Origin`. Usuwa połączenie i poświadczenia. Transakcje pozostają w dzienniku; deduplikacja zachowuje się przy ponownym podłączeniu.
 
-### 3.16. `POST /api/connections/mt/pair`
+### 3.17. `POST /api/connections/mt/pair`
 
 Wymaga sesji i `Origin`. Body `{"platform":"mt5"}`. Zwraca jednorazowo kod `AV-XXXX-XXXX` do EA. W bazie znajduje się tylko SHA-256 kodu.
 
-### 3.17. `POST /api/mt/ea`
+### 3.18. `POST /api/mt/ea`
 
 Publiczny endpoint dla Expert Advisor, uwierzytelniany kodem parowania (nie sesją). Body:
 
@@ -338,7 +395,7 @@ Publiczny endpoint dla Expert Advisor, uwierzytelniany kodem parowania (nie sesj
 
 Maks. 200 transakcji w żądaniu. Deduplikacja po `ticket`. Kod można wymienić, generując nowy; nowy kod zastępuje poprzednie połączenie MetaTrader.
 
-### 3.18. `GET /api/health` — integracje
+### 3.19. `GET /api/health` — integracje
 
 Pole `integrations` zawiera:
 
@@ -361,6 +418,8 @@ Pole `integrations` zawiera:
 
 - brak haseł użytkowników; tylko Discord OAuth2,
 - sesje: token losowy, w DB tylko SHA-256, cookie HttpOnly/SameSite/Secure,
+- tokeny urządzeń: AES-256-GCM z kluczem poza repo; token urządzenia Apple w DB tylko jako SHA-256,
+- odłączenie urządzenia usuwa tokeny i wszystkie metryki zdrowotne z bazy,
 - CSRF: `Origin` dla mutujących żądań + SameSite=Lax,
 - rate limiting w MySQL,
 - CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`,
@@ -386,20 +445,10 @@ Pole `integrations` zawiera:
 | `DISCORD_TRIAL_DAYS` | 0 = bez daty końca |
 | `ALLOW_DEMO_LOGIN` | `false` na produkcji |
 | `MAX_STATE_BYTES` | limit stanu (12 MiB) |
-| `INTEGRATIONS_KEY` | 32+ znaków; klucz AES-256-GCM do szyfrowania poświadczeń giełd |
-| `METAAPI_TOKEN` | token MetaApi (tylko serwer); brak = MetaTrader niedostępny |
-| `OKX_BASE`, `BINGX_BASE`, `WEEX_SPOT_BASE`, `WEEX_FUTURES_BASE` | opcjonalne nadpisania adresów API (testy/mock) |
-| `METAAPI_BASE`, `METAAPI_CLIENT_BASE` | opcjonalne nadpisania MetaApi (testy/mock) |
-
-## 12. MCP — tokeny i propozycje
-
-Endpointy panelu wymagają sesji i poprawnego `Origin`. Nie wymagają CSRF tokenu (ochrona przez `Origin`), zgodnie z resztą API.
-
-| Metoda | Ścieżka | Rola |
-| --- | --- | --- |
-| `GET` | `/api/mcp` | tokeny, oczekujące propozycje, audyt, flagi |
-| `POST` | `/api/mcp/tokens` | wydanie tokenu; body: `{name, scopes:[\"panel:read\",\"panel:propose\"]}`; token widoczny raz |
-| `POST` | `/api/mcp/tokens/revoke` | unieważnienie; body: `{id}` |
-| `POST` | `/api/mcp/proposals/decide` | `{id, action: \"approve\"|\"reject\"}` |
-
-Zatwierdzenie sprawdza właściciela propozycji, TTL, status `pending` i `base_revision`; niezgodność rewizji zwraca `409 revision_conflict`. Szczegóły polityki i narzędzi: [MCP.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/MCP.md).
+| `WEARABLES_ENCRYPTION_KEY` | opcjonalny klucz AES dla tokenów urządzeń; domyślnie pochodna `SESSION_SECRET` |
+| `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja Oura |
+| `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja Whoop |
+| `GARMIN_CLIENT_ID`, `GARMIN_CLIENT_SECRET` | aplikacja Garmin Health API |
+| `GARMIN_AUTHORIZE_URL`, `GARMIN_TOKEN_URL`, `GARMIN_API_BASE` | endpointy przydzielone przez Garmin po zatwierdzeniu partnera |
+| `OURA_AUTHORIZE_URL`, `OURA_TOKEN_URL`, `OURA_API_BASE` | opcjonalne nadpisania endpointów Oura |
+| `WHOOP_AUTHORIZE_URL`, `WHOOP_TOKEN_URL`, `WHOOP_API_BASE` | opcjonalne nadpisania endpointów Whoop |

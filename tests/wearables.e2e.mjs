@@ -9,10 +9,11 @@
  * Uruchom: npm run test:wearables
  */
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright-core';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP_PORT = Number(process.env.WEARABLES_TEST_PORT || 4175);
@@ -81,6 +82,15 @@ function startServer(args, label) {
   return child;
 }
 
+function stopServer(child) {
+  if (!child) return;
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  } else {
+    try { child.kill('SIGTERM'); } catch {}
+  }
+}
+
 async function req(pathOrUrl, opts = {}) {
   const url = pathOrUrl.startsWith('http') ? pathOrUrl : BASE + pathOrUrl;
   const res = await fetch(url, {
@@ -137,6 +147,105 @@ async function connect(provider) {
   return list.json;
 }
 
+function resolveChrome() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files/Microsoft/Edge/Application/msedge.exe'
+  ].filter(Boolean);
+  return candidates.find((p) => fs.existsSync(p)) || null;
+}
+
+async function runUiChecks() {
+  const executablePath = resolveChrome();
+  if (!executablePath) {
+    log('UI: pominięte — brak Chrome/Edge', true);
+    return;
+  }
+  const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
+  const context = await browser.newContext({ baseURL: BASE, viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (err) => errors.push(err.message));
+  try {
+    await page.goto('/', { waitUntil: 'load' });
+    await page.waitForFunction(() => window.AV && AV.ready);
+    await page.click('#enter');
+    await page.waitForSelector('#demoEnter');
+    await page.click('#demoEnter');
+    await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated, null, { timeout: 15000 });
+    await page.goto('/#cialo');
+    await page.waitForFunction(() => !!document.querySelector('#bodyReady'));
+    assert.equal((await page.locator('#bodyReady').innerText()).trim(), '');
+    log('UI: brak urządzenia = puste pola', true);
+
+    await page.locator('#checkMood .chip', { hasText: 'Spokój' }).click();
+    await page.locator('#checkEnergy .chip', { hasText: '5' }).click();
+    await page.click('#saveCheck');
+    await page.waitForFunction(() => document.querySelector('#bodyReady')?.textContent.trim() === '80', null, { timeout: 5000 });
+    log('UI: check-in bez urządzenia', true, '80/100');
+
+    const uiConnect = async (provider, expected) => {
+      await page.locator(`[data-provider="${provider}"] [data-dev]`).click();
+      await page.waitForFunction((p) => window.AV?.api?.wearables?.devices?.[p]?.connected, provider, { timeout: 15000 });
+      await page.waitForFunction((v) => document.querySelector('#bodyReady')?.textContent.trim() === String(v), expected, { timeout: 5000 });
+      assert.equal((await page.locator('#metricSleep').innerText()).trim(), '5 h 12 min');
+      assert.equal((await page.locator('#metricHrv').innerText()).trim(), '38 ms');
+      assert.equal((await page.locator('#metricHr').innerText()).trim(), '61');
+      assert.equal(await page.locator('#sleepCard').isVisible(), true);
+      log('UI: połączenie i metryki · ' + provider, true, 'gotowość=' + expected);
+    };
+
+    const uiDisconnect = async (provider) => {
+      await page.locator(`[data-provider="${provider}"] [data-dev]`).click();
+      await page.waitForSelector('#gModal.on');
+      await page.click('#gConfirmOk');
+      await page.waitForFunction((p) => !window.AV?.api?.wearables?.devices?.[p]?.connected, provider, { timeout: 10000 });
+      assert.equal((await page.locator('#metricSleep').innerText()).trim(), '');
+      log('UI: odłączenie i puste metryki · ' + provider, true);
+    };
+
+    await uiConnect('garmin', 70);
+    await uiDisconnect('garmin');
+    await uiConnect('oura', 72);
+    await uiDisconnect('oura');
+    await uiConnect('whoop', 72);
+    await uiDisconnect('whoop');
+
+    const pair = await req('/api/wearables/apple/pair', { method: 'POST', headers: { Origin: ORIGIN }, body: '{}' });
+    assert.equal(pair.res.status, 200, pair.text);
+    await page.locator('[data-provider="apple"] [data-dev]').click();
+    await page.waitForSelector('#gModal.on');
+    const code = (await page.locator('#gBody .mono').innerText()).trim();
+    assert.match(code, /^AV-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    const today = new Date().toISOString().slice(0, 10);
+    const ingest = await req('/api/wearables/apple/ingest', {
+      method: 'POST',
+      body: JSON.stringify({
+        code,
+        deviceName: 'iPhone UI',
+        days: [{ date: today, sleepMinutes: 312, hrvMs: 38, restingHr: 61, providerScore: 70 }]
+      })
+    });
+    assert.equal(ingest.res.status, 200, ingest.text);
+    await page.click('#applePairCheck');
+    await page.waitForFunction(() => window.AV?.api?.wearables?.devices?.apple?.connected, null, { timeout: 10000 });
+    await page.waitForTimeout(400);
+    const appleRing = (await page.locator('#bodyReady').innerText()).trim();
+    const appleState = await page.evaluate(() => ({ today: AV.api.wearables?.today, readiness: AV.readiness(AV.state) }));
+    assert.equal(appleRing, '70', JSON.stringify(appleState));
+    log('UI: Apple Watch przez kod parowania', true, 'gotowość=70');
+    await uiDisconnect('apple');
+
+    assert.deepEqual(errors, []);
+    log('UI: brak błędów JavaScript', true);
+  } finally {
+    await browser.close();
+  }
+}
+
 async function main() {
   console.log('Alpha Vault wearables E2E ·', BASE, '· fake', FAKE);
   const env = baseEnv();
@@ -165,7 +274,12 @@ async function main() {
   log('logowanie demo', true);
 
   await clearCheckins();
-  log('czyszczenie check-inów do testu gotowości', true);
+  for (const provider of ['garmin', 'apple', 'oura', 'whoop']) {
+    await req(`/api/wearables/${provider}`, { method: 'DELETE', headers: { Origin: ORIGIN } });
+  }
+  const clean = await req('/api/wearables');
+  assert.equal(clean.json.series.length, 0, 'stan urządzeń nie został wyczyszczony');
+  log('czyszczenie check-inów i urządzeń', true);
 
   const badCallback = await req('/auth/wearables/oura/callback?code=x&state=y');
   assert.equal(badCallback.res.status, 400);
@@ -212,6 +326,7 @@ async function main() {
       body: '{}'
     });
     assert.equal(sync.res.status, 200, sync.text);
+    assert.ok(sync.json, 'sync JSON: ' + sync.text);
     assert.equal(sync.json.days, 14);
     log('ręczna synchronizacja · ' + provider, true, sync.json.days + ' dni');
 
@@ -258,7 +373,7 @@ async function main() {
   const appleList = await req('/api/wearables');
   assert.equal(appleList.json.devices.apple.connected, true);
   assert.equal(appleList.json.today.sleepMinutes, 312);
-  assert.equal(appleList.json.readiness.score, 69);
+  assert.equal(appleList.json.readiness.score, 69, JSON.stringify({ today: appleList.json.today, baseline: appleList.json.baseline, readiness: appleList.json.readiness }));
   log('Apple: dane w panelu', true, 'score=' + appleList.json.today.readiness);
 
   const replay = await req('/api/wearables/apple/ingest', {
@@ -286,7 +401,7 @@ async function main() {
   assert.equal(updated.json.today.sleepMinutes, 400);
   log('Apple: kolejny ingest z tokenem', true, 'sleep=400 min');
 
-  // Gotowość łączy urządzenie (70) z check-inem (54): 0.7*70 + 0.3*54 = 65.
+  // Gotowość łączy urządzenie (81) z check-inem (54): 0.7*81 + 0.3*54 = 73.
   const state = await req('/api/state');
   const value = state.json.state;
   value.checkins = [{
@@ -303,8 +418,8 @@ async function main() {
   });
   assert.equal(put.res.status, 200, put.text);
   const combined = await req('/api/wearables');
-  assert.equal(combined.json.readiness.score, 65, JSON.stringify(combined.json.readiness));
-  log('gotowość urządzenie + check-in', true, '65/100');
+  assert.equal(combined.json.readiness.score, 73, JSON.stringify(combined.json.readiness));
+  log('gotowość urządzenie + check-in', true, '73/100');
 
   const del = await req('/api/wearables/apple', {
     method: 'DELETE',
@@ -315,6 +430,9 @@ async function main() {
   assert.equal(cleared.json.devices.apple.connected, false);
   assert.equal(cleared.json.series.length, 0);
   log('Apple: odłączenie usuwa dane', true);
+
+  await clearCheckins();
+  await runUiChecks();
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} PASS`);
@@ -328,6 +446,6 @@ try {
   if (err.stack) console.error(err.stack.split('\n').slice(0, 6).join('\n'));
   process.exitCode = 1;
 } finally {
-  if (appServer) appServer.kill();
-  if (fakeServer) fakeServer.kill();
+  stopServer(appServer);
+  stopServer(fakeServer);
 }

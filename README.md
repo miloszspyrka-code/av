@@ -9,7 +9,6 @@ Aplikacja działa na hostingu współdzielonym LH.pl:
 - baza: MySQL/MariaDB,
 - logowanie: Discord OAuth2 (`identify guilds.members.read`),
 - sesje: token w cookie HttpOnly + hash w MySQL,
-- prop challenge: szablony FTMO i innych firm, limity, alerty i statystyki per challenge ([docs/PROP.md](docs/PROP.md)),
 - wdrożenia: GitHub Actions → SSH → `alphavault.pl` (alternatywnie `scripts/local-deploy.sh`).
 
 Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerze produkcyjnym nie działa proces Node.
@@ -49,11 +48,12 @@ php app/db/migrate.php
 php -S 127.0.0.1:4173 -t public public/router.php
 
 npm ci
-npm test                 # API: 21 scenariuszy
-npm run test:prop        # silnik prop challenge: 27 scenariuszy
-npm run test:ui          # UI: 32 scenariusze
+npm test                 # API: 20 scenariuszy
+npm run test:ui          # UI: 37 scenariuszy
+npm run test:pwa         # PWA mobile: 20 scenariuszy
 npm run test:ui:empty    # puste pola: 10 scenariuszy (osobny serwer)
 npm run test:events      # Discord DB/sync + DST: 24 scenariusze
+npm run test:wearables   # urządzenia zdrowotne API + UI: 33 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
 ```
 
@@ -64,7 +64,7 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 - Domena: `https://alphavault.pl`
 - Document root: `~/public_html/alphavault.pl`
 - Kod aplikacji i `config.json`: `~/public_html/alphavault.pl/.app` (ukryty katalog, deny)
-- Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml` (gdy `DEPLOY_ENABLED=true`).
+- Deployment: deploy na `main` uruchamia `.github/workflows/deploy-alphavault.yml` dopiero po zielonym CI (`workflow_run`) i przy `DEPLOY_ENABLED=true`.
 - CI gate: PR do `main` wymaga zielonego `PHP + API + UI`; branch protection blokuje bezpośredni push, force push i usuwanie gałęzi.
 - Environment `alphavault-production` dopuszcza deploy tylko z `main`; merge commit jest wyłączony (squash/rebase).
 - Repo jest publiczne; włączone secret scanning, push protection i Dependabot security updates.
@@ -111,14 +111,13 @@ Ręcznie: `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app
 - `monitor-production.yml`: co 15 min health + `sync.status`/`stale`.
 - `deploy-alphavault.yml`: lint, SSH, backup, rsync, migracja, health check.
 - `main` jest chroniony: wymagany PR i check `PHP + API + UI`, linear history, `enforce_admins`, bez force push/delete.
-- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje. Environment `alphavault-production` dopuszcza tylko `main`.
+- `DEPLOY_ENABLED=true`; deploy startuje po zielonym CI na `main` (`workflow_run`). Environment `alphavault-production` dopuszcza tylko `main`.
 - Deployment nigdy nie dotyka katalogów WordPressa ani innych domen.
 
 ## Legacy
 
 `legacy/` zawiera poprzedni backend Express 4 i skrypty lokalnego MySQL. Nie jest częścią produkcyjnego deployu; pozostaje jako referencja migracji.
-
-## Integracje
+﻿## Integracje
 
 ```powershell
 npm run test:integrations

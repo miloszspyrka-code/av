@@ -196,6 +196,13 @@ Pełny kontrakt: [docs/API.md](docs/API.md). Specyfikacja: [docs/openapi.yaml](d
 | GET | `/api/events` | tak | wydarzenia, live, konsultacje, sync |
 | GET | `/api/admin/events` | admin | wszystkie wydarzenia + sync |
 | PUT | `/api/admin/events/{id}/category` | admin | ręczne przypisanie |
+| GET | `/api/wearables` | tak | urządzenia, metryki, baseline, gotowość |
+| POST | `/api/wearables/{provider}/sync` | tak | ręczna synchronizacja |
+| DELETE | `/api/wearables/{provider}` | tak | odłączenie + usunięcie danych |
+| POST | `/api/wearables/apple/pair` | tak | kod parowania iPhone |
+| POST | `/api/wearables/apple/ingest` | kod/token | ingest danych Apple Health |
+| GET | `/auth/wearables/{provider}/start` | tak | start OAuth2 |
+| GET | `/auth/wearables/{provider}/callback` | tak | callback OAuth2 |
 
 **Zasady:**
 
@@ -204,6 +211,11 @@ Pełny kontrakt: [docs/API.md](docs/API.md). Specyfikacja: [docs/openapi.yaml](d
 - Błędy mają `{ error, message }`.
 - `/api/events` nie zwraca `raw_payload`.
 - `isAdmin` wynika wyłącznie z `ADMIN_DISCORD_IDS`.
+- `/api/wearables` nigdy nie zwraca tokenów dostawców ani `raw_payload`.
+
+### 6.1. Urządzenia zdrowotne
+
+Garmin/Oura/Whoop używają OAuth2 z jednorazowym `state`; tokeny są szyfrowane AES-256-GCM. Apple Watch używa kodu parowania i tokenu urządzenia. Połączenie zapisuje metryki w `wearable_daily_metrics`, a `GET /api/wearables` liczy gotowość z dostępnych składników (sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%) i łączy ją z check-inem w proporcji 70/30. Odłączenie usuwa tokeny i metryki w transakcji.
 
 ## 7. Discord Scheduled Events — pełny przepływ
 
@@ -437,6 +449,10 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 | `discord_scheduled_events` | wydarzenia Discord | `discord_event_id` (UNIQUE) |
 | `discord_sync_state` | stan i blokada sync | `id=1` |
 | `discord_sync_runs` | historia sync (30 dni) | `id` |
+| `wearable_connections` | połączenie z urządzeniem, zaszyfrowane tokeny | `(user_id, provider)` |
+| `wearable_daily_metrics` | dzienne metryki zdrowotne | `(user_id, provider, metric_date)` |
+| `wearable_oauth_states` | jednorazowe stany OAuth2 urządzeń | `state` |
+| `wearable_pair_codes` | jednorazowe kody Apple | `code_hash` |
 | `schema_migrations` | wersje migracji | `version` |
 
 ### 10.2. Indeksy wydarzeń
@@ -467,12 +483,11 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 ```text
 index.html
   → core.js       (AV, $, $$, esc, fmt)
+  → pwa.js        (instalacja PWA, powiadomienia, deep link)
   → data.js       (dane demo/statyczne)
-  → prop.js       (silnik prop challenge: szablony, limity, metryki)
   → state.js      (stan, API, rewizje, wydarzenia)
   → render1.js    (widoki, pulpit, dziennik)
   → render2.js    (statystyki, mentor, akademia, admin)
-  → propui.js     (widok prop, edytor, szablony, alerty)
   → actions.js    (zdarzenia, timery, modale)
 ```
 
@@ -485,13 +500,14 @@ Skrypty mają `defer`; kolejność jest istotna.
 3. Sesja → `GET /api/state`; brak stanu → `buildEmpty()` lub `buildDemo()` dla demo.
 4. `AV.applyServerUser()`.
 5. `AV.loadEvents()` → `GET /api/events`.
-6. `AV.renderAll()` → `renderAcademy()`.
+6. `AV.loadWearables()` → `GET /api/wearables` (błąd nie blokuje panelu).
+7. `AV.renderAll()` → `renderAcademy()`, `renderBody()`.
 
 ### 11.3. Render Akademii
 
 - `AV.nextLiveEvent()` — aktywne lub najbliższe przyszłe wydarzenie `live`.
 - `AV.nextConsultationEvent()` — z `nextConsultation`.
-- `AV.liveInfo()` — countdown, `liveNow`.
+- `AV.liveInfo()` - `liveNow` i pozostały czas (bez countdownu w UI).
 - `renderAcademy()` ustawia:
   - `#liveTitle`, `#liveWho`, `#liveWhen`, `#liveCd`,
   - `#nextConsult`, `#nextConsultWho`, `#consultMonth`,
@@ -505,7 +521,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 
 | Timer | Akcja |
 | --- | --- |
-| 1 s | countdown live |
+| 1 s | countdown blokady ochronnej |
 | 12 s | ticker |
 | 60 s | kalendarz makro, powiadomienia |
 | 300 s | `loadEvents()` |
@@ -517,7 +533,7 @@ Skrypty mają `defer`; kolejność jest istotna.
 - `liveReminder` w stanie użytkownika,
 - okno 15 minut przed startem (840–900 s),
 - jednorazowy `liveNotified`,
-- toast + `Notification` przeglądarki, jeśli dozwolone.
+- toast + `AV.pwa.notify` (service worker, jeśli zarejestrowany; w przeciwnym razie `Notification`).
 
 ### 11.6. Offline
 
@@ -525,14 +541,16 @@ Skrypty mają `defer`; kolejność jest istotna.
 - Po utracie sieci UI działa, ale zapisy są odkładane.
 - Po powrocie stan serwera ma pierwszeństwo; konflikt rewizji rozwiązuje 409.
 
-### 11.7. Mentor AI — eksport kontekstu
+### 11.7. PWA i powiadomienia
 
-- `AV.mentorExport(state)` buduje czysty tekst: kim jestem, zasady, transakcje z 90 dni, plan dnia, emocje i check-iny, gotowość, sen/HRV (jeśli urządzenie jest podłączone) oraz najbliższe makro.
-- Sekcje bez danych są pomijane; eksport nie zawiera tekstów zastępczych.
-- `renderMentor()` wpisuje tekst do `#mentorExport`, uzupełnia `#mentorSees` i `#ctxWhen`; zakładka „Uwagi” renderuje `mentorNotes()`.
-- `#copyCtx` kopiuje kontekst (`navigator.clipboard`, fallback `execCommand`), `#reCtx` odświeża eksport.
-- Instrukcje w widoku opisują wklejenie kontekstu w Grok, ChatGPT i Claude.
-- Panel nie wysyła danych do modeli i nie przechowuje kluczy API — dane trafiają do dostawcy dopiero po wklejeniu przez użytkownika.
+- `manifest.webmanifest` + ikony + meta iOS czynią panel instalowalnym bez App Store.
+- `pwa.js` rejestruje `/sw.js`, obsługuje `beforeinstallprompt`, `appinstalled` i przyciski `[data-install]`, `[data-pwa-notify]`.
+- `sw.js` cache'uje powłokę (HTML/JS/ikony), ale **nie** cache'uje `/api/` ani `/auth/`; nawigacja jest network-first z fallbackiem offline.
+- `AV.pwa.notify()` używa `registration.showNotification()` (iOS/Android) albo `Notification` w przeglądarce; `notifyTradeClosed()` wysyła deep link `/?qa=<tradeId>`.
+- `notificationclick` fokusuje istniejące okno albo otwiera nowe z deep linkiem; `AV.quickAddFromUrl()` otwiera modal i czyści parametr z URL.
+- `AV.openQuickAdd()` wybiera transakcję: wskazany `id` → najnowsza bez emocji/oceny → najnowsza zamknięta → najnowsza. Modal pokazuje prawdziwe dane, nie statyczny BTC.
+- Zapis quick add: emocja + ocena wymagane, zdjęcie opcjonalne (`capture="environment"`). Czas od otwarcia do zapisu jest mierzony w `AV.ui.qaLastSeconds`.
+- Push serwerowy: SW ma handler `push` i `notificationclick`; nie ma jeszcze serwerowego źródła zdarzeń i VAPID. Do wdrożenia z auto-importem.
 
 ## 12. Puste pola i stany brzegowe
 
@@ -619,7 +637,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 
 - `main` wymaga PR i zielonego checku `PHP + API + UI`; bez bezpośredniego push, force push i usuwania gałęzi.
 - `enforce_admins=true`; merge commit wyłączony — dozwolone squash/rebase.
-- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje przez `deploy-alphavault.yml`.
+- `DEPLOY_ENABLED=true`; deploy na `main` startuje dopiero po zielonym CI (`workflow_run`), na commicie zweryfikowanym przez `PHP + API + UI`.
 - Environment `alphavault-production` dopuszcza deploy tylko z `main`.
 - Repo jest publiczne; secret scanning, push protection i Dependabot security updates są włączone.
 
@@ -635,6 +653,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Rate limit | MySQL, per bucket/IP |
 | Nagłówki | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` |
 | Payloady | `raw_payload` niewysyłany do klienta |
+| Urządzenia | tokeny dostawców AES-256-GCM; token Apple tylko SHA-256; odłączenie usuwa metryki |
 | Admin | lista Discord ID, nie rola w UI |
 | Logi | bez tokenów, haseł i pełnych danych osobowych |
 | WordPress | deploy nie dotyka innych katalogów ani baz |
@@ -644,10 +663,11 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Suita | Plik | Zakres | Wynik lokalny |
 | --- | --- | --- | --- |
 | Discord DB/sync | `tests/discord-events.test.php` | DST, UPSERT, soft delete, klasyfikacja, Stage/EXTERNAL | 24/24 PASS |
-| Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
-| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport, prop | 21/21 PASS |
-| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, pusty stan, zapisy | 32/32 PASS |
+| API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, admin, eksport | 20/20 PASS |
+| UI | `tests/ui.e2e.mjs` | 14 widoków, live, konsultacje, pusty stan, zapisy, 8 odznak | 37/37 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 10/10 PASS |
+| PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
+| Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 Garmin/Oura/Whoop, Apple, gotowość, UI, bezpieczeństwo | 33/33 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
 | Prod health/docs | `curl` | `/api/health`, `/docs/`, `.app` deny | PASS |
@@ -662,7 +682,9 @@ Komendy:
 npm test
 npm run test:ui
 npm run test:ui:empty
+npm run test:pwa
 npm run test:events
+npm run test:wearables
 npm run test:docs
 ```
 
@@ -679,7 +701,6 @@ CI: `.github/workflows/ci.yml` — MySQL 8.4, migracja, wszystkie suite, empty-s
 - Kontrakt API: [docs/API.md](docs/API.md) + [docs/openapi.yaml](docs/openapi.yaml).
 - Schemat: [docs/BAZA-DANYCH.md](docs/BAZA-DANYCH.md).
 - Deploy: [docs/DEPLOY.md](docs/DEPLOY.md).
-- MCP: [docs/MCP.md](docs/MCP.md) — mapa narzędzi, walidacje, OAuth, plan wdrożenia.
 - Zasady agenta: [AGENTS.md](AGENTS.md).
 
 Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
@@ -741,9 +762,9 @@ npm run test:docs   # sprawdza linki, sekcje i brak dryfu
 | `raw_payload` | pełny JSON z Discorda, tylko do diagnostyki |
 | DST | zmiana czasu letni/zimowy |
 
-## 18. Integracje giełd, MetaTrader i API
+## 20. Integracje giełd, MetaTrader i API
 
-### 18.1. Warstwy
+### 20.1. Warstwy
 
 ```text
 public/js/state.js          loadConnections, connectExchange, syncConnections, reloadStateFromServer
@@ -753,7 +774,7 @@ app/routes/api.php          /api/connections*, /api/mt/ea
 bin/sync-exchange-trades.php  ręczny/CRON worker
 ```
 
-### 18.2. Połączenie klucza
+### 20.2. Połączenie klucza
 
 1. Przeglądarka wysyła `POST /api/connections` z polami klucza.
 2. Serwer waliduje klucz u dostawcy i sprawdza uprawnienia.
@@ -761,7 +782,7 @@ bin/sync-exchange-trades.php  ręczny/CRON worker
 4. Poświadczenia są szyfrowane AES-256-GCM kluczem `INTEGRATIONS_KEY` i zapisywane w `exchange_connections`.
 5. Do UI wraca wyłącznie maska, status i liczniki.
 
-### 18.3. Synchronizacja
+### 20.3. Synchronizacja
 
 - Pierwsze 30 dni pobierane jest od razu, starsze paczki (do 90 dni) w kolejnych przebiegach.
 - Kolejne przebiegi pobierają okno od ostatniej synchronizacji minus 1 dzień.
@@ -769,7 +790,7 @@ bin/sync-exchange-trades.php  ręczny/CRON worker
 - Transakcja trafia do `user_states.state.trades` i jest widoczna w dzienniku.
 - Błąd dostawcy nie usuwa ostatniego dobrego zestawu; połączenie dostaje status `error` i komunikat.
 
-### 18.4. Harmonogram
+### 20.4. Harmonogram
 
 `bin/sync-exchange-trades.php` jest wywoływany z istniejącego zadania LH Cron (co 5 min) i sam pilnuje, żeby realna synchronizacja nie częściej niż co 25 min. Ręcznie:
 
@@ -778,13 +799,13 @@ bin/sync-exchange-trades.php  ręczny/CRON worker
 tail -20 ~/public_html/alphavault.pl/.app/logs/discord-sync.log
 ```
 
-### 18.5. MetaTrader
+### 20.5. MetaTrader
 
 - Hasło inwestora: MetaApi cloud; akceptacja tylko przy `investorMode:true`.
 - EA: kod parowania `AV-XXXX-XXXX` (w bazie tylko SHA-256), endpoint `POST /api/mt/ea`, plik `integrations/mt5/AlphaVault.mq5`.
 - EA wysyła wyłącznie zamknięte transakcje; nie handluje.
 
-### 18.6. Bezpieczeństwo
+### 20.6. Bezpieczeństwo
 
 - `INTEGRATIONS_KEY` i `METAAPI_TOKEN` tylko po stronie serwera.
 - Brak publicznego endpointu uruchamiającego synchronizację; `/api/mt/ea` wymaga kodu parowania.
