@@ -10,7 +10,7 @@ Aplikacja działa na hostingu współdzielonym LH.pl:
 - logowanie: Discord OAuth2 (`identify guilds.members.read`),
 - sesje: token w cookie HttpOnly + hash w MySQL,
 - prop challenge: szablony FTMO i innych firm, limity, alerty i statystyki per challenge ([docs/PROP.md](docs/PROP.md)),
-- wdrożenia: GitHub Actions → SSH → `alphavault.pl` (alternatywnie `scripts/local-deploy.sh`).
+- wdrożenia: GitHub Actions → SSH → `alphavault.pl` (bez lokalnego deployu).
 
 Node.js 24 jest używany tylko lokalnie i w CI do testów Playwright. Na serwerze produkcyjnym nie działa proces Node.
 
@@ -32,11 +32,13 @@ db/                # schema.sql, demo-state.json, migrations
 tests/             # API, UI, empty-state, Discord, dokumentacja
 docs/              # dokumentacja techniczna
 legacy/            # poprzedni backend Express (referencja, nie jest wdrażany)
-scripts/           # deploy produkcyjny, local-deploy, sync-docs
+scripts/           # deploy produkcyjny i generator dokumentacji
 .github/workflows/ # CI i deployment
 ```
 
-## Lokalnie
+## Development lokalny
+
+**Weryfikacja i wdrożenie idą wyłącznie przez GitHub Actions.** AV-engineer nie uruchamia lokalnie testów, serwera PHP, MySQL ani Playwright. Poniższe polecenia są dla człowieka-developera i nie są dowodem w raporcie.
 
 Wymagania: PHP 8.3 z `pdo_mysql`, `curl`, `mbstring`; MySQL 8.x/MariaDB; Node.js 24 do testów.
 
@@ -61,10 +63,11 @@ npm run test:quotes      # notowania rynkowe: 14 scenariuszy
 npm run test:roles       # rola: login + cron recheck: 18 scenariuszy
 npm run test:wearables   # urządzenia zdrowotne API + UI: 42 scenariusze
 npm run test:docs        # linki i spójność dokumentacji
-npm run test:encoding    # UTF-8, brak mojibake w kodzie i testach
 ```
 
 Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL`, `DB_*`, `DISCORD_*`, `SESSION_SECRET`, `ALLOW_DEMO_LOGIN`. Plik `config.json` jest ignorowany przez Git.
+
+Kanoniczna bramka: PR → `ci.yml` (`PHP + API + UI`) → merge → `deploy-alphavault.yml` → `Verify production E2E`. Szczegóły: [AGENTS.md](AGENTS.md) §6 i [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Produkcja
 

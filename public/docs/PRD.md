@@ -15,13 +15,13 @@
 **Dokumenty powiązane**
 
 - [DOCUMENTATION.md](DOCUMENTATION.md) — jak aplikacja działa, punkt po punkcie, wraz z pełną listą punktów styku.
-- [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md) — kontrakt pracy agenta AV-engineer, komendy, zakazy i Definition of Done.
+- [AGENTS.md](https://github.com/miloszspyrka-code/av/blob/main/AGENTS.md) — kontrakt pracy agenta AV-engineer, komendy, zakazy i Definition of Done.
 - [docs/FUNKCJE.md](FUNKCJE.md) — stan każdej funkcji (E2E / lokalnie / demo).
 - [docs/API.md](API.md) — kontrakt HTTP i przykłady odpowiedzi.
 - [docs/ARCHITEKTURA.md](ARCHITEKTURA.md) — warstwy i przepływy techniczne.
 - [docs/BAZA-DANYCH.md](BAZA-DANYCH.md) — schemat MySQL i backup.
-- [docs/DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md) — konfiguracja OAuth2, bota i roli.
-- [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md) — wdrożenie na LH.pl.
+- [docs/DISCORD.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DISCORD.md) — konfiguracja OAuth2, bota i roli.
+- [docs/DEPLOY.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DEPLOY.md) — wdrożenie na LH.pl.
 - [docs/TESTOWANIE.md](TESTOWANIE.md) — testy i checklisty.
 
 ---
@@ -281,8 +281,8 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 
 | Ryzyko | Wpływ | Mitygacja |
 | --- | --- | --- |
-| Ryzyko blokady billingu GitHub Actions | brak deployu i CI | repo publiczne — standard runners free; monitoruj Billing; alternatywnie `local-deploy.sh` |
-| Brak danych Discord w środowisku lokalnym | nie da się testować OAuth lokalnie | sekrety w GitHub / `local.env` poza repo |
+| Ryzyko blokady billingu GitHub Actions | brak deployu i CI | repo publiczne — standard runners free; monitoruj Billing; blokada = BLOCKER, bez lokalnego deployu |
+| Brak danych Discord w środowisku lokalnym | nie da się testować OAuth lokalnie | sekrety w GitHub; weryfikacja OAuth tylko za zgodą użytkownika |
 | LH Cron zatrzymany | brak automatycznej synchronizacji | monitoring logów i `stale=true` |
 | Stage nie wystąpił w realnym API | brak potwierdzenia Stage | fixture + oznaczenie „niezweryfikowany” |
 | Zmiana odpowiedzi Discord | utrata pól | walidacja i `raw_payload` |
@@ -326,10 +326,10 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 | FR-01, FR-02 | [DOCUMENTATION.md §4](DOCUMENTATION.md#4-uwierzytelnianie-sesje-i-csrf), [docs/API.md](API.md) |
 | FR-03 | [DOCUMENTATION.md §5](DOCUMENTATION.md#5-stan-aplikacji), [docs/BAZA-DANYCH.md](BAZA-DANYCH.md) |
 | FR-04 | [docs/FUNKCJE.md](FUNKCJE.md) |
-| FR-05, FR-06, FR-07, FR-08 | [DOCUMENTATION.md §7](DOCUMENTATION.md#7-discord-scheduled-events--pełny-przepływ), [docs/DISCORD.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DISCORD.md) |
+| FR-05, FR-06, FR-07, FR-08 | [DOCUMENTATION.md §7](DOCUMENTATION.md#7-discord-scheduled-events--pełny-przepływ), [docs/DISCORD.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DISCORD.md) |
 | FR-09, FR-10 | [DOCUMENTATION.md §8](DOCUMENTATION.md#8-czas-dst-i-recurrence) |
-| FR-11, FR-12, FR-13 | [DOCUMENTATION.md §9](DOCUMENTATION.md#9-cron-i-niezawodność), [docs/DEPLOY.md](https://github.com/miloszspyrka-code/alphavault/blob/main/docs/DEPLOY.md) |
+| FR-11, FR-12, FR-13 | [DOCUMENTATION.md §9](DOCUMENTATION.md#9-cron-i-niezawodność), [docs/DEPLOY.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DEPLOY.md) |
 | FR-14 | [DOCUMENTATION.md §15](DOCUMENTATION.md#15-bezpieczeństwo) |
 | FR-15 | [docs/API.md](API.md) |
-| FR-16 | [DOCUMENTATION.md §17](DOCUMENTATION.md#17-zarządzanie-dokumentacją), [AGENTS.md](https://github.com/miloszspyrka-code/alphavault/blob/main/AGENTS.md) |
+| FR-16 | [DOCUMENTATION.md §17](DOCUMENTATION.md#17-zarządzanie-dokumentacją), [AGENTS.md](https://github.com/miloszspyrka-code/av/blob/main/AGENTS.md) |
 | FR-19 | [docs/PROP.md](PROP.md), [docs/FUNKCJE.md](FUNKCJE.md) |

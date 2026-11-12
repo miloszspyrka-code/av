@@ -73,10 +73,9 @@ Puste pola i stany brzegowe: [DOCUMENTATION.md §12](../DOCUMENTATION.md#12-pust
 
 ## Deployment
 
-`main` → GitHub Actions → SSH/rsync → `~/public_html/alphavault.pl` + `~/public_html/alphavault.pl/.app` → migracja PHP → health check. `config.json` jest generowany z sekretów na serwerze. Alternatywa: `scripts/local-deploy.sh` (WSL2) bez GitHub Actions.
+`main` → GitHub Actions → SSH/rsync → `~/public_html/alphavault.pl` + `~/public_html/alphavault.pl/.app` → migracja PHP → health check. `config.json` jest generowany z sekretów na serwerze. Deploy uruchamia wyłącznie GitHub Actions; nie ma lokalnej alternatywy.
 
 - deploy: [DEPLOY.md](DEPLOY.md)
-- deploy lokalny: [LOCAL-DEPLOY.md](LOCAL-DEPLOY.md)
 - testy: [TESTOWANIE.md](TESTOWANIE.md)
 
 ## Integracje giełd i brokerów

@@ -2,41 +2,33 @@
 
 # Testy
 
-## Lokalnie
+## Gdzie uruchamiamy testy
 
-Wymagania: PHP 8.3 (`pdo_mysql`, `curl`, `mbstring`), MySQL/MariaDB, Node.js 24.
+**Testy uruchamia wyłącznie GitHub Actions.** AV-engineer nie uruchamia testów, serwera PHP, MySQL ani Playwright lokalnie. Lokalny wynik nie jest dowodem i nie może zamykać zadania.
 
-```powershell
-Copy-Item tests/config.test.example.json tests/config.test.json
-$env:ALPHA_VAULT_CONFIG = "tests/config.test.json"
-php app/db/migrate.php
-php -S 127.0.0.1:4173 -t public public/router.php
-```
+- PR → `.github/workflows/ci.yml` → wymagany check `PHP + API + UI`.
+- `main` → ten sam workflow → dopiero po `success` startuje deploy.
+- Produkcja → `deploy-alphavault.yml` (krok `Verify production E2E`) i `monitor-production.yml`.
 
-W drugim terminalu:
+CI używa MySQL 8.4, PHP 8.3, Node 24 i systemowego Chrome. Konfiguracja testowa jest generowana w workflow; nie ma potrzeby utrzymywać lokalnego `tests/config.test.json` do weryfikacji zmiany.
 
-```powershell
-npm ci
-$env:APP_URL = "http://127.0.0.1:4173"
-npm test
-npm run test:macro
-npm run test:ui
-npm run test:tax
-npm run test:pwa
-```
+## Zakres CI
 
-Test pustych pól wymaga drugiego serwera z gildią bez wydarzeń:
-
-```powershell
-$env:ALPHA_VAULT_CONFIG = "tests/config.test.json"
-$env:DISCORD_GUILD_ID = "empty-guild"
-php -S 127.0.0.1:4174 -t public public/router.php
-```
-
-```powershell
-$env:APP_URL = "http://127.0.0.1:4174"
-npm run test:ui:empty
-```
+| Krok CI | Co sprawdza |
+| --- | --- |
+| Documentation | `sync-docs --check` i `tests/docs.test.mjs` |
+| PHP syntax check | `php -l` wszystkich plików w `app/` i `public/` |
+| Apply database schema | migracja `app/db/migrate.php` na MySQL 8.4 |
+| Role recheck tests | decyzje login i cron recheck na mocku Discord |
+| Discord events tests | DB/sync, DST, UPSERT, soft delete |
+| Macro events tests | normalizacja FF/TradingView, UTC, soft delete |
+| Quotes tests | cache, TTL, fallback, E2E notowań |
+| Wearables E2E | OAuth2/PKCE, rotacja tokenów, UI, bezpieczeństwo |
+| API E2E | health, sesja, CSRF, stan, events, macro, admin, eksport |
+| UI E2E | 15 widoków, live, prop, makro, zapisy, odznaki |
+| Tax E2E | PIT-38, CSV/PDF, wpłaty/wypłaty |
+| PWA E2E | manifest, SW, instalacja, push, offline |
+| UI empty-state E2E | puste pola po sukcesie z `[]` |
 
 ## Podatki PIT-38 — 8 scenariuszy
 
@@ -53,7 +45,7 @@ npm run test:ui:empty
 
 Test przywraca poprzedni stan demo po zakończeniu.
 
-## Urządzenia zdrowotne — 42 scenariusze + 6 testów konfiguracji
+## Urządzenia zdrowotne — 42 scenariusze + 4 testy konfiguracji
 
 `npm run test:wearables` uruchamia własny serwer aplikacji oraz lokalny, deterministyczny dostawcę OAuth (`tests/fake-health-provider.php`). Nie używa prawdziwych kont ani danych zdrowotnych.
 
@@ -234,17 +226,9 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 - synchronizację `public/docs` z źródłami,
 - obecność wszystkich generowanych plików.
 
-## Kodowanie — 7 scenariuszy
+## Skan kodowania (diagnostyka)
 
-`tests/encoding.test.mjs` + `scripts/check-encoding.mjs`:
-
-- naprawa mojibake `UTF-8 → Windows-1250 → UTF-8` (np. „Wartość” i „dźwignia 50×” po uszkodzonym zapisie),
-- brak zmian w poprawnym tekście,
-- brak mojibake w `public/js/actions.js`, `tests/prop.unit.mjs` i `tests/discord-events.test.php`,
-- skan całego repo: niepoprawne UTF-8 i pozostałości mojibake,
-- wyjątki tylko dla celowych fixture'ów testowych.
-
-Naprawa istniejących plików: `node scripts/fix-mojibake.mjs --write <plik>`.
+`node scripts/scan-encoding.mjs` wypisuje pliki z niepoprawnym UTF-8 lub mojibake. To narzędzie diagnostyczne, nie test CI. Nie deklaruj naprawy kodowania bez potwierdzenia w runie CI i w podglądzie pliku.
 
 ## Live Discord
 
@@ -263,16 +247,21 @@ Naprawa istniejących plików: `node scripts/fix-mojibake.mjs --write <plik>`.
 
 - MySQL 8.4 service,
 - PHP 8.3 + Node 24,
-- dokumentacja (`docs:check` + `test:docs`),
-- kodowanie (`test:encoding`),
+- dokumentacja (`sync-docs --check` + `tests/docs.test.mjs`),
 - PHP lint,
 - migracja,
 - rola: decyzje login + cron na mocku Discord,
 - Discord DB/sync,
+- makro DB/sync,
+- notowania,
+- prop challenge,
+- urządzenia (API + UI + konfiguracja),
 - API e2e,
 - UI e2e (systemowy Chrome),
+- podatki PIT-38,
 - PWA e2e (emulacja iPhone 14, Chrome),
-- empty-state na osobnym porcie.
+- empty-state na osobnym porcie,
+- integracje giełd/MetaTrader/API oraz ich UI na mockach.
 
 ## Produkcja — 2026-11-12
 
@@ -285,14 +274,14 @@ Wykonane na `https://alphavault.pl`:
 | `GET /docs/` | 200, indeks PRD/DOCUMENTATION/API |
 | `GET /.app/config.json` | 403 |
 | `GET /api/events` bez sesji | 401 |
-| Realny sync | 3 wydarzenia VOICE, 3 unikalne ID |
-| Baza | 3 rekordy `live`, `sync.status=success` |
-| Błąd 401 (zły token) | `sync.status=error`, 3 wydarzenia zachowane, `last_success_at` bez zmian |
-| LH Cron | logi `18:05:05` i `18:10:02` — uruchomienie co 5 min |
-| Monitoring | `monitor-production.yml` — health + `sync.status`/`stale`, co 15 min |
+| Realny sync | `sync.status=success`; liczba w `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
+| Baza | rekordy `live` zgodne z Discordem, `sync.status=success` |
+| Błąd 401 (zły token) | `sync.status=error`, wydarzenia zachowane, `last_success_at` bez zmian |
+| LH Cron | health `sync.lastSuccessAt` 21:45:02 UTC — co 5 min |
+| Monitoring | `monitor-production.yml` — health, sync, UI, docs, `.app` 403, co 15 min |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
 | PWA manifest/SW/ikony | 200, `application/manifest+json`, ikony `/assets/pwa/*`, installability bez błędów |
-| PWA mobile E2E | 20/20 lokalnie i w CI; fizyczny telefon — do potwierdzenia |
+| PWA mobile E2E | 20/20 w CI; fizyczny telefon — do potwierdzenia |
 
 Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy użytkownik ani token.
 
@@ -308,11 +297,13 @@ Sesja testowa została usunięta po weryfikacji. Nie pozostał żaden testowy u�
 Testy Discord wykonuj ręcznie na koncie z rolą Alpha, bez roli i spoza serwera. Nie deklaruj wyniku bez rzeczywistego udziału użytkownika.
 ﻿## Integracje giełd, MetaTrader i API
 
-```powershell
+CI generuje `tests/config.integrations.json` z `config.test.json`, ustawia `INTEGRATIONS_KEY`, `METAAPI_TOKEN` i adresy `*_BASE` na lokalny mock, a następnie uruchamia:
+
+```text
 npm run test:integrations      # API + mocki OKX/BingX/WEEX/MetaApi/EA
 npm run test:ui:integrations   # Playwright: formularze i dziennik
 ```
 
-Wymagania: `tests/config.integrations.json` (kopiuj z `config.test.json` i dodaj `INTEGRATIONS_KEY`, `METAAPI_TOKEN` oraz adresy `*_BASE` na lokalny mock). Testy uruchamiają własny serwer mocków na `127.0.0.1:4191` i aplikację na `4175`.
+Oba kroki są częścią `.github/workflows/ci.yml`. Lokalne uruchomienie jest dozwolone tylko dla developera i nie jest dowodem w raporcie AV-engineer.
 
 Zakres: OKX read-only i odrzucenie handlu, BingX `apiPermissions`, WEEX akceptacja klucza z handlem + rekonstrukcja fills, MetaApi `investorMode` i odrzucenie hasła z handlem, EA kod parowania + ingest + deduplikacja, UI formularze i licznik transakcji.

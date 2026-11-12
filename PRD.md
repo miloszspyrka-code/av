@@ -279,8 +279,8 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 
 | Ryzyko | Wpływ | Mitygacja |
 | --- | --- | --- |
-| Ryzyko blokady billingu GitHub Actions | brak deployu i CI | repo publiczne — standard runners free; monitoruj Billing; alternatywnie `local-deploy.sh` |
-| Brak danych Discord w środowisku lokalnym | nie da się testować OAuth lokalnie | sekrety w GitHub / `local.env` poza repo |
+| Ryzyko blokady billingu GitHub Actions | brak deployu i CI | repo publiczne — standard runners free; monitoruj Billing; blokada = BLOCKER, bez lokalnego deployu |
+| Brak danych Discord w środowisku lokalnym | nie da się testować OAuth lokalnie | sekrety w GitHub; weryfikacja OAuth tylko za zgodą użytkownika |
 | LH Cron zatrzymany | brak automatycznej synchronizacji | monitoring logów i `stale=true` |
 | Stage nie wystąpił w realnym API | brak potwierdzenia Stage | fixture + oznaczenie „niezweryfikowany” |
 | Zmiana odpowiedzi Discord | utrata pól | walidacja i `raw_payload` |
