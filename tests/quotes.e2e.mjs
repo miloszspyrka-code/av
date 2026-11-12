@@ -44,16 +44,10 @@ function log(name, ok, info = '') {
 function appEnv(port, extra) {
   return {
     ...process.env,
-    ALPHA_VAULT_CONFIG: '',
+    ALPHA_VAULT_CONFIG: path.join(ROOT, 'tests', 'config.test.json'),
     APP_URL: `http://127.0.0.1:${port}`,
     APP_ENV: 'local',
     SESSION_SECRET: 'quotes-e2e-session-secret-0123456789',
-    DB_HOST: '127.0.0.1',
-    DB_PORT: '3307',
-    DB_NAME: 'alpha_vault',
-    DB_USER: 'alpha_vault',
-    DB_PASSWORD: 'unused',
-    QUOTES_TTL: '1',
     ...extra,
   };
 }
@@ -89,6 +83,21 @@ async function waitFor(url, timeoutMs = 20000) {
   return false;
 }
 
+async function waitForQuotes(base, timeoutMs = 20000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const res = await fetch(base + '/api/quotes');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.quotes) && data.quotes.length === SYMBOLS.length) return true;
+      }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  return false;
+}
+
 async function getJson(base, pathName) {
   const res = await fetch(base + pathName, { headers: { Accept: 'application/json' } });
   const text = await res.text();
@@ -105,14 +114,11 @@ async function main() {
   start(['-S', `127.0.0.1:${FAKE_PORT}`, 'tests/fake-quotes-provider.php'],
     { ...process.env, QUOTES_HITS_FILE: hitsFile }, 'fake');
   start(['-S', `127.0.0.1:${APP_PORT}`, '-t', 'public', 'public/router.php'],
-    appEnv(APP_PORT, { QUOTES_BASE: FAKE, QUOTES_CACHE: cacheOk }), 'app');
+    appEnv(APP_PORT, { QUOTES_BASE: FAKE, QUOTES_CACHE: cacheOk, QUOTES_TTL: '60' }), 'app');
   start(['-S', `127.0.0.1:${EMPTY_PORT}`, '-t', 'public', 'public/router.php'],
-    appEnv(EMPTY_PORT, { QUOTES_BASE: `http://127.0.0.1:${DOWN_PORT}`, QUOTES_CACHE: cacheEmpty }), 'empty');
-  // Serwer zapasowy: ten sam cache co app, ale dostawca jest niedostępny.
-  start(['-S', `127.0.0.1:${DOWN_PORT}`, '-t', 'public', 'public/router.php'],
-    appEnv(DOWN_PORT, { QUOTES_BASE: `http://127.0.0.1:${DOWN_PORT + 1}`, QUOTES_CACHE: cacheOk }), 'down');
+    appEnv(EMPTY_PORT, { QUOTES_BASE: `http://127.0.0.1:${DOWN_PORT}`, QUOTES_CACHE: cacheEmpty, QUOTES_TTL: '0' }), 'empty');
 
-  assert.ok(await waitFor(`${OK}/api/quotes`), 'serwer aplikacji nie wystartował');
+  assert.ok(await waitForQuotes(OK), 'serwer aplikacji nie wystartował');
   assert.ok(await waitFor(`${FAKE}/__hits`), 'dostawca testowy nie wystartował');
 
   const first = await getJson(OK, '/api/quotes');
@@ -143,18 +149,18 @@ async function main() {
   stopAll();
   servers.length = 0;
   start(['-S', `127.0.0.1:${APP_PORT}`, '-t', 'public', 'public/router.php'],
-    appEnv(APP_PORT, { QUOTES_BASE: FAKE, QUOTES_CACHE: cacheOk }), 'app-restart');
+    appEnv(APP_PORT, { QUOTES_BASE: FAKE, QUOTES_CACHE: cacheOk, QUOTES_TTL: '0' }), 'app-restart');
   start(['-S', `127.0.0.1:${EMPTY_PORT}`, '-t', 'public', 'public/router.php'],
-    appEnv(EMPTY_PORT, { QUOTES_BASE: `http://127.0.0.1:${DOWN_PORT}`, QUOTES_CACHE: cacheEmpty }), 'empty-restart');
+    appEnv(EMPTY_PORT, { QUOTES_BASE: `http://127.0.0.1:${DOWN_PORT}`, QUOTES_CACHE: cacheEmpty, QUOTES_TTL: '0' }), 'empty-restart');
   assert.ok(await waitFor(`${OK}/api/quotes`), 'restart aplikacji nieudany');
   assert.ok(await waitFor(`${EMPTY}/api/quotes`), 'serwer pustego stanu nie wystartował');
 
-  await new Promise((resolve) => setTimeout(resolve, 1200));
   const failed = await getJson(OK, '/api/quotes');
   assert.equal(failed.res.status, 200, failed.text);
   assert.equal(failed.json.stale, true, 'po błędzie dostawcy flaga stale');
   assert.equal(failed.json.quotes.length, SYMBOLS.length, 'błąd nie może wyczyścić ostatniego zestawu');
   assert.deepEqual(failed.json.quotes.map((q) => q.price), first.json.quotes.map((q) => q.price));
+  assert.equal(failed.json.updatedAt, first.json.updatedAt);
   log('błąd dostawcy — ostatni dobry zestaw zachowany', true, `stale=${failed.json.stale}`);
 
   const empty = await getJson(EMPTY, '/api/quotes');

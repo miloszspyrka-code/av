@@ -60,7 +60,7 @@ if (preg_match('#^/v8/finance/chart/(.+)$#', $path, $matches) === 1) {
             'result' => [[
                 'meta' => [
                     'symbol' => $symbol,
-                    'regularMarketPrice' => $bases[$symbol] + $hits,
+                    'regularMarketPrice' => $bases[$symbol],
                     'regularMarketChangePercent' => $change,
                 ],
             ]],
