@@ -18,7 +18,7 @@ Apache + PHP 8.3 (LH.pl)
         │ co 5 minut
    LH Cron → bin/sync-discord-events.php → Discord REST API
    LH Cron → bin/sync-macro-events.php → ForexFactory / TradingView
-   LH Cron → bin/sync-wearables.php → Oura / Whoop / Garmin API
+   LH Cron → bin/sync-wearables.php → Oura / Whoop API (Garmin: tylko tokeny; dane push pending)
 ```
 
 Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request. Szczegółowe przepływy: [DOCUMENTATION.md](../DOCUMENTATION.md). Wymagania: [PRD.md](../PRD.md).
@@ -33,7 +33,7 @@ Brak procesu Node na produkcji. PHP-FPM obsługuje żądania per request. Szczeg
 | `app/Discord.php` | OAuth2, profil, członkostwo i rola |
 | `app/DiscordEvents.php` | Discord Scheduled Events, klasyfikacja, UPSERT, soft delete |
 | `app/MacroEvents.php` | kalendarz makro: feed FF/TradingView, UPSERT, soft delete, API |
-| `app/Wearables.php` | OAuth2 urządzeń, szyfrowanie tokenów, ingest Apple, metryki i gotowość |
+| `app/Wearables.php` | OAuth2 + PKCE, szyfrowanie i rotacja tokenów, statusy, ingest Apple, metryki i gotowość |
 | `app/Http.php` | JSON/HTML, nagłówki, błędy |
 | `app/routes/api.php` | `/api/health`, `/api/me`, `/api/state`, `/api/events`, `/api/macro-events`, `/api/wearables`, admin, konto, eksport |
 | `app/routes/auth.php` | `/auth/discord`, `/auth/wearables/*`, callback, demo, logout |
