@@ -695,7 +695,7 @@
     if (k === 'file') { AV.renderImport(); return; }
     const c = AV.connections()[k];
     const meta = {
-      weex: { n: 'WEEX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>weex.com</b> i kliknij ikonę profilu w prawym górnym rogu.', 'Wejdź w <b>Zarządzanie API</b> i kliknij <b>Utwórz klucz API</b>.', 'Nazwij klucz, np. <b>Alpha Vault</b>, i ustaw passphrase. Zapisz go.', 'W uprawnieniach zaznacz <b>tylko odczyt</b>. <b>Nie zaznaczaj</b> handlu ani wypłat.', 'Potwierdź kodem 2FA i skopiuj <b>API Key</b> oraz <b>Secret Key</b>. Secret pokazuje się tylko raz.', 'Wklej trzy wartości obok i kliknij <b>Połącz</b>. Pierwsza synchronizacja pobierze 90 dni historii.'] },
+      weex: { n: 'WEEX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>weex.com</b> i kliknij ikonę profilu w prawym górnym rogu.', 'Wejdź w <b>Zarządzanie API</b> i kliknij <b>Utwórz klucz API</b>.', 'Nazwij klucz, np. <b>Alpha Vault</b>, i ustaw passphrase. Zapisz go.', 'W uprawnieniach zaznacz <b>odczyt</b>. Handel i wypłaty nie blokują połączenia — klucz przejdzie z każdym zestawem uprawnień.', 'Potwierdź kodem 2FA i skopiuj <b>API Key</b> oraz <b>Secret Key</b>. Secret pokazuje się tylko raz.', 'Wklej trzy wartości obok i kliknij <b>Połącz</b>. Pierwsza synchronizacja pobierze 90 dni historii.'] },
       okx: { n: 'OKX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>okx.com</b>, kliknij profil i wybierz <b>API</b>.', 'Kliknij <b>Utwórz klucz API v5</b>.', 'Wpisz nazwę, np. <b>Alpha Vault</b>, i ustaw passphrase.', 'Uprawnienia: <b>tylko Odczyt</b>. Handel i wypłaty wyłączone.', 'Potwierdź i skopiuj <b>API Key</b> oraz <b>Secret Key</b>.', 'Wklej obok razem z passphrase i kliknij <b>Połącz</b>.'] },
       bingx: { n: 'BingX', f: ['API Key', 'Secret Key'], steps: ['Zaloguj się na <b>bingx.com</b>, kliknij profil i wybierz <b>Zarządzanie API</b>.', 'Kliknij <b>Utwórz API</b> i nazwij klucz, np. <b>Alpha Vault</b>.', 'Zostaw <b>tylko Odczyt</b>. Nie włączaj handlu ani wypłat.', 'Potwierdź kodem z maila lub 2FA.', 'Skopiuj <b>API Key</b> i <b>Secret Key</b>, wklej obok i kliknij <b>Połącz</b>.'] }
     }[k];
@@ -703,14 +703,17 @@
     const statusNote = c.error
       ? '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div><b>Ostatnia synchronizacja nie powiodła się.</b><br>' + AV.esc(c.error) + '</div></div>'
       : '';
+    const permsNote = k === 'weex'
+      ? 'Klucz zapisujemy zaszyfrowany. Prawo do handlu ani wypłat nie blokuje połączenia WEEX — do importu wystarczy odczyt.'
+      : 'Jeśli klucz ma prawo do handlu albo wypłat, Alpha Vault go odrzuci. Tak chronimy Twoje środki.';
     AV.setHTML('#exBody', '<div class="sech"><h2>' + meta.n + (connected ? ' <span class="win" style="font-size:13px;font-weight:600;margin-left:6px">' + (c.pending ? '● konfiguracja' : '● połączona') + '</span>' : '') + '</h2>' + (connected && c.id ? '<button class="btn g sm" data-disconnect="' + c.id + '">Odłącz</button>' : '') + '</div>' +
-      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + (c.lastSync ? new Date(c.lastSync).toLocaleString('pl-PL') : 'oczekuje') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Automatyczny import</span><b>co 30 minut</b></div><div class="kv"><span>Uprawnienia klucza</span><b class="win">' + (c.perms === 'read-only' ? 'tylko odczyt ✓' : AV.esc(c.perms || '')) + '</b></div><div class="kv"><span>Klucz</span><b class="mono">' + AV.esc(c.masked || '') + '</b></div>' : '') +
+      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + (c.lastSync ? new Date(c.lastSync).toLocaleString('pl-PL') : 'oczekuje') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Automatyczny import</span><b>co 30 minut</b></div><div class="kv"><span>Uprawnienia klucza</span><b class="win">' + (c.perms === 'any' ? 'dowolne (odczyt wystarcza)' : c.perms === 'read-only' ? 'tylko odczyt ✓' : AV.esc(c.perms || '')) + '</b></div><div class="kv"><span>Klucz</span><b class="mono">' + AV.esc(c.masked || '') + '</b></div>' : '') +
       statusNote +
       '<div class="grid g2" style="margin-top:' + (connected ? 20 : 4) + 'px;align-items:start"><div><h3>Jak zdobyć klucz</h3><ol class="howto" style="margin-top:6px">' + meta.steps.map((s) => '<li><span>' + s + '</span></li>').join('') + '</ol></div>' +
       '<div><div class="card flat"><h3>' + (connected ? 'Zmień klucz' : 'Wklej klucz') + '</h3>' + meta.f.map((f, i) => '<span class="label">' + f + '</span><input class="input mono" id="exF' + i + '" placeholder="' + f + '" autocomplete="off" type="' + (/Secret|Pass/.test(f) ? 'password' : 'text') + '">').join('') +
       '<button class="btn p" style="width:100%;margin-top:18px" data-conn="' + k + '">' + (connected ? 'Zapisz nowy klucz' : 'Połącz ' + meta.n) + '</button>' +
       '<div id="exMsg" class="hint" style="margin-top:10px"></div></div>' +
-      '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div>Jeśli klucz ma prawo do handlu albo wypłat, Alpha Vault go odrzuci. Tak chronimy Twoje środki.</div></div></div></div>');
+      '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div>' + permsNote + '</div></div></div></div>');
     AV.bindExchangeActions(k, meta);
   };
 

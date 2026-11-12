@@ -124,15 +124,18 @@ try {
   await page.waitForFunction(() => (document.querySelector('#exBody')?.textContent || '').includes('Zaimportowane transakcje'), null, { timeout: 25000 });
   log('OKX: połączenie przez UI + import', true);
 
-  // WEEX
+  // WEEX — klucz z prawem handlu przechodzi
   await page.click('.exl button[data-ex="weex"]');
-  await page.fill('#exF0', 'weex-read');
+  const weexNote = await page.locator('#exBody .note').innerText();
+  assert.match(weexNote, /nie blokuje połączenia/i);
+  await page.fill('#exF0', 'weex-trade');
   await page.fill('#exF1', 'weex-secret');
   await page.fill('#exF2', 'passphrase');
   await page.click('[data-conn="weex"]');
   await waitConnected('weex');
   await page.waitForFunction(() => (document.querySelector('#exBody')?.textContent || '').includes('Zaimportowane transakcje'), null, { timeout: 25000 });
-  log('WEEX: połączenie przez UI + sync', true);
+  assert.match(await page.locator('#exBody').innerText(), /dowolne \(odczyt wystarcza\)/);
+  log('WEEX: klucz z handlem przez UI + sync', true);
 
   // BingX
   await page.click('.exl button[data-ex="bingx"]');

@@ -240,7 +240,7 @@ Pełny E2E: `npm run test:wearables` (33 scenariusze API + UI, lokalny dostawca 
 | Funkcja | Stan | Opis |
 |---|---|---|
 | WEEX/OKX/BingX — połączenie klucza | E2E | `POST /api/connections`; walidacja na żywo, szyfrowanie AES-256-GCM, brak sekretów w UI |
-| Weryfikacja tylko-do-odczytu | E2E | OKX `perm`, BingX `apiPermissions`, WEEX bezpieczna próba zlecenia na nieistniejącym symbolu |
+| Uprawnienia klucza | E2E | OKX `perm` i BingX `apiPermissions` wymagają odczytu; WEEX przyjmuje każdy klucz z działającym odczytem konta |
 | Synchronizacja transakcji | E2E | OKX: zamknięte pozycje + spot fills; BingX: positionHistory; WEEX: fills → rekonstrukcja rund |
 | Automatyczny import | E2E | wywoływany przez istniejący LH Cron (co 5 min) z blokadą „co 25 min”; ręcznie `bin/sync-exchange-trades.php` |
 | Deduplikacja | E2E | `exchange_imports.external_id` + `extId` w transakcji; ponowna synchronizacja nie tworzy duplikatów |
