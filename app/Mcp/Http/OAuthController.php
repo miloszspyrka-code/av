@@ -274,15 +274,18 @@ final class OAuthController
 
     public function login(): never
     {
-        $requestId = (string) ($_GET['req'] ?? '');
-        $returnTo = (string) ($_GET['return'] ?? '');
-        if ($requestId === '' && $returnTo !== '') {
-            $requestId = $this->createLoginRequest($returnTo);
+        $row = $this->loginRowOrFail();
+        if ($this->auth->readSession() !== null) {
+            $this->finishLoginRequest($row);
         }
-        $row = $this->loginRequest($requestId);
-        if ($row === null) {
-            Http::html('<h1>400</h1><p>Nieprawidłowa sesja logowania. <a href="/">Wróć</a>.</p>', 400);
-        }
+
+        $req = htmlspecialchars((string) $row['id'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        Http::html('<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zaloguj się — AlphaVault</title><style>body{margin:0;background:#080707;color:#f5f1eb;font-family:system-ui,Arial,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px}.box{max-width:520px;width:100%;background:#121110;border:1px solid rgba(255,255,255,.11);border-radius:24px;padding:34px;text-align:center}.brand{font-family:monospace;font-size:11px;letter-spacing:.28em;color:#d9b25f;text-transform:uppercase}.serif{font-family:Georgia,serif;font-weight:400}h1{font-size:30px;letter-spacing:-1px;margin:12px 0 8px}p{color:#b7b0a6;line-height:1.65;font-size:14px}.btn{display:inline-block;margin-top:20px;background:#f5f1eb;color:#080707;text-decoration:none;font-weight:800;padding:13px 22px;border-radius:99px}small{display:block;margin-top:18px;color:#7f786f;font-size:11px;line-height:1.5}</style></head><body><div class="box"><div class="brand">Alpha Vault</div><h1>Zaloguj się do <span class="serif">AlphaVault</span></h1><p>Połącz klienta AI z Twoim kontem AlphaVault. Discord służy tylko do weryfikacji tożsamości i roli Alpha.</p><a class="btn" href="/oauth/login/start?req=' . $req . '">Zaloguj przez Discord</a><small>Nie przekazujemy Twojego tokenu Discord klientowi AI. Dostęp możesz w każdej chwili unieważnić w panelu „Połączone aplikacje”.</small></div></body></html>');
+    }
+
+    public function loginStart(): never
+    {
+        $row = $this->loginRowOrFail();
         if ($this->auth->readSession() !== null) {
             $this->finishLoginRequest($row);
         }
@@ -530,6 +533,25 @@ final class OAuthController
         ]);
 
         return $id;
+    }
+
+    private function loginRowOrFail(): array
+    {
+        $requestId = (string) ($_GET['req'] ?? '');
+        $returnTo = (string) ($_GET['return'] ?? '');
+        if ($requestId === '' && $returnTo !== '') {
+            try {
+                $requestId = $this->createLoginRequest($returnTo);
+            } catch (\Throwable) {
+                Http::errorPage(400, 'Nieprawidłowy powrót', 'Nie można rozpocząć logowania dla tego adresu powrotu.');
+            }
+        }
+        $row = $this->loginRequest($requestId);
+        if ($row === null) {
+            Http::errorPage(400, 'Sesja logowania wygasła', 'Odśwież stronę i spróbuj połączyć klienta AI ponownie.');
+        }
+
+        return $row;
     }
 
     private function loginRequest(string $id): ?array

@@ -2,9 +2,11 @@
 
 > **Status: FAZA 1 WDROŻONA (2026-11-12).** Działa `https://mcp.alphavault.pl/mcp` z OAuth 2.1, PKCE S256, DCR, consentem, refresh/revocation i 8 narzędziami read-only. Narzędzia zapisujące są przygotowane architektonicznie, ale **nie są zarejestrowane** przy `MCP_WRITES_ENABLED=false`.
 >
-> Wersja: 3.0 · 2026-11-12
+> Wersja: 3.1 · 2026-11-12
 > Repozytorium: `miloszspyrka-code/av`
 > Dokumentacja techniczna (repo): `docs/MCP.md`
+>
+> To **prywatny, własny (custom) serwer MCP** AlphaVault. Nie jest publikowany w katalogu OpenAI/Grok, nie jest serwerem federacyjnym ani oficjalnym connectorem. Dodaje się go jako własny MCP server w ustawieniach klienta.
 
 ## 1. Decyzja architektoniczna
 
@@ -72,7 +74,8 @@ Biblioteki (wersje przypięte w `composer.lock`):
 | `POST /oauth/authorize` | allow/deny |
 | `POST /oauth/token` | code+PKCE, refresh |
 | `POST /oauth/revoke` | unieważnienie tokenu |
-| `GET /oauth/login` | start logowania Discord |
+| `GET /oauth/login` | brandowana strona logowania AlphaVault |
+| `GET /oauth/login/start` | start logowania Discord |
 | `GET /oauth/discord/callback` | callback Discord |
 | `GET /oauth/connected` | lista połączonych klientów |
 | `POST /oauth/connected/revoke` | unieważnienie wszystkich tokenów klienta |
@@ -92,7 +95,7 @@ Biblioteki (wersje przypięte w `composer.lock`):
 ### 3.4. Logowanie Discord i konta
 
 1. Użytkownik trafia na `/oauth/authorize`.
-2. Brak sesji MCP → `/oauth/login` → Discord.
+2. Brak sesji MCP → `/oauth/login` (brandowana strona AlphaVault) → Discord.
 3. Callback sprawdza `state` i cookie `mcp_login`.
 4. `Discord::checkRole()` weryfikuje członkostwo w `DISCORD_GUILD_ID` i rolę `DISCORD_REQUIRED_ROLE_ID`.
 5. Brak roli/członkostwa → **403, bez tworzenia konta**.
@@ -222,7 +225,7 @@ Nie wykonano interaktywnego logowania prawdziwym kontem Discord przez agenta (br
 
 ### Faza 4 — produkcja
 
-- Monitoring, rotacja kluczy, test obciążenia, finalne E2E, aktualizacja polityki prywatności i regulaminu.
+- Monitoring, rotacja kluczy, test obciążenia, finalne E2E.
 
 ## 11. Powiązania
 

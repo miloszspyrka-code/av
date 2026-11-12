@@ -361,7 +361,14 @@ async function main() {
   assert.equal(loginUrl.pathname, '/oauth/login');
   const loginCookie = (noSession.res.headers.getSetCookie?.() || []).find((c) => c.startsWith('mcp_login='));
   assert.ok(loginCookie, 'brak cookie mcp_login');
-  const loginStart = await req(loginUrl.pathname + loginUrl.search, {
+  const loginPage = await req(loginUrl.pathname + loginUrl.search, {
+    headers: { Cookie: loginCookie.split(';')[0] },
+  });
+  assert.equal(loginPage.res.status, 200, loginPage.text);
+  assert.match(loginPage.text, /Alpha Vault/);
+  const startMatch = /href="([^"]*\/oauth\/login\/start\?req=[^"]+)"/.exec(loginPage.text);
+  assert.ok(startMatch, 'brak linku startu logowania');
+  const loginStart = await req(startMatch[1].replace(/&amp;/g, '&'), {
     headers: { Cookie: loginCookie.split(';')[0] },
   });
   assert.equal(loginStart.res.status, 302, loginStart.text);

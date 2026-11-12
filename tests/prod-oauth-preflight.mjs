@@ -49,7 +49,12 @@ const cookie = (auth.res.headers.getSetCookie?.() || []).find((c) => c.startsWit
 assert.ok(cookie);
 console.log('authorize -> login PASS');
 
-const start = await req(BASE + login.pathname + login.search, { headers: { Cookie: cookie.split(';')[0] } });
+const loginPage = await req(BASE + login.pathname + login.search, { headers: { Cookie: cookie.split(';')[0] } });
+assert.equal(loginPage.res.status, 200, loginPage.text);
+assert.match(loginPage.text, /Alpha Vault/);
+const startMatch = /href="([^"]*\/oauth\/login\/start\?req=[^"]+)"/.exec(loginPage.text);
+assert.ok(startMatch, 'brak linku startu logowania');
+const start = await req(BASE + startMatch[1].replace(/&amp;/g, '&'), { headers: { Cookie: cookie.split(';')[0] } });
 assert.equal(start.res.status, 302, start.text);
 const discord = new URL(start.res.headers.get('location'));
 assert.equal(discord.hostname, 'discord.com');

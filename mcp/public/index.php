@@ -103,6 +103,13 @@ if ($path === '/oauth/revoke') {
     $oauth->revoke();
 }
 
+if ($path === '/oauth/login/start') {
+    if ($method !== 'GET') {
+        \AlphaVault\Http::json(['error' => 'method_not_allowed'], 405);
+    }
+    $oauth->loginStart();
+}
+
 if ($path === '/oauth/login') {
     if ($method !== 'GET') {
         \AlphaVault\Http::json(['error' => 'method_not_allowed'], 405);

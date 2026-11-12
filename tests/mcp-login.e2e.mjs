@@ -185,7 +185,12 @@ async function startLogin() {
   const loginPath = new URL(auth.res.headers.get('location'), BASE).pathname + new URL(auth.res.headers.get('location'), BASE).search;
   const loginCookie = cookieFrom(auth.res, 'mcp_login');
   assert.ok(loginCookie);
-  const login = await req(loginPath, { headers: { Cookie: loginCookie } });
+  const loginPage = await req(loginPath, { headers: { Cookie: loginCookie } });
+  assert.equal(loginPage.res.status, 200, loginPage.text);
+  assert.match(loginPage.text, /Alpha Vault/);
+  const startMatch = /href="([^"]*\/oauth\/login\/start\?req=[^"]+)"/.exec(loginPage.text);
+  assert.ok(startMatch, 'brak linku startu logowania');
+  const login = await req(startMatch[1].replace(/&amp;/g, '&'), { headers: { Cookie: loginCookie } });
   assert.equal(login.res.status, 302, login.text);
   const discordUrl = new URL(login.res.headers.get('location'));
   assert.equal(discordUrl.origin, DISCORD);
