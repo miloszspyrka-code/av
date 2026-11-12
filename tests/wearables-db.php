@@ -34,6 +34,14 @@ function enc(string $plain, \AlphaVault\Config $config, bool $previous = false, 
 
 $command = (string) ($argv[1] ?? '');
 
+if ($command === 'reset') {
+    $db->execute('DELETE FROM wearable_daily_metrics');
+    $db->execute('DELETE FROM wearable_connections');
+    $db->execute('DELETE FROM wearable_pair_codes');
+    $db->execute('DELETE FROM wearable_oauth_states');
+    out(['ok' => true]);
+}
+
 if ($command === 'expire-token') {
     $provider = (string) ($argv[2] ?? '');
     $row = $db->queryOne(

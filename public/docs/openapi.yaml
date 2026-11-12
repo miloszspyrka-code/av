@@ -346,7 +346,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [garmin, apple, oura, whoop]
+            enum: [apple, oura]
       responses:
         '200':
           description: Synchronizacja zakończona
@@ -366,7 +366,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [garmin, apple, oura, whoop]
+            enum: [apple, oura]
       responses:
         '200':
           description: Odłączono

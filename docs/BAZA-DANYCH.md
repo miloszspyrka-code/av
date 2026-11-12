@@ -22,7 +22,7 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `macro_sync_state` | ostatnia próba/sukces synchronizacji makro, licznik, błąd |
 | `wearable_connections` | jedno połączenie użytkownika z dostawcą; status, zaszyfrowane tokeny, `token_expires_at`, `refresh_token_expires_at`, token urządzenia Apple (hash), last sync |
 | `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
-| `wearable_oauth_states` | jednorazowe stany OAuth2 dla Garmin/Oura/Whoop (10 min) wraz z `code_verifier` dla PKCE |
+| `wearable_oauth_states` | jednorazowe stany OAuth2 dla Oura (10 min) wraz z `code_verifier` dla PKCE; Garmin/Whoop wyłączone |
 | `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
 | `schema_migrations` | wersje migracji |
 | `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu |

@@ -203,7 +203,7 @@ Panel jest instalowalny z przeglądarki bez App Store i Google Play (`manifest.w
 
 ### FR-18 — Integracje urządzeń i gotowość
 
-Użytkownik łączy Garmin Connect, Oura Ring lub Whoop przez OAuth2, a Apple Watch przez jednorazowy kod parowania i ingest z iPhone. Alpha Vault pobiera sen, HRV, tętno spoczynkowe, Body Battery i wynik regeneracji, liczy gotowość oraz pokazuje, jak sen wpływa na wynik dnia. Tokeny są szyfrowane, dane o zdrowiu przetwarzane tylko za zgodą, a odłączenie urządzenia usuwa je z bazy. Check-in przed rynkiem wnosi 30% gotowości.
+Użytkownik łączy Oura Ring przez OAuth2, a Apple Watch przez jednorazowy kod parowania i ingest z iPhone. Alpha Vault pobiera sen, HRV, tętno spoczynkowe, Body Battery i wynik regeneracji, liczy gotowość oraz pokazuje, jak sen wpływa na wynik dnia. Tokeny są szyfrowane, dane o zdrowiu przetwarzane tylko za zgodą, a odłączenie urządzenia usuwa je z bazy. Check-in przed rynkiem wnosi 30% gotowości. Integracje Garmin i Whoop są wyłączone na razie (kod zachowany, brak wpisu w UI/API).
 
 ### FR-19 — Prop challenge
 
@@ -260,7 +260,7 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 | AC-12 | Produkcyjne E2E przechodzi | health + events + login + sync na `alphavault.pl` |
 | AC-13 | Dokumentacja spójna i aktualna | `npm run test:docs` |
 | AC-14 | PWA jest instalowalna, a szybkie dodanie z powiadomienia zajmuje ≤ 10 s | `tests/pwa.e2e.mjs` 20/20 |
-| AC-15 | OAuth2 + PKCE Garmin/Oura/Whoop kończy się zapisem metryk lub statusem oczekiwania na specyfikację Garmin | `npm run test:wearables` 42/42 |
+| AC-15 | OAuth2 + PKCE Oura kończy się zapisem metryk; Apple Watch ingestion działa; Garmin i Whoop niedostępne w UI/API | `npm run test:wearables` |
 | AC-16 | Apple Health przyjmuje dane po kodzie parowania i tokenie urządzenia | `npm run test:wearables` |
 | AC-17 | Gotowość łączy urządzenie z check-inem i czyści się po odłączeniu | test API + UI E2E |
 | AC-18 | Tokeny dostawców nie są widoczne w API ani logach | test odpowiedzi API + audyt |

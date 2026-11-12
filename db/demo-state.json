@@ -59,10 +59,8 @@
       "Spokojna głowa"
     ],
     "devices": {
-      "garmin": true,
       "apple": false,
-      "oura": false,
-      "whoop": false
+      "oura": false
     },
     "connections": {
       "weex": {
