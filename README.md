@@ -62,7 +62,7 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 - Domena: `https://alphavault.pl`
 - Document root: `~/public_html/alphavault.pl`
 - Kod aplikacji i `config.json`: `~/public_html/alphavault.pl/.app` (ukryty katalog, deny)
-- Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml` (gdy `DEPLOY_ENABLED=true`).
+- Deployment: deploy na `main` uruchamia `.github/workflows/deploy-alphavault.yml` dopiero po zielonym CI (`workflow_run`) i przy `DEPLOY_ENABLED=true`.
 - CI gate: PR do `main` wymaga zielonego `PHP + API + UI`; branch protection blokuje bezpośredni push, force push i usuwanie gałęzi.
 - Environment `alphavault-production` dopuszcza deploy tylko z `main`; merge commit jest wyłączony (squash/rebase).
 - Repo jest publiczne; włączone secret scanning, push protection i Dependabot security updates.
@@ -109,7 +109,7 @@ Ręcznie: `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app
 - `monitor-production.yml`: co 15 min health + `sync.status`/`stale`.
 - `deploy-alphavault.yml`: lint, SSH, backup, rsync, migracja, health check.
 - `main` jest chroniony: wymagany PR i check `PHP + API + UI`, linear history, `enforce_admins`, bez force push/delete.
-- `DEPLOY_ENABLED=true`; merge do `main` auto-deployuje. Environment `alphavault-production` dopuszcza tylko `main`.
+- `DEPLOY_ENABLED=true`; deploy startuje po zielonym CI na `main` (`workflow_run`). Environment `alphavault-production` dopuszcza tylko `main`.
 - Deployment nigdy nie dotyka katalogów WordPressa ani innych domen.
 
 ## Legacy
