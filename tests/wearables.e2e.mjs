@@ -153,6 +153,26 @@ async function clearCheckins() {
   assert.equal(put.res.status, 200, put.text);
 }
 
+async function ensureTodayTrade() {
+  const state = await req('/api/state');
+  assert.equal(state.res.status, 200, state.text);
+  const value = state.json.state;
+  const todayKey = warsawDay();
+  const trades = value.trades || [];
+  if (trades.some((t) => warsawDay(new Date(t.date)) === todayKey)) return;
+  const sample = trades[0] || {};
+  value.trades = [
+    ...trades,
+    { ...sample, id: 'e2e-sleep-' + Date.now(), date: new Date().toISOString(), result: 10 }
+  ];
+  const put = await req('/api/state', {
+    method: 'PUT',
+    headers: { Origin: ORIGIN },
+    body: JSON.stringify({ state: value, baseRevision: state.json.revision })
+  });
+  assert.equal(put.res.status, 200, put.text);
+}
+
 async function startFlow(provider) {
   const start = await req(`/auth/wearables/${provider}/start`);
   assert.equal(start.res.status, 302, 'start ' + provider + ': ' + start.text);
@@ -616,6 +636,7 @@ async function main() {
   log('Apple: odłączenie usuwa dane', true);
 
   await clearCheckins();
+  await ensureTodayTrade();
   await runUiChecks();
 
   const joinedLogs = serverLogs.join('');
