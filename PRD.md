@@ -111,6 +111,8 @@ Cały stan użytkownika jest dokumentem JSON w `user_states`. Zapis jest optymis
 
 Zachowane: pulpit, plan dnia, dziennik, playbook, nowa transakcja, kalkulator, prop challenge, statystyki, mentor AI, podatki PIT-38, kalendarz makro, ciało i głowa, giełdy, ustawienia, eksport i usunięcie konta.
 
+Każdy widok ma czytelny adres w hashu (`#/dziennik`, `#/akademia`, `#/podatki`, `#/konto`, …); stare krótkie adresy (`#/trans`, `#/akad`, `#/ust`) pozostają aliasami i są przepisywane na slug. Kontrakt: `DOCUMENTATION.md §11.1a`, test: `tests/router.unit.mjs`.
+
 ### FR-05 — Harmonogram live'ów z Discorda
 
 - źródło: `GET https://discord.com/api/v10/guilds/{guild.id}/scheduled-events?with_user_count=true`,

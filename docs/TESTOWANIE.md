@@ -117,6 +117,18 @@ Test nie używa prawdziwego Discorda ani danych klientów.
 - statystyki, serię strat, najlepszy/najgorszy dzień,
 - archiwum poza metrykami i zachowanie waluty.
 
+## Routing i adresy podstron — 18 scenariuszy
+
+`tests/router.unit.mjs` (`npm run test:router`) ładuje `public/js/actions.js` w izolowanym kontekście `node:vm` (stuby DOM, bez serwera i przeglądarki) i sprawdza:
+
+- każdy z 15 widoków ma slug, slugi są unikalne i zgodne z `^[a-z0-9]+(-[a-z0-9]+)*$`,
+- brak starych krótkich adresów (`trans`, `akad`, `ust`, …) w `AV.viewSlugs`,
+- mapowanie w obie strony `id → slug → id` oraz aliasy (`#/akad`, `#/trans`),
+- `AV.viewFromHash()`: wielkość liter, końcowy `/`, nieznany slug i pusty hash → `pulpit`,
+- `AV.showView()` zapisuje czytelny slug w `location.hash` i sprowadza nieznane id do `pulpit`.
+
+Test nie wymaga Chrome ani PHP — chroni kontrakt adresów przed regresją przy zmianach w routingu.
+
 ## Makro — 21 scenariuszy
 
 `npm run test:macro` uruchamia `tests/macro-events.test.php`:
