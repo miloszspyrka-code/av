@@ -2,13 +2,13 @@
    Po zmianie plików JS podnieś VERSION, żeby wyczyścić stare cache. */
 'use strict';
 
-const VERSION = 'av-2026-11-12-1';
+const VERSION = 'av-2026-11-12-2';
 const SHELL = [
   '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
-  '/icons/apple-touch-icon.png',
+  '/assets/pwa/icon-192.png',
+  '/assets/pwa/icon-512.png',
+  '/assets/pwa/icon-maskable-512.png',
+  '/assets/pwa/apple-touch-icon.png',
   '/js/core.js',
   '/js/data.js',
   '/js/state.js',
@@ -105,8 +105,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Alpha Vault';
   const options = {
     body: data.body || '',
-    icon: data.icon || '/icons/icon-192.png',
-    badge: data.badge || '/icons/icon-192.png',
+    icon: data.icon || '/assets/pwa/icon-192.png',
+    badge: data.badge || '/assets/pwa/icon-192.png',
     tag: data.tag || 'av-push',
     renotify: true,
     data: { url: data.url || '/?qa=1' }
