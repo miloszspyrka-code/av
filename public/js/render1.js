@@ -115,14 +115,6 @@
   /* ---------- pulpit ---------- */
   AV.renderDashboard = () => {
     const s = AV.state, today = AV.todayStats(s), stats = AV.computeStats(AV.rangeTrades(s, 30), s);
-    const r = AV.readiness(s);
-    AV.setText('#readyVal', r.score);
-    AV.setText('#bodyReady', r.score);
-    AV.setText('#readyTitle', r.title);
-    AV.setText('#bodyReadyTitle', r.title);
-    AV.setText('#readyDesc', AV.genderize(r.desc, s.user.gender));
-    AV.setText('#bodyReadyDesc', AV.genderize(r.desc, s.user.gender));
-    $$('.ready .ring b').forEach((b) => { b.className = r.cls; });
     AV.setText('#dayPnl', AV.dispMoney(today.pnl, 2).replace(/^[+−]/, (m) => m) + ' ');
     const pnlEl = $('#dayPnl');
     if (pnlEl) {
@@ -173,14 +165,14 @@
     if (!box) return;
     const arr = today.closed.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
     if (!arr.length) {
-      AV.setHTML(box, '<div class="sech" style="margin:0"><span class="tag praise">Mentor · spokój</span><span class="link" data-go="mentor">Wszystkie uwagi ' + AV.ic('arrow', 'width:14px;height:14px') + '</span></div><h3>Dziś jeszcze nie handlowałaś</h3><p>Dobry moment, żeby najpierw zrobić plan i check-in. Mentor oceni dzień, kiedy pojawią się transakcje.</p><div class="step"><b>Krok:</b> plan dnia przed pierwszą transakcją.</div>');
+      AV.setHTML(box, '<div class="sech" style="margin:0"><span class="tag praise">Mentor · spokój</span><span class="link" data-go="mentor">Wszystkie uwagi ' + AV.ic('arrow', 'width:14px;height:14px') + '</span></div><h3>Dziś jeszcze nie ma transakcji</h3><p>Dobry moment, żeby najpierw zrobić plan i check-in. Mentor oceni dzień, kiedy pojawią się transakcje.</p><div class="step"><b>Krok:</b> plan dnia przed pierwszą transakcją.</div>');
       return;
     }
     const last = arr[0];
     const revenge = arr.some((t) => (t.errors || []).includes('Wejście po stracie'));
     const title = revenge ? 'To wygląda na odgrywanie się' : last.result >= 0 ? 'Dobra robota, trzymaj proces' : 'Strata mieści się w planie?';
     const text = revenge
-      ? 'Widać wejście po stracie i większą pozycję. Rynek nie wie, że straciłaś. Zamknij platformę na 30 minut.'
+      ? 'Widać wejście po stracie i większą pozycję. Rynek nie wie o stracie. Zamknij platformę na 30 minut.'
       : last.result >= 0
         ? 'Ostatnia transakcja: ' + AV.esc(last.pair) + ' ' + AV.money(last.result, 2, '') + '. Oceniasz decyzję, nie wynik — trzymaj checklistę.'
         : 'Ostatnia transakcja: ' + AV.esc(last.pair) + ' ' + AV.money(last.result, 2, '') + '. Sprawdź, czy SL był ustawiony przed wejściem, i nie odrabiaj straty.';

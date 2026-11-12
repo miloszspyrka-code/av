@@ -314,7 +314,7 @@
     if (!el) return;
     if (AV.api.online && AV.api.authenticated) {
       const plan = AV.state?.subscription?.plan === 'solo' ? 'Alpha Vault' : 'Alpha + Akademia';
-      el.textContent = 'POŁĄCZONO Z MYSQL · ' + plan + (AV.api.lastError ? ' · ostatni zapis: błąd' : ' · zapis automatyczny');
+      el.textContent = plan + (AV.api.lastError ? ' · zapis wstrzymany' : ' · zapis automatyczny');
     } else if (AV.api.online) {
       el.textContent = 'ALPHA VAULT · logowanie przez Discord';
     } else {
@@ -557,25 +557,17 @@
 
   /* ---------- forma ---------- */
   AV.readiness = (state) => {
-    const h = state.health;
     const check = (state.checkins || []).filter((c) => c.date === AV.dateKey(new Date())).sort((a, b) => b.score - a.score)[0];
     const moodMod = { 'Spokój': 10, 'Skupienie': 7, 'Pewność': 5, 'Nuda': -3, 'Zmęczenie': -8, 'Strach': -10, 'FOMO': -12, 'Złość': -14, 'Chciwość': -6 }[check?.mood] || 0;
     const checkScore = check ? AV.clamp(50 + ((Number(check.energy) || 3) - 3) * 10 + moodMod, 0, 100) : 55;
-    const garmin = !!(state.settings.devices && state.settings.devices.garmin);
-    const sleepScore = AV.clamp(h.sleepH / 8 * 100, 0, 100);
-    const hrvScore = AV.clamp(h.hrv / (h.hrvBase || 52) * 100, 0, 100);
-    const hrScore = AV.clamp((h.hrBase || 56) / h.hr * 100, 0, 100);
-    const score = garmin
-      ? Math.round(sleepScore * 0.35 + hrvScore * 0.2 + hrScore * 0.1 + checkScore * 0.35)
-      : Math.round(checkScore);
+    const score = Math.round(checkScore);
     let title = 'Świetna forma', cls = 'win';
     if (score < 80) { title = 'Dobra forma'; cls = 'win'; }
     if (score < 65) { title = 'Ostrożnie dziś'; cls = 'warnc'; }
     if (score < 50) { title = 'Lepiej odpuścić'; cls = 'loss'; }
-    const desc = garmin
-      ? 'Spał[aś|eś] ' + String(Math.floor(h.sleepH)) + ' h ' + String(Math.round((h.sleepH % 1) * 60)).padStart(2, '0') + ' min, HRV ' + h.hrv + ' ms, tętno ' + h.hr + '. ' + (score < 60 ? 'Połowa normalnej pozycji albo odpuść.' : 'Możesz grać normalnie, ale trzymaj się planu.')
-      : 'Brak danych z zegarka — gotowość liczona tylko z check-inu. Podłącz Garmina, żeby dodać sen i HRV.';
-    return { score, title, cls, desc, garmin, checkScore, sleepScore, hrvScore, hrScore, check };
+    // Brak integracji ze sprzętem: gotowość liczymy wyłącznie z check-inu.
+    const desc = 'Gotowość liczona z check-inu: nastrój, energia i notatka.';
+    return { score, title, cls, desc, garmin: false, checkScore, sleepScore: 0, hrvScore: 0, hrScore: 0, check };
   };
 
   /* ---------- podatki ---------- */
@@ -653,7 +645,7 @@
       cWynik: AV.money(c.reduce((s, t) => s + t.result, 0), 2, ''), cN: c.length,
       aWr: a.length ? Math.round(a.filter((t) => t.result > 0).length / a.length * 100) : 0,
       planZgodne: planOK + ' z ' + todayPlanTrades.length,
-      gotowosc: r.score, sen: Math.floor(state.health.sleepH) + ' h ' + String(Math.round((state.health.sleepH % 1) * 60)).padStart(2, '0') + ' min',
+      gotowosc: r.score,
       clFull: full.length ? Math.round(full.filter((t) => t.result > 0).length / full.length * 100) : 0,
       clNo: part.length ? Math.round(part.filter((t) => t.result > 0).length / part.length * 100) : 0,
       tr: today.count, event: next ? next.name : 'brak ważnych publikacji',
@@ -664,10 +656,9 @@
     };
   };
 
-  AV.genderize = (text, g) => String(text).replace(/\[([^|\]]*)\|([^\]]*)\]/g, (_, f, m) => g === 'm' ? m : f);
   AV.fill = (text, state, extra = {}) => {
     const d = { ...AV.mentorData(state), ...extra };
-    return AV.genderize(text, state.user.gender).replace(/\{(\w+)\}/g, (_, k) => d[k] != null ? d[k] : '');
+    return String(text).replace(/\{(\w+)\}/g, (_, k) => d[k] != null ? d[k] : '');
   };
 
   /* ---------- playbook ---------- */

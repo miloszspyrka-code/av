@@ -34,7 +34,7 @@ Legenda:
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Powitanie z porą dnia | ✅ | ustawienie „Powitanie” |
-| Gotowość do tradingu | ✅ | sen/HRV/tętno + check-in; zmienia się po check-inie |
+| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie; bez sekcji gotowości i bez integracji ze sprzętem |
 | Wynik dnia | ✅ | z transakcji dzisiejszych, przeliczony na walutę wyników |
 | Limity strat/transakcji/ryzyka | ✅ | z planu dnia i ustawień |
 | Plan dnia na pulpicie | ✅ | z zatwierdzonego planu |
@@ -201,12 +201,8 @@ To zestawienie pomocnicze, nie porada podatkowa.
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Urządzenia Garmin/Apple/Oura/Whoop | 🟡 | połączenie/odłączenie w UI, dane demo |
-| Gotowość | ✅ | check-in + dane zdrowia |
-| Check-in (emocja, energia, notatka) | ✅ | zapis, wpływ na pulpit i mentora |
-| Wykres sen → wynik | ✅ | statyczny materiał edukacyjny |
-
-Brak realnej integracji z API producentów zegarków.
+| Check-in przed rynkiem | ✅ | nastrój, energia, notatka; zapis w stanie i wpływ na podpowiedzi mentora |
+| Gotowość i urządzenia | ⛔ | usunięte z UI; brak realnej integracji z API producentów zegarków |
 
 ---
 

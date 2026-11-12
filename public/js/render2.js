@@ -159,7 +159,6 @@
       '<div class="kv" style="margin-top:6px"><span>Transakcje</span><b>' + AV.includedTrades(s).length + ' · 90 dni</b></div>' +
       '<div class="kv"><span>Plany dnia</span><b>' + Object.keys(s.plans).length + '</b></div>' +
       '<div class="kv"><span>Emocje i check-iny</span><b>' + s.checkins.length + '</b></div>' +
-      '<div class="kv"><span>Sen i HRV</span><b>' + (s.settings.devices.garmin ? 'Garmin · 30 dni' : 'brak urządzenia') + '</b></div>' +
       '<div class="kv"><span>Kalendarz makro</span><b>ten tydzień</b></div>');
     const msgs = $('#msgs');
     if (msgs) {
@@ -181,13 +180,13 @@
     const today = AV.todayStats(s), L = AV.lockInfo(s);
     if (today.losses >= L.limit) notes.push({
       tag: 'alert', when: AV.dateTimeShort(new Date()), title: 'Złamana zasada: limit strat',
-      text: 'Po ' + L.limit + ' stratach handlowałaś dalej (' + today.closed.filter((t) => t.result < 0).length + ' strat, ' + AV.money(today.pnl, 2, '') + '). Tryb ochronny blokuje dziennik po limicie.',
+      text: 'Po ' + L.limit + ' stratach handel trwał dalej (' + today.closed.filter((t) => t.result < 0).length + ' strat, ' + AV.money(today.pnl, 2, '') + '). Tryb ochronny blokuje dziennik po limicie.',
       step: 'Jeśli chcesz obejść blokadę, musisz napisać dlaczego.'
     });
     const revenge = today.arr.filter((t) => (t.errors || []).includes('Wejście po stracie'));
     if (revenge.length) notes.push({
       tag: 'alert', when: AV.dateTimeShort(revenge[0].date), title: 'To wygląda na odgrywanie się',
-      text: 'Po stracie otworzyłaś ' + AV.esc(revenge[0].pair) + ' z błędem „wejście po stracie”. To emocja próbuje odrobić, nie plan.',
+      text: 'Po stracie pojawiła się ' + AV.esc(revenge[0].pair) + ' z błędem „wejście po stracie”. To emocja próbuje odrobić, nie plan.',
       step: 'Po każdej stracie 30 minut od wykresu.'
     });
     const st = AV.computeStats(AV.closedTrades(s), s);
@@ -256,7 +255,7 @@
     AV.setHTML('#weeklyReport',
       '<span class="tag al">Raport tygodnia · ' + AV.dateShort(from) + '–' + AV.dateShort(new Date()) + '</span>' +
       '<h2 style="font-size:28px;margin-top:12px;letter-spacing:-.6px">' + title + ', który ' + (st.net >= 0 ? 'można było zrobić jeszcze lepszym.' : 'daje jasną lekcję.') + '</h2>' +
-      '<div class="grid g4" style="margin-top:18px"><div><div class="lbl">Wynik</div><div class="val ' + (st.net >= 0 ? 'win' : 'loss') + '">' + AV.signed(st.net, 2, '') + '</div></div><div><div class="lbl">Transakcje</div><div class="val">' + st.n + '</div></div><div><div class="lbl">Ocena A</div><div class="val">' + a.n + ' z ' + st.n + '</div></div><div><div class="lbl">Śr. sen</div><div class="val">' + Math.floor(s.health.sleepH) + ':' + String(Math.round(s.health.sleepH % 1 * 60)).padStart(2, '0') + '</div></div></div>' +
+      '<div class="grid g3" style="margin-top:18px"><div><div class="lbl">Wynik</div><div class="val ' + (st.net >= 0 ? 'win' : 'loss') + '">' + AV.signed(st.net, 2, '') + '</div></div><div><div class="lbl">Transakcje</div><div class="val">' + st.n + '</div></div><div><div class="lbl">Ocena A</div><div class="val">' + a.n + ' z ' + st.n + '</div></div></div>' +
       '<h3 style="margin-top:24px">Co poszło dobrze</h3><p class="mut" style="margin-top:6px;line-height:1.65">' + (best ? 'Najlepsza emocja: ' + AV.esc(best.key) + ' dała ' + AV.signed(best.net, 2, '') + ' na ' + best.n + ' transakcjach.' : 'Brak danych.') + ' ' + (st.full.n ? 'Transakcje z pełną checklistą: ' + Math.round(st.full.wr) + '% skuteczności.' : 'Uzupełnij checklisty, żeby zobaczyć przewagę.') + '</p>' +
       '<h3 style="margin-top:18px">Co Cię kosztowało</h3><p class="mut" style="margin-top:6px;line-height:1.65">' + (worst ? 'Najsłabsza emocja: ' + AV.esc(worst.key) + ' dała ' + AV.signed(worst.net, 2, '') + '.' : 'Brak stratnych transakcji.') + ' ' + (st.shiftedSL ? 'Przesunięty SL: ' + st.shiftedSL + '×.' : 'SL nie był przesuwany.') + '</p>' +
       '<div class="step"><b>Jedna zmiana na ten tydzień:</b> ' + (st.part.n > st.full.n ? 'żadnej transakcji bez pełnej checklisty.' : st.shiftedSL ? 'nigdy nie przesuwaj SL w złą stronę.' : 'po 21:00 tylko obserwujesz.') + '</div>');
@@ -482,34 +481,7 @@
 
   /* ---------- ciało ---------- */
   AV.renderBody = () => {
-    const s = AV.state, r = AV.readiness(s), h = s.health;
-    AV.setText('#bodyReady', r.score);
-    AV.setText('#readyVal', r.score);
-    AV.setText('#bodyReadyTitle', r.title);
-    AV.setText('#readyTitle', r.title);
-    AV.setText('#bodyReadyDay', 'Dziś, ' + new Date().toLocaleDateString('pl-PL', { weekday: 'long' }));
-    AV.setText('#bodyReadyDesc', AV.genderize(r.desc, s.user.gender));
-    AV.setText('#readyDesc', AV.genderize(r.desc, s.user.gender));
-    $$('.ready .ring b').forEach((b) => b.className = r.cls);
-    const g = s.settings.devices.garmin;
-    AV.setText('#metricSleep', g ? Math.floor(h.sleepH) + ':' + String(Math.round(h.sleepH % 1 * 60)).padStart(2, '0') : '—');
-    AV.setText('#metricHrv', g ? String(h.hrv) : '—');
-    AV.setText('#metricHr', g ? String(h.hr) : '—');
-    AV.setText('#metricBattery', g ? String(h.battery) : '—');
-    AV.setText('#metricSleepTrend', g ? '↓ 1:36 vs norma' : 'brak danych');
-    AV.setText('#metricHrvTrend', g ? '↓ 27%' : 'brak danych');
-    AV.setText('#metricHrTrend', g ? '↑ 5 bpm' : 'brak danych');
-    AV.setText('#metricBatteryTrend', g ? 'niska' : 'brak danych');
-    $$('#devList .dev').forEach((row) => {
-      const key = row.dataset.device, on = !!s.settings.devices[key];
-      const btn = row.querySelector('[data-dev]');
-      const st = row.querySelector('[data-devstate]');
-      if (btn) { btn.textContent = on ? 'Odłącz' : 'Połącz'; btn.className = 'btn ' + (on ? 'g' : 'p') + ' sm'; }
-      if (st) {
-        st.className = on ? 'win' : '';
-        st.textContent = on ? '● połączony · sync ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : (key === 'apple' ? 'przez aplikację Alpha Vault na iPhone' : 'sen, HRV, gotowość');
-      }
-    });
+    const s = AV.state;
     const c = (s.checkins || []).find((x) => x.date === AV.dateKey(new Date()));
     if (c) {
       $$('#checkMood .chip').forEach((ch) => ch.classList.toggle('on', ch.textContent === c.mood));
@@ -646,7 +618,7 @@
     r.onload = () => {
       const rows = AV.parseCsv(String(r.result));
       const parsed = AV.mapCsvTrades(rows);
-      if (!parsed.length) { AV.toast('Nie rozpoznałem transakcji w tym pliku.'); return; }
+      if (!parsed.length) { AV.toast('Nie udało się rozpoznać transakcji w tym pliku.'); return; }
       AV.openModal('<div class="eyebrow">Import · podgląd</div><h1 style="font-size:26px;margin-top:6px">' + parsed.length + ' ' + AV.plural(parsed.length, 'transakcja', 'transakcje', 'transakcji') + '</h1>' +
         '<p class="mut" style="margin-top:8px;font-size:13.5px">Sprawdź pierwsze wiersze. Duplikaty (data + para + wejście) zostaną pominięte.</p>' +
         '<div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Para</th><th>Kier.</th><th>Wejście</th><th>Wyjście</th><th>Wynik</th></tr></thead><tbody>' +
@@ -716,7 +688,6 @@
     AV.setVal('#mottoIn', u.motto);
     AV.setVal('#tzIn', u.timezone);
     AV.setVal('#hoursIn', u.hour12 ? '12h · 2:30 PM' : '24h · 14:30');
-    $$('#gender .chip').forEach((c) => c.classList.toggle('on', c.dataset.g === u.gender));
     $$('#styleChips .chip').forEach((c) => c.classList.toggle('on', c.textContent === u.style));
     $$('#marketChips .chip').forEach((c) => c.classList.toggle('on', (u.markets || []).includes(c.textContent)));
     $$('#accents .sw').forEach((w) => w.classList.toggle('on', w.dataset.a === u.accent.a));

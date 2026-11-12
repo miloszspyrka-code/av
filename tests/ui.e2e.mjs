@@ -52,9 +52,9 @@ try {
   log('modal logowania', await page.locator('#demoEnter').isVisible(), 'Discord niepodłączony → demo');
 
   await page.click('#demoEnter');
-  await page.waitForFunction(() => document.querySelector('#envBadge')?.textContent.includes('POŁĄCZONO Z MYSQL'), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector('#envBadge')?.textContent.includes('zapis automatyczny'), null, { timeout: 15000 });
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated);
-  log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + MySQL');
+  log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + sesja');
 
   const rows = await page.locator('#tbody tr').count();
   assert.equal(rows, 47);
@@ -152,12 +152,15 @@ try {
 
   // ciało: check-in
   await page.click('.navg button[data-v="cialo"]');
-  const ready0 = await page.locator('#bodyReady').innerText();
   await page.locator('#checkMood .chip', { hasText: 'Spokój' }).click();
   await page.locator('#checkEnergy .chip', { hasText: '5' }).click();
   await page.click('#saveCheck');
-  const ready1 = await page.locator('#bodyReady').innerText();
-  log('check-in → gotowość', Number(ready1) > Number(ready0), ready0 + ' → ' + ready1);
+  const savedCheck = await page.evaluate(() => {
+    const key = AV.dateKey(new Date());
+    const c = (AV.state.checkins || []).find((x) => x.date === key);
+    return c ? { mood: c.mood, energy: c.energy, score: c.score } : null;
+  });
+  log('check-in: zapis', !!savedCheck && savedCheck.mood === 'Spokój' && savedCheck.energy === 5, JSON.stringify(savedCheck));
 
   // ustawienia: profil
   await page.click('.navg button[data-v="ust"]');
