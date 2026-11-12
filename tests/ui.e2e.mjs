@@ -170,18 +170,21 @@ try {
   log('profil: zapis imienia', sideName === 'E2E Tester', sideName);
   const planDates = await page.evaluate(() => {
     const prev = AV.state.subscription.until;
+    const expected = new Date(prev).toLocaleDateString('pl-PL');
     const read = () => ({
       side: document.querySelector('#sidePlan').textContent.trim(),
-      row: document.querySelector('#planUntilRow').style.display
+      row: document.querySelector('#planUntilRow').style.display,
+      until: document.querySelector('#planValidUntil').textContent.trim()
     });
     AV.state.subscription.until = null;
     AV.renderUser();
     const none = read();
     AV.state.subscription.until = prev;
     AV.renderUser();
-    return { none, restored: read() };
+    return { none, restored: read(), expected };
   });
   log('profil: bez daty bez adnotacji', planDates.none.side === 'Alpha + Akademia' && planDates.none.row === 'none', JSON.stringify(planDates.none));
+  log('profil: data z API w miejscu daty', planDates.restored.until === planDates.expected && planDates.restored.side.endsWith(planDates.expected), planDates.restored.until + ' = ' + planDates.expected);
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');
