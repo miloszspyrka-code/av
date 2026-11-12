@@ -265,7 +265,7 @@ Każda zmiana funkcjonalna aktualizuje właściwy dokument. Dokumenty wskazują 
 | GitHub Actions | działa |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
-| LH Cron | nieskonfigurowany — wymaga panelu LH |
+| LH Cron | **działa** — co 5 min, logi 18:05:05 i 18:10:02 |
 | Stage | niezweryfikowany |
 | OAuth Discord w przeglądarce | nieprzetestowany interaktywnie |
 

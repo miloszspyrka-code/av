@@ -82,7 +82,7 @@ Backend odmawia dostępu, gdy:
 
 ## 5. Synchronizacja Discord (CRON)
 
-Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → dodaj zadanie:
+Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadanie:
 
 ```text
 */5 * * * * /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
@@ -173,10 +173,10 @@ Po deployu:
 1. zaloguj się kontem z rolą Alpha,
 2. sprawdź `/api/events` (3 wydarzenia VOICE w dniu testu),
 3. uruchom ręcznie sync i porównaj `events_count` z Discordem,
-4. skonfiguruj Cron i potwierdź wpis w logu po 5 minutach,
+4. sprawdź wpis Cron w logu po 5 minutach,
 5. sprawdź puste pola na środowisku testowym, nie na produkcji.
 
-**Wynik 2026-11-12:** `/` 200, health wszystkie flagi `true`, `/docs/` 200, `.app` 403, sync 3/3 bez duplikatów, UI read-only PASS. Cron nadal wymaga wpisu w panelu.
+**Wynik 2026-11-12:** `/` 200, health wszystkie flagi `true`, `/docs/` 200, `.app` 403, sync 3/3 bez duplikatów, UI read-only PASS. Cron aktywny: logi `18:05:05` i `18:10:02`.
 
 ## 8. Bezpieczeństwo
 

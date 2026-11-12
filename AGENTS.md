@@ -290,16 +290,15 @@ npm run test:docs
 | `DEPLOY_ENABLED` | `true` |
 | Prod sync | success, 3 wydarzenia, 3 unikalne ID |
 | Prod UI (read-only) | PASS — live, harmonogram, puste konsultacje |
-| LH Cron | **nieskonfigurowany** — wymaga panelu LH |
+| LH Cron | **działa** — logi 18:05:05, 18:10:02 |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **nieprzetestowany interaktywnie** |
 
 **Pozostałe czynności:**
 
-1. Dodaj wpis Cron w panelu LH (§9 [DOCUMENTATION.md](DOCUMENTATION.md#9-cron-i-niezawodność)).
-2. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
-3. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
-4. Zaktualizuj §10 i [PRD.md §11](PRD.md#11-status-wdrożenia-2026-11-12).
+1. Wykonaj interaktywny test OAuth: konto z rolą, bez roli, spoza serwera.
+2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
+3. Zaktualizuj §10 i [PRD.md §11](PRD.md#11-status-wdrożenia-2026-11-12).
 
 ## 11. Format raportu końcowego
 

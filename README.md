@@ -65,7 +65,7 @@ Konfiguracja lokalna może też pochodzić ze zmiennych środowiskowych `APP_URL
 - Deployment: push/merge do `main` uruchamia `.github/workflows/deploy-alphavault.yml` (gdy `DEPLOY_ENABLED=true`).
 - Rollback: workflow z `rollback=true` przywraca ostatni backup z `~/alphavault-backups`.
 
-**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK, sync Discord 3/3, `/docs/` 200; LH Cron do dodania w panelu.
+**Stan 2026-11-12:** produkcja wdrożona, `/api/health` OK, sync Discord 3/3, `/docs/` 200; LH Cron działa co 5 min.
 
 Wymagane sekrety GitHub:
 
