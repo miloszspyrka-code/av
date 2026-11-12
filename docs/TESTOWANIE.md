@@ -313,7 +313,7 @@ Wykonane na `https://alphavault.pl`:
 | Realny sync | `sync.status=success`; liczba w `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
 | Baza | rekordy `live` zgodne z Discordem, `sync.status=success` |
 | Błąd 401 (zły token) | `sync.status=error`, wydarzenia zachowane, `last_success_at` bez zmian |
-| LH Cron | health `sync.lastSuccessAt` 21:45:02 UTC — co 5 min |
+| LH Cron | 1 wpis `*/5`; `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` = 22:00:02 UTC, `stale=false` |
 | Monitoring | `monitor-production.yml` — health, sync, UI, docs, `.app` 403, co 15 min |
 | Playwright (sesja testowa, read-only) | live + harmonogram widoczne, konsultacje puste, brak błędów JS |
 | PWA manifest/SW/ikony | 200, `application/manifest+json`, ikony `/assets/pwa/*`, installability bez błędów |

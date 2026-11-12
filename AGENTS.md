@@ -155,10 +155,10 @@ MySQL: serwer445119_alphavault
 | DB host/port | `main195.lh.pl:3306` (panel LH); `localhost` też działa z procesów na serwerze |
 | DB name/user | `serwer445119_alphavault` |
 | PHP CLI | `/usr/bin/php` (8.3) |
-| Cron (panel LH) | `*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh` |
-| Cron makro (panel LH) | `*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh` |
-| Cron (ręcznie) | `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
-| Log sync | `~/public_html/alphavault.pl/.app/logs/discord-sync.log` |
+| LH Cron (jedyny wpis) | `*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh` |
+| Cron — zadania pochodne | wrapper uruchamia `bin/sync-discord-events.php` (Discord events + exchange `syncDue`) i `bin/check-discord-roles.php` (recheck roli) |
+| Cron — ręcznie | `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php` |
+| Logi Cron | `~/public_html/alphavault.pl/.app/logs/discord-sync.log`, `~/public_html/alphavault.pl/.app/logs/macro-sync.log` |
 
 `open_basedir` LH nie pozwala PHP czytać katalogu poza docrootem; dlatego kod i `config.json` są w `~/public_html/alphavault.pl/.app`, zablokowanym przez `.htaccess` (`Require all denied` + `^\.app`). Nie zmieniaj tej ścieżki bez testu health checku.
 
@@ -167,6 +167,34 @@ MySQL: serwer445119_alphavault
 **Sekrety GitHub:** wszystkie wymagane są ustawione (DB, Discord, SSH). Wartości są write-only — nie próbuj ich odczytać.
 
 **SSH na LH:** dopuszczone wyłącznie do odczytu logów (break-glass), nigdy do deployu, rsync, migracji ani testów. Standardowa ścieżka to GitHub Actions.
+
+### 5.1. LH Cron — jedno źródło automatyzacji
+
+**Stan zweryfikowany 2026-11-12:** w panelu LH jest **jeden** wpis Cron:
+
+```text
+*/5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
+```
+
+Wrapper `cron/sync-discord-events.sh` wykonuje kolejno:
+
+| Automatyzacja | Skrypt | Kadencja | Dowód |
+| --- | --- | --- | --- |
+| Synchronizacja Discord events | `bin/sync-discord-events.php` | co 5 min | `logs/discord-sync.log` |
+| Synchronizacja integracji giełd/MetaTrader | ten sam skrypt, `Integrations::syncDue()` | co 5 min, realny sync max co 25 min | `health.integrations.sync` |
+| Recheck roli Alpha | `bin/check-discord-roles.php` | co 5 min po sync | `health.roleRecheck` |
+
+**Poza LH Cron (tylko ręcznie):** `bin/sync-macro-events.php` (kalendarz makro, `logs/macro-sync.log`) i `bin/sync-wearables.php` (urządzenia). Nie mają wpisu w panelu, więc nie są automatyzacjami cyklicznymi.
+
+**Zasada:** wszystkie automatyzacje wynikają z jednego wpisu `*/5`. Nową cykliczną czynność dopinaj do `cron/sync-discord-events.sh` z własnym throttle i wpisem w tabeli powyżej; nie dodawaj drugiego wpisu w panelu LH. `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje) — harmonogram zmienia się wyłącznie w panelu.
+
+**Weryfikacja E2E (bez sesji i sekretów):**
+
+```powershell
+curl.exe -sS https://alphavault.pl/api/health
+```
+
+Wymagane: `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` młodsze niż 10 min, `sync.status=success`, `roleRecheck.status=success`, `sync.stale=false`. Panel: LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań.
 
 ## 6. GitHub E2E — jedyna ścieżka zmiany i wdrożenia
 
@@ -335,8 +363,8 @@ node scripts/sync-docs.mjs
 | Realny Discord API | aktualna liczba w `/api/health` → `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 dodaje kolumnę EA i tabele MCP |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
-| Cron integracji | `success` 20:20:01, 0 połączeń, 0 importów (LH Cron co 5 min) |
-| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; zadanie LH Cron co 15 min do dodania w panelu |
+| Cron integracji | `success` (health `integrations.sync`), 0 połączeń, 0 importów; wewnątrz 5-min wrappera, realny sync max co 25 min |
+| Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; **brak wpisu LH Cron** — uruchamiany ręcznie `bin/sync-macro-events.php` |
 | `https://alphavault.pl` | **200** — wdrożona |
 | GitHub Actions | działa — repo publiczne, standard runners free |
 | `DEPLOY_ENABLED` | `true` |
@@ -349,8 +377,8 @@ node scripts/sync-docs.mjs
 | PWA na fizycznym telefonie | **niezweryfikowane** — wymaga instalacji i zgody na powiadomienia |
 | Prod urządzenia | `/api/wearables` anon = 401; UI „Ciało” wdrożone; tabele utworzone; **Oura skonfigurowana** (`ouraConfigured=true`, deploy 3.8.0 z 2026-11-12); Garmin i Whoop wyłączone |
 | Apple Health | backend + kod parowania gotowe i przetestowane; aplikacja iPhone poza repo |
-| Cron urządzeń | `cron/sync-wearables.sh` wdrożony, uruchomiony ręcznie 2026-11-12 (`ok=0 failed=0 total=0`); wpis w panelu LH do dodania |
-| LH Cron | **działa** — health `sync.lastSuccessAt` 21:45:02 UTC |
+| Cron urządzeń | **brak wpisu LH Cron**; `cron/sync-wearables.sh` uruchomiony ręcznie 2026-11-12 (`ok=0 failed=0 total=0`) |
+| LH Cron | **1 wpis `*/5`**; sync i recheck roli 22:00:02 UTC, `stale=false` |
 | Monitoring | `monitor-production.yml` — co 15 min: health, sync, UI, docs, `.app` 403 |
 | Stage | **niezweryfikowany** |
 | OAuth w przeglądarce | **potwierdzony 2026-11-12** — konto z rolą → sesja; konto bez roli → 403 |
@@ -361,8 +389,9 @@ node scripts/sync-docs.mjs
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
 4. Oura: zarejestruj redirect `https://alphavault.pl/auth/wearables/oura/callback` w Oura Cloud i wykonaj interaktywny test połączenia; sekrety `OURA_*` są już wdrożone.
-5. Dodaj w panelu LH: `*/30 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-wearables.sh`.
-6. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
+5. Dodaj sekrety `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*` (obecnie oba wyłączone w UI/API).
+6. Makro i urządzenia pozostają ręczne; jeśli mają być cykliczne, dopnij je do `cron/sync-discord-events.sh` z throttle — bez nowego wpisu w panelu LH.
+7. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
 
 ## 11. Format raportu końcowego
 

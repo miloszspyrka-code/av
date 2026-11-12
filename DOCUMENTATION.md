@@ -400,10 +400,9 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 
 ```text
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
-*/15 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-macro-events.sh
 ```
 
-Wrapper uruchamia kolejno `bin/sync-discord-events.php` i `bin/check-discord-roles.php` (recheck roli co 5 min).
+To jedyny wpis w LH Cron. Wrapper uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min) i `bin/check-discord-roles.php` (recheck roli co 5 min). Makro i urządzenia nie mają wpisu w LH Cron — są uruchamiane ręcznie; nowe automatyzacje dopinaj do tego wrappera.
 
 Ręcznie (bez panelu):
 
@@ -415,7 +414,7 @@ Ręcznie (bez panelu):
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
-**Stan 2026-11-12:** wpis Cron jest aktywny; logi `18:05:05` i `18:10:02` potwierdzają uruchomienie co 5 minut. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`.
+**Stan 2026-11-12:** jedyny wpis Cron jest aktywny; `/api/health` potwierdza `sync.lastSuccessAt=22:00:02 UTC`, `roleRecheck.lastSuccessAt=22:00:02 UTC`, `stale=false`. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`. Makro (`logs/macro-sync.log`) i urządzenia nie są cykliczne.
 
 ### 9.2. Blokada
 

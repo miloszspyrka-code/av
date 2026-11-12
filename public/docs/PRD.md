@@ -228,7 +228,7 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 - tylko publikacje ★★ i ★★★ (Low/Holiday pomijane), czasy w UTC + oryginalne ISO,
 - UPSERT bez duplikatów i soft delete po braku w feedzie,
 - błąd API nie czyści ostatniego dobrego zestawu; sukces z `[]` czyści widok,
-- synchronizacja przez LH Cron co 15 minut i ręcznie `bin/sync-macro-events.php`.
+- synchronizacja ręczna `bin/sync-macro-events.php`; brak wpisu w LH Cron (docelowo można dopiąć do 5-min wrappera z throttle).
 
 ## 7. Wymagania niefunkcjonalne
 
