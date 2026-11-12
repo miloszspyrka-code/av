@@ -187,3 +187,85 @@ jobs:
           REMOTE
           } | sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s'
 
+      - name: Inspect WordPress installs and DB identity
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PASSWORD: ${{ secrets.LH_SSH_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          LH_SSH_PORT="${LH_SSH_PORT:-22}"
+          DB_PORT="${DB_PORT:-3306}"
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$LH_SSH_PORT" "$LH_SSH_HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
+          chmod 600 "$HOME/.ssh/known_hosts"
+          export SSHPASS="$LH_SSH_PASSWORD"
+          SSH_OPTS=(-p "$LH_SSH_PORT" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=20)
+
+          echo "DB secret shape (no values):"
+          echo "DB_HOST_LEN=${#DB_HOST} DB_PORT=$DB_PORT DB_NAME_LEN=${#DB_NAME} DB_USER_LEN=${#DB_USER} DB_PASSWORD_LEN=${#DB_PASSWORD}"
+          case "$DB_HOST" in
+            localhost|127.0.0.1) echo "DB_HOST_KIND=local" ;;
+            *) echo "DB_HOST_KIND=remote" ;;
+          esac
+
+          echo "=== public_html root ==="
+          sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -u
+          ls -la "$HOME/public_html" 2>/dev/null | sed -n '1,60p'
+          echo "--- autoinstalator ---"
+          ls -la "$HOME/public_html/autoinstalator" 2>/dev/null | sed -n '1,80p'
+          echo "--- symlinks ---"
+          find "$HOME/public_html" -maxdepth 3 -type l -ls 2>/dev/null | sed -n '1,40p'
+          echo "--- wp installs (maxdepth 6) ---"
+          find "$HOME/public_html" -maxdepth 6 -name wp-config.php -print 2>/dev/null | sort | while IFS= read -r cfg; do
+            dir=$(dirname "$cfg")
+            echo "WP_PATH=$dir"
+            php -r '
+              $file=$argv[1];
+              $s=file_get_contents($file);
+              if ($s === false) { echo "WP_DB=UNREADABLE\n"; exit; }
+              $v=[];
+              foreach (["DB_NAME","DB_USER","DB_PASSWORD","DB_HOST"] as $k) {
+                if (preg_match("/define\s*\(\s*[\x27\"]".$k."[\x27\"]\s*,\s*[\x27\"](.*?)[\x27\"]\s*\)/", $s, $m)) { $v[$k]=$m[1]; }
+              }
+              if (preg_match("/\\\$table_prefix\s*=\s*[\x27\"]([^\x27\"]+)/", $s, $m)) { echo "WP_TABLE_PREFIX=".$m[1]."\n"; }
+              if (count($v) < 4) { echo "WP_DB=UNREADABLE_CONSTANTS\n"; exit; }
+              mysqli_report(MYSQLI_REPORT_OFF);
+              $c=@new mysqli($v["DB_HOST"],$v["DB_USER"],$v["DB_PASSWORD"],$v["DB_NAME"]);
+              if ($c->connect_error) { echo "WP_DB=FAIL: ".$c->connect_error."\n"; }
+              else { echo "WP_DB=OK server=".$c->server_info."\n"; }
+            ' "$cfg" || echo "WP_DB=PHP_ERROR"
+            if command -v wp >/dev/null 2>&1; then
+              echo "WP_VERSION=$(wp --path="$dir" core version 2>/dev/null || echo unknown)"
+              echo "WP_SITEURL=$(wp --path="$dir" option get siteurl 2>/dev/null || echo unknown)"
+              echo "WP_HOME=$(wp --path="$dir" option get home 2>/dev/null || echo unknown)"
+            fi
+          done
+          REMOTE
+
+          echo "=== DB target variants from LH host ==="
+          {
+            printf 'DB_HOST=%q\n' "$DB_HOST"
+            printf 'DB_PORT=%q\n' "$DB_PORT"
+            printf 'DB_NAME=%q\n' "$DB_NAME"
+            printf 'DB_USER=%q\n' "$DB_USER"
+            printf 'DB_PASSWORD=%q\n' "$DB_PASSWORD"
+            cat <<'REMOTE'
+          for target in "$DB_HOST" localhost 127.0.0.1; do
+            if MYSQL_PWD="$DB_PASSWORD" mysql --protocol=TCP --host="$target" --port="$DB_PORT" --user="$DB_USER" "$DB_NAME" -e "SELECT 1;" >/dev/null 2>&1; then
+              echo "DB_TARGET=OK"
+            else
+              echo "DB_TARGET=FAIL"
+            fi
+          done
+          REMOTE
+          } | sshpass -e ssh "${SSH_OPTS[@]}" "$LH_SSH_USER@$LH_SSH_HOST" 'bash -s'
+
+
