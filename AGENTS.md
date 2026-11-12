@@ -390,7 +390,7 @@ node scripts/sync-docs.mjs
 1. Dokończ test OAuth: konto spoza serwera → 403. Konto z rolą i konto bez roli potwierdzone 2026-11-12.
 2. Potwierdź Stage, jeśli pojawi się realne `STAGE_INSTANCE`.
 3. Potwierdź instalację PWA i powiadomienia na fizycznym telefonie (iPhone Safari + Android Chrome).
-4. Oura: zarejestruj redirect `https://alphavault.pl/auth/wearables/oura/callback` w Oura Cloud i wykonaj interaktywny test połączenia; sekrety `OURA_*` są już wdrożone.
+4. Oura: redirect `https://alphavault.pl/auth/wearables/oura/callback` zarejestrowany w Oura Cloud (2026-11-12); wykonaj interaktywny test połączenia; sekrety `OURA_*` są wdrożone.
 5. Dodaj sekrety `WHOOP_*`; dla Garmina przejdź onboarding Health API i ustaw `GARMIN_*` (obecnie oba wyłączone w UI/API).
 6. Makro (15 min) i urządzenia (30 min) działają z wrappera `*/5` przez throttle; nowe cykliczne zadania dopinaj tam, bez nowego wpisu w panelu LH.
 7. Włącz monitoring uptime i backup offsite (opcjonalne, poza pipeline).
