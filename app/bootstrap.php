@@ -13,6 +13,7 @@ require_once $root . '/app/HttpException.php';
 require_once $root . '/app/Http.php';
 require_once $root . '/app/Auth.php';
 require_once $root . '/app/Discord.php';
+require_once $root . '/app/RoleGuard.php';
 require_once $root . '/app/DiscordApiException.php';
 require_once $root . '/app/DiscordEvents.php';
 require_once $root . '/app/MacroEvents.php';

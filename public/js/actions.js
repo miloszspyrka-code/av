@@ -1450,9 +1450,40 @@
     AV.state = AV.load();
     const boot = await AV.bootstrap();
     AV.state = AV.state || AV.load();
+    const hadLocalSession = AV.hasLocalSession();
     if (boot.authenticated) $('#auth').classList.add('hide');
+    else if (boot.denied) $('#auth').classList.add('hide');
     else if (boot.offline && AV.isLoggedIn()) $('#auth').classList.add('hide');
-    else $('#auth').classList.remove('hide');
+    else if (AV.api.online && hadLocalSession) {
+      $('#auth').classList.add('hide');
+      AV.showAccessGate('Sesja wygasła. Zaloguj się ponownie — dostęp wymaga aktywnej roli Alpha.');
+    } else $('#auth').classList.remove('hide');
+    $('#roleCheck')?.addEventListener('click', async () => {
+      const btn = $('#roleCheck');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await AV.apiFetch('/api/me');
+        if (res.ok) {
+          const me = await res.json();
+          if (me.authenticated && (me.user?.isDemo || !me.roleCheckConfigured || me.user?.subscription?.roleVerified)) {
+            location.reload();
+            return;
+          }
+        }
+        AV.setText('#roleGateMsg', res.status === 401
+          ? 'Sesja wygasła. Zaloguj się ponownie przyciskiem powyżej.'
+          : 'Nadal brak aktywnej roli Alpha. Sprawdź rolę na Discordzie i spróbuj ponownie za chwilę.');
+      } catch {
+        AV.setText('#roleGateMsg', 'Brak połączenia z serwerem. Spróbuj ponownie za chwilę.');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+    $('#roleLogout')?.addEventListener('click', async () => {
+      try { await AV.serverLogout(); } catch {}
+      AV.logout();
+      location.href = '/';
+    });
     AV.ensureChat();
     AV.setPlan(AV.state.subscription.plan === 'solo', true);
     AV.renderAll();
@@ -1475,9 +1506,14 @@
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadMacroEvents(); }, 300000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadWearables(); }, 300000);
+    const roleCheckEvery = Math.max(300, Number(AV.api.roleRecheckSeconds) || 300) * 1000 + 15000;
+    setInterval(() => { if (AV.api.online && AV.api.authenticated) AV.checkAccess(); }, roleCheckEvery);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') AV.loadQuotes();
-      if (document.visibilityState === 'visible' && AV.isLoggedIn()) { AV.loadEvents(); AV.loadMacroEvents(); AV.loadWearables(); }
+      if (document.visibilityState === 'visible' && AV.isLoggedIn()) {
+        AV.loadEvents(); AV.loadMacroEvents(); AV.loadWearables();
+        if (Date.now() - (AV.api.lastRoleCheckAt || 0) > roleCheckEvery) AV.checkAccess();
+      }
     });
     setTimeout(() => { AV.macroNotify(); AV.checkLiveReminder(); if (AV.propNotify) AV.propNotify(); }, 4000);
     AV.showView(AV.viewFromHash());

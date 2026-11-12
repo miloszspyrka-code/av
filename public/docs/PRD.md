@@ -88,7 +88,8 @@ W wersji 3.0 backend został zmigrowany z Express/Node.js na PHP 8.3, a harmonog
 
 - Logowanie wyłącznie Discord OAuth2 (`identify guilds.members.read`).
 - Wymagane: członkostwo w serwerze `DISCORD_GUILD_ID` i rola `DISCORD_REQUIRED_ROLE_ID`.
-- Brak konfiguracji = brak dostępu (fail closed).
+- Rola jest sprawdzana przy logowaniu i cyklicznie co 5 minut; jej odebranie usuwa sesje i blokuje panel.
+- Chwilowy błąd Discorda nie odbiera dostępu kontom już zweryfikowanym (fail open); brak roli i brak konfiguracji = brak dostępu (fail closed).
 - Sesja: cookie `av_session` HttpOnly, SameSite=Lax, Secure na HTTPS, 30 dni przy „Nie wylogowuj mnie”.
 - CSRF: kontrola `Origin` dla żądań mutujących.
 - Rate limiting w MySQL dla logowania i operacji wrażliwych.
@@ -98,7 +99,7 @@ W wersji 3.0 backend został zmigrowany z Express/Node.js na PHP 8.3, a harmonog
 
 ### FR-01 — Logowanie Discord i rola
 
-Użytkownik klika „Zaloguj przez Discord”, przechodzi OAuth2, a serwer sprawdza członkostwo i rolę. Brak roli, brak członkostwa lub błąd Discord kończy się czytelnym komunikatem i brakiem sesji.
+Użytkownik klika „Zaloguj przez Discord”, przechodzi OAuth2, a serwer sprawdza członkostwo i rolę. Brak roli lub członkostwa kończy się czytelnym komunikatem i brakiem sesji. Cron co 5 minut ponawia sprawdzenie aktywnych sesji; odebranie roli blokuje panel. Chwilowy błąd Discorda nie odbiera dostępu kontom już zweryfikowanym.
 
 ### FR-02 — Sesja, CSRF, rate limit
 

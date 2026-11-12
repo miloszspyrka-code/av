@@ -56,7 +56,8 @@ W `miloszspyrka-code/alphavault` → Settings → Secrets and variables → Acti
 | `DISCORD_REDIRECT_URI` | `https://alphavault.pl/auth/discord/callback` |
 | `DISCORD_GUILD_ID` | ID serwera Alpha Moves |
 | `DISCORD_REQUIRED_ROLE_ID` | ID roli Alpha |
-| `DISCORD_BOT_TOKEN` | token bota read-only do scheduled events |
+| `DISCORD_BOT_TOKEN` | token bota read-only do scheduled events i rechecku roli |
+| `DISCORD_ROLE_RECHECK_SECONDS` | próg rechecku roli (minimum 300, domyślnie 300) |
 | `ADMIN_DISCORD_IDS` | opcjonalna lista Discord ID administratorów (po przecinku) |
 | `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET` | aplikacja OAuth2 w Oura Cloud (scope `daily`; bez nich kafelek jest nieaktywny) |
 | `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET` | aplikacja OAuth2 w WHOOP Developer Dashboard (scope `read:recovery read:sleep offline`) |
@@ -84,14 +85,17 @@ W Discord Developer Portal:
 
 - OAuth2 → Redirects: dodaj `https://alphavault.pl/auth/discord/callback`,
 - scopes: `identify`, `guilds.members.read`,
-- weryfikacja roli używa tokenu użytkownika i `GET /users/@me/guilds/{guild_id}/member` — bot nie jest do tego potrzebny,
-- bot jest potrzebny wyłącznie do odczytu scheduled events; ma tylko `View Channels`, bez Manage Events i bez Privileged Gateway Intents.
+- logowanie sprawdza rolę tokenem użytkownika: `GET /users/@me/guilds/{guild_id}/member`,
+- cron co 5 min sprawdza aktywne sesje botem: `GET /guilds/{guild_id}/members/{user_id}`,
+- bot ma tylko `View Channels`, bez Manage Events i bez Privileged Gateway Intents.
 
 Backend odmawia dostępu, gdy:
 
 - użytkownik nie jest członkiem serwera,
 - użytkownik nie ma wymaganej roli,
 - `DISCORD_GUILD_ID` lub `DISCORD_REQUIRED_ROLE_ID` nie są ustawione (fail closed).
+
+Odebranie roli w Discordzie usuwa wszystkie sesje użytkownika w ciągu maksymalnie 5 minut (`access.role_revoked`). Chwilowy błąd Discorda nie odbiera dostępu osobom już zweryfikowanym.
 
 ## 4a. Urządzenia zdrowotne
 
@@ -127,7 +131,14 @@ Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadan
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php`.
+Skrypt uruchamia kolejno `bin/sync-discord-events.php` i `bin/check-discord-roles.php` (recheck roli co 5 min).
+
+Ręcznie (bez panelu):
+
+```bash
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/check-discord-roles.php
+```
 
 `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje), więc harmonogram zmieniaj tylko w panelu LH.
 
@@ -149,7 +160,7 @@ Ręcznie (bez panelu): `/usr/bin/php /home/platne/serwer445119/public_html/alpha
 
 Wymagania:
 
-- `DISCORD_BOT_TOKEN` i `DISCORD_GUILD_ID` w `~/public_html/alphavault.pl/.app/config.json`,
+- `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` i `DISCORD_REQUIRED_ROLE_ID` w `~/public_html/alphavault.pl/.app/config.json`,
 - bot z uprawnieniem `View Channels`, bez uprawnień do zarządzania wydarzeniami,
 - brak Privileged Gateway Intents,
 - katalog `~/public_html/alphavault.pl/.app/logs` z prawami 700.
@@ -305,7 +316,7 @@ Tworzy `exchange_connections`, `exchange_imports`, `exchange_sync_runs`, `exchan
 
 ### 19.3. Cron
 
-Istniejące zadanie co 5 min wywołuje także worker integracji:
+Istniejące zadanie co 5 min wywołuje także worker integracji i recheck roli:
 
 ```text
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh

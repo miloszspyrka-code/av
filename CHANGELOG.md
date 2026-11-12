@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.8.0 — 2026-11-12
+
+### Dodane
+- Cykliczna weryfikacja roli Alpha: cron co 5 minut (`bin/check-discord-roles.php`) sprawdza aktywne sesje botem (`GET /guilds/{id}/members/{user_id}`) i usuwa wszystkie sesje przy braku roli lub członkostwa (`access.role_revoked`).
+- `users.role_checked_at`, `role_check_status`, `role_check_error` oraz tabela `role_check_state` z blokadą cronu i licznikami; stan w `/api/health.roleRecheck`.
+- Frontend: pełnoekranowa bramka `#roleGate` przy 401 lub `roleVerified=false`, komunikat o wymaganej roli, przycisk „Sprawdź ponownie” i kontrola dostępu co 5 minut.
+- `DISCORD_ROLE_RECHECK_SECONDS` (minimum 300 s) i `DISCORD_API_BASE` (tylko testy/mock).
+
+### Zmienione
+- Logowanie: brak roli/członkostwa = 403; chwilowy błąd Discorda (429/5xx) = 503 dla nowych kont, ale zweryfikowane konto dostaje dostęp z grace, żeby kupujący nie tracili panelu.
+- `sync-discord-events.sh` uruchamia po synchronizacji recheck roli; bez dodatkowego wpisu w LH Cron.
+- Dokumentacja: API, Discord, baza, deploy, funkcje, testy.
+
+### Testy
+- `npm run test:roles` — 18 scenariuszy: decyzje login, fail-open, 404, 429 z Retry-After, revoke sesji, audit, blokada cronu.
+- UI e2e: bramka roli blokuje panel.
+
 ## 3.7.1 — 2026-11-12
 
 ### Naprawione
@@ -11,6 +28,7 @@
 
 ### Dodane
 - `npm run test:tax` — 8 scenariuszy: odczyt z MySQL, edycja nadwyżki, CSV, PDF, formularz wpłaty/wypłaty, puste konto i brak błędów JS.
+
 
 ## 3.7.0 - 2026-11-12
 
