@@ -19,6 +19,7 @@ if ($state === false) {
     fwrite(STDERR, "Brak db/demo-state.json\n");
     exit(1);
 }
+$state = \AlphaVault\DemoState::shiftToToday($state) ?? $state;
 $ids = [];
 foreach ($users as $user) {
     $userId = (int) $user['id'];

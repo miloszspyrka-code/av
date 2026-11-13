@@ -22,6 +22,7 @@ CI używa MySQL 8.4, PHP 8.3, Node 24 i systemowego Chrome. Konfiguracja testowa
 | Discord events tests | DB/sync, DST, UPSERT, soft delete |
 | Macro events tests | normalizacja FF/TradingView, UTC, soft delete |
 | Quotes tests | cache, TTL, fallback, E2E notowań |
+| Demo state tests | przesunięcie dat fixture demo, idempotencja, plany jako punkt zaczepienia |
 | Wearables E2E | OAuth2/PKCE, rotacja tokenów, UI, bezpieczeństwo |
 | API E2E | health, sesja, CSRF, stan, events, macro, admin, eksport |
 | UI E2E | 15 widoków, live, prop, makro, zapisy, odznaki |
@@ -74,6 +75,10 @@ Wymaga Chrome/Edge (Playwright). Jeśli brak przeglądarki, test API nadal przec
 ## Notowania rynkowe - 14 scenariuszy
 
 `tests/quotes.test.php` (`npm run test:quotes`) testuje `app/Quotes.php` bez sieci i bez bazy: świeży zestaw, cache w TTL, fallback po błędzie dostawcy, pusty payload bez cache, cząstkowe pobranie, wygasanie pojedynczego notowania (900 s) i uszkodzony plik cache.
+
+## Daty demo - 15 scenariuszy
+
+`tests/demo-state.test.php` (`npm run test:demo-state`) sprawdza `app/DemoState.php` bez bazy i bez sieci: delta 0 dla daty fixture, przesunięcie transakcji, planów, check-inów i dat przyszłych, idempotencję, plany jako punkt zaczepienia, przesunięcie wstecz, niepoprawny JSON, brak dat oraz strefę `Europe/Warsaw`.
 
 ## Discord DB/sync - 24 scenariusze
 
