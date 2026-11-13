@@ -78,7 +78,7 @@ Legenda:
 | Szczegóły transakcji | ✅ | wykres, MAE/MFE, checklist, notatka, mentor |
 | Screeny przed/po | ✅ | upload, drag&drop, Ctrl+V; JPEG w stanie |
 | Dodanie transakcji | ✅ | formularz startuje pusty; walidacja kierunku SL/TP; ryzyko = \|entry − SL\| × size; ostrzeżenie przy przekroczeniu limitu |
-| Pusty dziennik | ✅ | komunikat „Brak transakcji” bez filtrów; „Brak transakcji spełniających filtry” tylko przy aktywnym filtrze |
+| Pusty dziennik | ✅ | CTA „Dodaj transakcję” i „Giełdy i API” bez tekstu zastępczego; „Brak transakcji spełniających filtry” tylko przy aktywnym filtrze |
 | Edycja transakcji | ✅ | formularz wypełniony danymi |
 | Usunięcie transakcji | ✅ | potwierdzenie |
 | Zamknięcie otwartej pozycji | ✅ | cena wyjścia lub wynik ręczny, R, czas trwania; MAE/MFE tylko z importu |
@@ -108,7 +108,7 @@ Import XLS/XLSX nie jest czytany — zapisz jako CSV (komunikat w UI).
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Krypto (dźwignia, depozyt, wartość) | ✅ | |
+| Krypto (dźwignia, depozyt, wartość) | ✅ | ostrzeżenie o ryzyku wysokiej dźwigni |
 | FX/indeksy/surowce (loty, pipsy) | ✅ | |
 | Cena instrumentu live | ✅ | `GET /api/quotes?symbols=…`, Yahoo Finance, odświeżanie co 60 s; brak notowań = `—`, bez wartości demo |
 | Long/Short | ✅ | walidacja SL/TP |

@@ -435,6 +435,10 @@
 
   /* ---------- dziennik ---------- */
   AV.bindJournal = () => {
+    $('#jEmpty')?.addEventListener('click', (e) => {
+      if (e.target.closest('[data-journal-add]')) AV.showView('nowa');
+      else if (e.target.closest('[data-journal-exchanges]')) AV.showView('gieldy');
+    });
     $('#fRes')?.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
       AV.ui.jFilter = b.dataset.f; AV.renderJournal();
@@ -1345,9 +1349,7 @@
         }
       });
     });
-    $('#simExp')?.addEventListener('click', () => { AV.state.subscription.expired = true; AV.saveNow(); AV.renderExpired(); AV.toast('Podgląd: subskrypcja wygasła'); });
     $('#expBack')?.addEventListener('click', () => { AV.state.subscription.expired = false; AV.saveNow(); AV.renderExpired(); AV.toast('Wrócono do panelu'); });
-    $('#simSolo')?.addEventListener('click', () => AV.setPlan(true));
   };
 
   AV.toggleSetting = (el) => {
