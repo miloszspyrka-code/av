@@ -1245,7 +1245,6 @@
         currency: $('#accCurrency').value, start, date: $('#accDate').value.trim() || AV.dateLabel(new Date()),
         lev: $('#accLev').value.trim() || '1×', goal: $('#accGoal').value.trim(), balance: start, include: true, primary: false
       });
-      AV.state.meta.sessions = AV.state.meta.sessions;
       AV.saveNow(); $('#accForm').style.display = 'none';
       ['#accName', '#accStart', '#accDate', '#accLev', '#accGoal'].forEach((x) => $(x).value = '');
       AV.renderAccounts(); AV.renderSettings(); AV.renderDashboard(); AV.toast('Konto dodane');
@@ -1278,10 +1277,6 @@
         if (acc) acc.balance += f.type === 'Wpłata' ? -f.amount : f.amount;
         AV.saveNow(); AV.renderFlows(); AV.renderAccounts(); AV.renderTax(); AV.renderSettings(); AV.toast('Usunięto');
       } });
-    });
-    $('#outAll')?.addEventListener('click', () => {
-      AV.state.meta.sessions = [{ device: 'MacBook · Chrome', place: 'Warszawa', when: 'teraz' }];
-      AV.saveNow(); AV.renderSettings(); AV.toast('Wylogowano inne urządzenia');
     });
     $('#dlAll')?.addEventListener('click', () => AV.downloadAll());
     $('#downloadDataExpired')?.addEventListener('click', () => AV.downloadAll());
@@ -1318,7 +1313,7 @@
     if (k === 'remember') AV.toast(on ? 'Zostaniesz zalogowana na tym urządzeniu' : 'Sesja wygaśnie po zamknięciu karty');
     if (k === 'macroTwo') AV.renderCalendar();
     if (k === 'safetyEnabled') AV.renderLock();
-    if (k === 'requireReason' || k === 'apiCode') AV.toast('Ustawienie zapisane');
+    if (k === 'requireReason') AV.toast('Ustawienie zapisane');
   };
 
   /* ---------- wpłaty ---------- */

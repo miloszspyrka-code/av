@@ -124,6 +124,30 @@ try {
   }
   log('nawigacja wszystkich widoków', true, views.length + ' widoków');
 
+  // zaufanie: brak deklaracji 2FA/sesji/kodu API, uczciwe copy integracji
+  await page.click('.navg button[data-v="ust"]');
+  const trust = await page.evaluate(() => {
+    const ust = document.querySelector('#ust')?.innerText || '';
+    return {
+      twofa: ust.includes('2FA na Discordzie'),
+      sessions: ust.includes('Aktywne sesje') || !!document.querySelector('#outAll'),
+      apiCode: !!document.querySelector('[data-setting="apiCode"]'),
+      deviceSession: ust.includes('Sesja na tym urządzeniu')
+    };
+  });
+  log('konto: brak fałszywego 2FA/sesji/kodu API', !trust.twofa && !trust.sessions && !trust.apiCode && trust.deviceSession, JSON.stringify(trust));
+  await page.click('.navg button[data-v="gieldy"]');
+  const exCopy = await page.evaluate(() => document.querySelector('#gieldy')?.innerText || '');
+  log('giełdy: klucz tylko do odczytu', exCopy.includes('tylko odczyt') && !exCopy.includes('dowolne (odczyt wystarcza)'), exCopy.slice(0, 120));
+  const landingCopy = await page.evaluate(() => document.body.innerText);
+  log('landing: bez dowolnych uprawnień', !landingCopy.includes('dowolnymi uprawnieniami'), 'ok');
+  await page.click('.navg button[data-v="trans"]');
+  const journalCopy = await page.evaluate(() => document.querySelector('#trans')?.innerText || '');
+  log('dziennik: import do 25 minut', journalCopy.includes('do 25 minut') && !journalCopy.includes('co 30 minut'), 'ok');
+  await page.click('.navg button[data-v="mentor"]');
+  const mentorCopy = await page.evaluate(() => document.querySelector('#mentor')?.innerText || '');
+  log('MCP: tylko odczyt bez fałszywego statusu', mentorCopy.includes('MCP · TYLKO ODCZYT') && !mentorCopy.includes('SERWER MCP GOTOWY'), 'ok');
+
   // Mentor AI: integracje MCP
   await page.click('.navg button[data-v="mentor"]');
   await page.waitForSelector('.mcp-endpoint-card');

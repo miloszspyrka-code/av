@@ -11,7 +11,7 @@
 MCP zostanie zbudowany jako **osobny front controller PHP 8.3** na wydzielonej domenie, korzystający z tej samej bazy MySQL i tego samego konta LH.pl co AlphaVault.
 
 ```text
-ChatGPT / Grok / MCP Inspector
+ChatGPT / Claude / Grok / MCP Inspector
               │  HTTPS + OAuth 2.1 Bearer
               ▼
 https://mcpalphavault.pl/mcp
@@ -65,7 +65,7 @@ Do decyzji użytkownika należy wybór wariantu. Bez rejestracji `mcpalphavault.
 - Zgodność z wersjami: `2025-03-26`, `2025-06-18`, `2025-11-25` oraz stateless `2026-07-28` (bez obowiązkowego `initialize`).
 - `MCP-Protocol-Version` walidowany, jeśli występuje. Brak nagłówka = `2025-03-26`.
 - Bez `Mcp-Session-Id` po stronie serwera; każdy request jest samodzielny. To upraszcza skalowanie i unika stanu w PHP.
-- `Origin` walidowany, jeśli występuje. Dozwolone originy klientów: `chatgpt.com`, `chat.openai.com`, `platform.openai.com`, `grok.com`, `x.ai`. Brak `Origin` jest normalny dla klientów serwerowych.
+- `Origin` walidowany, jeśli występuje. Dozwolone originy klientów: `chatgpt.com`, `chat.openai.com`, `platform.openai.com`, `grok.com`, `x.ai`, `claude.ai`, `claude.com`. Brak `Origin` jest normalny dla klientów serwerowych.
 - `Host` musi być zgodny z domeną MCP (ochrona przed host-header injection).
 - Limit body: 64 KiB dla `tools/call`, 16 KiB dla OAuth; limit stanu bez zmian: 12 MiB.
 
@@ -90,7 +90,7 @@ MCP jest resource serverem i jednocześnie własnym authorization serverem. Nie 
 | `GET /oauth/authorize` | ekran zgody |
 | `POST /oauth/authorize` | zatwierdzenie/odrzucenie |
 | `POST /oauth/token` | code + PKCE, refresh |
-| `POST /oauth/register` | DCR dla ChatGPT/Grok |
+| `POST /oauth/register` | DCR dla ChatGPT/Claude/Grok |
 | `POST /oauth/revoke` | unieważnienie tokenu |
 | `GET /oauth/login` | logowanie Discord na domenie MCP |
 | `GET /oauth/discord/callback` | powrót z Discorda |
@@ -103,7 +103,7 @@ Wymagania:
 - `resource` (RFC 8707) przyjmowany i zapisywany w tokenie; akceptowane audience: `https://<host>` i `https://<host>/mcp`.
 - Access token: 1 h, losowy 32 B, w bazie tylko HMAC-SHA-256.
 - Refresh token: 30 dni, rotacja przy każdym użyciu; ponowne użycie starego tokenu unieważnia rodzinę.
-- DCR: dokładne `redirect_uris`, tylko HTTPS i tylko hosty z allowlisty (`chatgpt.com`, `openai.com`, `grok.com`, `x.ai`; `localhost` wyłącznie poza produkcją). Bez dzikich wildcardów.
+- DCR: dokładne `redirect_uris`, tylko HTTPS i tylko hosty z allowlisty (`chatgpt.com`, `openai.com`, `grok.com`, `x.ai`, `claude.ai`, `claude.com`; `localhost` wyłącznie poza produkcją). Bez dzikich wildcardów. Claude korzysta z callbacku `https://claude.ai/api/mcp/auth_callback`.
 - Tokeny w `Authorization: Bearer`, nigdy w URL, logach, opisach narzędzi ani wynikach.
 - 401 z `WWW-Authenticate: Bearer resource_metadata="...", scope="alphavault.read alphavault.write"`.
 - 403 z `error="insufficient_scope"` przy braku uprawnienia do zapisu.

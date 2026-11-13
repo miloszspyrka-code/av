@@ -63,7 +63,7 @@ $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
 if ($origin !== '') {
     $allowedOrigins = array_filter(array_map('trim', explode(',', (string) getenv('MCP_ALLOWED_ORIGINS'))));
     if ($allowedOrigins === []) {
-        $allowedOrigins = ['https://chatgpt.com', 'https://chat.openai.com', 'https://platform.openai.com', 'https://grok.com', 'https://x.ai'];
+        $allowedOrigins = ['https://chatgpt.com', 'https://chat.openai.com', 'https://platform.openai.com', 'https://grok.com', 'https://x.ai', 'https://claude.ai', 'https://claude.com'];
     }
     if (!in_array($origin, $allowedOrigins, true)) {
         mcp_json(403, ['error' => 'bad_origin']);
