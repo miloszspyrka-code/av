@@ -317,11 +317,11 @@ try {
   await page.click('.navg button[data-v="kalk"]');
   await page.waitForFunction(() => document.querySelector('#rMain')?.textContent !== '—', null, { timeout: 15000 });
   const calc = await page.locator('#rMain').innerText();
+  const levWarn = await page.locator('#levWarn').isVisible();
+  log('kalkulator: ostrzeżenie o dźwigni', levWarn, levWarn ? 'widoczne' : 'brak');
   await page.click('#calcMode [data-m="fx"]');
   const calcFx = await page.locator('#rMainL').innerText();
   log('kalkulator krypto + FX', calc !== '—' && calcFx.includes('MT4'), calc + ' / ' + calcFx);
-  const levWarn = await page.locator('#levWarn').isVisible();
-  log('kalkulator: ostrzeżenie o dźwigni', levWarn, levWarn ? 'widoczne' : 'brak');
 
   // cena live z API: bez etykiety demo i bez technicznych etykiet w nagłówku
   await page.click('#calcMode [data-m="crypto"]');
