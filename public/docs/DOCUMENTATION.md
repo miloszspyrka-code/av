@@ -822,6 +822,8 @@ Nie duplikuj szczegółów, których źródło jest w innym pliku — linkuj.
 | nowy dokument | `docs/README.md`, ten rozdział, test linków |
 | strona prawna | `docs/FUNKCJE.md` §16, `public/index.html`, `public/index.php`, `tests/docs.test.mjs` |
 
+Audyty wewnętrzne (np. `docs/AUDYT-UZYTECZNOSCI-2026-11-13.md`) są dokumentami repo-only: wpis w `docs/README.md`, bez kopii w `public/docs`.
+
 ### 17.3. Automatyczna spójność
 
 ```powershell

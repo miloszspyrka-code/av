@@ -36,7 +36,8 @@ const REPO_ONLY = new Set([
   'docs/AGENTS.md',
   'docs/DEPLOY.md',
   'docs/DISCORD.md',
-  'docs/MCP.md'
+  'docs/MCP.md',
+  'docs/AUDYT-UZYTECZNOSCI-2026-11-13.md'
 ]);
 
 const PUBLIC_NAMES = new Set(MANAGED.map((entry) => entry.out));

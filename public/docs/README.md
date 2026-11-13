@@ -13,6 +13,7 @@
 | [ARCHITEKTURA.md](ARCHITEKTURA.md) | warstwy, przepływy, decyzje, rozszerzenia | tak |
 | [BAZA-DANYCH.md](BAZA-DANYCH.md) | MySQL, schemat, backup, bezpieczeństwo | tak |
 | [FUNKCJE.md](FUNKCJE.md) | co działa e2e, co jest demo | tak |
+| [AUDYT-UZYTECZNOSCI-2026-11-13.md](https://github.com/miloszspyrka-code/av/blob/main/docs/AUDYT-UZYTECZNOSCI-2026-11-13.md) | audyt funkcjonalno-użytkowy, priorytety P0/P1/P2 | nie |
 | [PROP.md](PROP.md) | prop challenge: model danych, limity, statusy, testy | tak |
 | [TESTOWANIE.md](TESTOWANIE.md) | testy prop, API i UI, checklisty | tak |
 | [DISCORD.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
