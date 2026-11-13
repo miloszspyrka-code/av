@@ -228,6 +228,8 @@
     prop_challenge: 'Prop challenge'
   }[kind] || kind);
 
+  AV.mcpCodes = {};
+
   AV.mcpValue = (value) => {
     if (value === null || value === undefined || value === '') return '—';
     if (Array.isArray(value)) return value.map((v) => AV.mcpValue(v)).join(', ');
@@ -266,8 +268,10 @@
         + '<div class="mcp-proposal-title">' + AV.esc(p.target || p.kind) + '</div>'
         + '<div class="mcp-proposal-meta">' + AV.esc(p.clientName || 'Agent MCP') + ' · utworzono ' + AV.esc(created) + ' · wygasa ' + AV.esc(expires) + '</div></div>'
         + '<div class="mcp-proposal-actions"><button type="button" class="approve" data-mcp-decide="approve" data-id="' + AV.attr(p.id) + '">Zatwierdź</button>'
-        + '<button type="button" class="reject" data-mcp-decide="reject" data-id="' + AV.attr(p.id) + '">Odrzuć</button></div></div>'
+        + '<button type="button" class="reject" data-mcp-decide="reject" data-id="' + AV.attr(p.id) + '">Odrzuć</button>'
+        + '<button type="button" class="code" data-mcp-code="' + AV.attr(p.id) + '">Kod do rozmowy</button></div></div>'
         + (rows ? '<div class="mcp-diff">' + rows + '</div>' : '')
+        + (AV.mcpCodes[p.id] ? '<div class="mcp-approval-code"><span>Kod jednorazowy:</span><code>' + AV.esc(AV.mcpCodes[p.id].code) + '</code><span>Wpisz go w rozmowie z agentem. Wygasa ' + AV.esc(new Date(AV.mcpCodes[p.id].expiresAt).toLocaleTimeString('pl-PL')) + '.</span></div>' : '')
         + '</div>';
     }).join('');
   };
@@ -306,6 +310,7 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Nie udało się rozstrzygnąć propozycji.');
+      delete AV.mcpCodes[id];
       AV.toast(action === 'approve' ? 'Propozycja zatwierdzona. Zapisano w bazie.' : 'Propozycja odrzucona. Dane bez zmian.');
       if (action === 'approve') await AV.reloadStateFromServer();
       await AV.loadMcpProposals();
@@ -322,8 +327,42 @@
     }
   };
 
+  AV.requestApprovalCode = async (id) => {
+    if (!id) return false;
+    const button = $('[data-mcp-code="' + id + '"]');
+    if (button) button.disabled = true;
+    try {
+      const res = await AV.apiFetch('/api/mcp/proposals/' + encodeURIComponent(id) + '/approval-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Nie udało się wygenerować kodu.');
+      AV.mcpCodes[id] = { code: data.code, expiresAt: data.expiresAt };
+      AV.renderMcpProposals();
+      AV.toast('Kod gotowy. Wpisz go w rozmowie z agentem.');
+      return true;
+    } catch (err) {
+      if (button) button.disabled = false;
+      const error = $('#mcpPendingError');
+      if (error) {
+        error.style.display = 'block';
+        error.textContent = err.message;
+      }
+      AV.toast(err.message, 7000);
+      return false;
+    }
+  };
+
   AV.bindMcp = () => {
     $('#mcpProposals')?.addEventListener('click', (e) => {
+      const code = e.target.closest('[data-mcp-code]');
+      if (code) {
+        e.preventDefault();
+        AV.requestApprovalCode(code.dataset.mcpCode);
+        return;
+      }
       const button = e.target.closest('[data-mcp-decide]');
       if (!button) return;
       e.preventDefault();

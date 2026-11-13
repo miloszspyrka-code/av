@@ -44,6 +44,7 @@ final class TradeContextService
         $planApproved = $plan !== null && !empty($plan['approvedAt']);
 
         return [
+            'found' => true,
             'trade' => $this->trades->sanitize($trade, true),
             'review' => $state['tradeReviews'][$tradeId] ?? null,
             'setup' => $setup,

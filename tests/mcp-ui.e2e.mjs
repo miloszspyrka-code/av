@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Panel MCP E2E: propozycje, diff, zatwierdzenie, odrzucenie, trwałość po reloadzie.
+ * Panel MCP E2E: propozycje, diff, jednorazowy kod, zatwierdzenie, odrzucenie, trwałość po reloadzie.
  * Wymaga serwera APP_URL i Chrome.
  */
 import assert from 'node:assert/strict';
@@ -93,6 +93,12 @@ try {
   assert.match(diffText, /70/, 'brak wartości 70');
   assert.match(diffText, /Musisz|Zatwierdź|Odrzuć/i, 'brak akcji');
   log('panel: diff i akcje', true);
+
+  await page.click('[data-mcp-code="' + seeded.checkin + '"]');
+  await page.waitForSelector('.mcp-approval-code code', { timeout: 10000 });
+  const approvalCode = await page.locator('.mcp-approval-code code').innerText();
+  assert.match(approvalCode.trim(), /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+  log('panel: jednorazowy kod do rozmowy', true);
 
   await page.click('[data-mcp-decide="approve"][data-id="' + seeded.checkin + '"]');
   await page.waitForTimeout(1500);

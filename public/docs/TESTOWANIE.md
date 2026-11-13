@@ -249,14 +249,14 @@ Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `d
 
 To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu początkowego) i powiadomienia iOS wymagają testu ręcznego; patrz „Czego testy nie obejmują”.
 
-## MCP 2.0 — OAuth, narzędzia, propozycje, panel
+## MCP 2.1 - OAuth, narzędzia, propozycje, kod, panel
 
 | Test | Zakres |
 | --- | --- |
-| `php tests/mcp.test.php` | propozycje, idempotencja, konflikt rewizji, TTL, ochrona danych giełdowych, izolacja, audyt |
-| `node tests/mcp.e2e.mjs` | OAuth 2.1 + PKCE, DCR, consent, token/refresh/revoke, 15 narzędzi odczytu, 7 propozycji, prompts, `MCP_WRITES_ENABLED=false/true` |
+| `php tests/mcp.test.php` | propozycje, kod jednorazowy, idempotencja decyzji, konflikt rewizji, TTL, ochrona danych giełdowych, `target_missing`, izolacja, audyt |
+| `node tests/mcp.e2e.mjs` | OAuth 2.1 + PKCE, DCR, consent, token/refresh/revoke, 17 narzędzi odczytu, 11 narzędzi zapisu, `approve_proposal` kodem, `reject_proposal`, prompts, `MCP_WRITES_ENABLED=false/true` |
 | `node tests/mcp-login.e2e.mjs` | logowanie Discord na mocku: rola OK, brak roli, brak członkostwa, duplikat konta |
-| `node tests/mcp-ui.e2e.mjs` | panel: dwie propozycje, diff, approve, reject, reload, trwałość i brak błędów JS |
+| `node tests/mcp-ui.e2e.mjs` | panel: dwie propozycje, diff, kod do rozmowy, approve, reject, reload, trwałość i brak błędów JS |
 | `node tests/prop-parity.mjs` | parytet `PropChallengeService.php` z `public/js/prop.js` na wspólnych fixtures |
 | `php tests/mcp-user-service.php` | idempotentne dopasowanie konta wyłącznie po Discord ID |
 

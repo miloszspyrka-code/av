@@ -510,7 +510,8 @@ Panel MCP: status, scope i oczekujące propozycje zmian.
 
 - Wymaga sesji panelu (`401` bez logowania).
 - Zwraca `{endpoint, enabled, writesEnabled, scopes, proposals[], proposalCount, audit[]}`.
-- `proposals` zawiera `id`, `kind`, `target`, `baseRevision`, `before`, `after`, `diff`, `status`,
+- `proposals` zawiera `proposalId`, `kind`, `target`, `baseRevision`, `diffHash`, `changes`,
+  `before`, `after`, `diff`, `status`, `canApprove`, `approvalCodeActive`, `approvalCodeExpiresAt`,
   `createdAt`, `expiresAt`, `clientName`.
 - Propozycje wygasłe są oznaczane jako `expired` przy odczycie.
 
@@ -528,7 +529,21 @@ Zatwierdzenie lub odrzucenie propozycji MCP.
 - `reject` nie zmienia `user_states`.
 - Błędy: `not_found` (404), `proposal_closed` (409), `proposal_expired` (409),
   `revision_conflict` (409), `state_too_large` (413).
-- Endpoint nie jest dostępny przez MCP i nie ma odpowiednika w narzędziach agenta.
+- Endpoint nie jest dostępny przez MCP. Zatwierdzanie przez agenta wymaga kodu z 3.23.
+
+### 3.23. `POST /api/mcp/proposals/{id}/approval-code`
+
+Generuje jednorazowy kod do zatwierdzenia propozycji w rozmowie z agentem.
+
+```json
+{ "proposalId": "uuid", "code": "ABCD-EFGH", "expiresAt": "2026-11-13T21:40:00Z" }
+```
+
+- Wymaga sesji panelu, `Origin` zgodnego z aplikacją i rate limitu 10/min.
+- Kod ma 8 znaków z alfabetu bez `0/O/1/I`, TTL 10 min (nie dłużej niż TTL propozycji).
+- W bazie zapisany jest wyłącznie SHA-256; kod nie jest dostępny przez MCP.
+- Nowe żądanie unieważnia poprzedni kod; 5 błędnych prób unieważnia kod.
+- Błędy: `not_found` (404), `proposal_closed` (409), `proposal_expired` (409).
 
 ## 4. Bezpieczeństwo
 

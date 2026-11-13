@@ -7,7 +7,7 @@ require_once $root . '/vendor/autoload.php';
 
 $db->execute("DELETE FROM users WHERE discord_id IN ('mcp-e2e-a', 'mcp-e2e-b')");
 $db->execute("DELETE FROM macro_events WHERE external_id = 'mcp-e2e-macro'");
-$db->execute("DELETE FROM mcp_clients WHERE client_name IN ('MCP E2E Client', 'MCP E2E Confidential')");
+$db->execute("DELETE FROM mcp_clients WHERE client_name IN ('MCP E2E Client', 'MCP E2E Confidential', 'MCP E2E Writer', 'MCP E2E Pilot B')");
 $file = $root . '/tests/mcp-test-sessions.json';
 if (is_file($file)) {
     unlink($file);

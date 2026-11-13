@@ -38,11 +38,15 @@ final class Tools
     private TradeContextService $tradeContext;
     private PropChallengeService $prop;
     private ProposalBuilder $builder;
+    private ProposalService $proposals;
     private bool $writesEnabled;
+    /** @var list<string> */
+    private array $pilotIds;
 
     public function __construct(Config $config, Db $db, Auth $auth)
     {
         $this->writesEnabled = (bool) $config->mcp['writesEnabled'];
+        $this->pilotIds = array_values(array_map('strval', (array) ($config->mcp['pilotDiscordIds'] ?? [])));
         $this->profiles = new ProfileService($config, $db, $auth);
         $this->states = new StateRepository($db);
         $this->trades = new TradeService();
@@ -54,8 +58,8 @@ final class Tools
         $this->connections = new ConnectionsService($db);
         $this->tradeContext = new TradeContextService($this->trades);
         $this->prop = new PropChallengeService();
-        $proposals = new ProposalService($db, $config);
-        $this->builder = new ProposalBuilder($db, $proposals);
+        $this->proposals = new ProposalService($db, $config);
+        $this->builder = new ProposalBuilder($db, $this->proposals);
     }
 
     // ------------------------------------------------------------------
@@ -164,8 +168,11 @@ final class Tools
         return ['items' => $items, 'total' => count($items)];
     }
 
-    public function getMacroCalendar(RequestContext $context, ?string $from = null, ?string $to = null, ?string $currency = null, ?int $impact = null, int $limit = 50, int $offset = 0): array
+    public function getMacroCalendar(RequestContext $context, ?string $from = null, ?string $to = null, ?string $currency = null, ?int $impact = null, int $limit = 50, int $offset = 0, bool $includePast = false): array
     {
+        if (!$includePast && ($from === null || trim($from) === '')) {
+            $from = Dates::todayKey();
+        }
         try {
             return $this->macro->list([
                 'from' => $from,
@@ -265,12 +272,75 @@ final class Tools
 
     public function getTradeContext(RequestContext $context, string $tradeId): array
     {
-        $contextData = $this->tradeContext->context($this->state($context), trim($tradeId));
-        if ($contextData === null) {
-            throw new ToolCallException('Transakcja nie istnieje.');
+        $id = trim($tradeId);
+        if ($id === '') {
+            throw new ToolCallException('tradeId nie może być pusty.');
         }
+        $contextData = $this->tradeContext->context($this->state($context), $id);
 
-        return $contextData;
+        return $contextData ?? [
+            'found' => false,
+            'trade' => null,
+            'review' => null,
+            'setup' => null,
+            'setupStats' => null,
+            'plan' => null,
+            'planMatch' => null,
+            'date' => null,
+        ];
+    }
+
+    // ------------------------------------------------------------------
+    // Cykl życia propozycji
+    // ------------------------------------------------------------------
+
+    public function listPendingProposals(RequestContext $context): array
+    {
+        $user = $this->user($context);
+        $items = $this->proposals->list((int) $user['id'], 'pending');
+
+        return ['items' => $items, 'total' => count($items)];
+    }
+
+    public function getProposalStatus(RequestContext $context, string $proposalId): array
+    {
+        $id = trim($proposalId);
+        if ($id === '') {
+            throw new ToolCallException('proposalId nie może być pusty.');
+        }
+        $user = $this->user($context);
+        try {
+            return $this->proposals->status((int) $user['id'], $id);
+        } catch (ProposalException $err) {
+            throw new ToolCallException($err->getMessage());
+        }
+    }
+
+    public function approveProposal(
+        RequestContext $context,
+        string $proposalId,
+        string $expectedDiffHash,
+        string $confirmationCode,
+        string $idempotencyKey
+    ): array {
+        return $this->propose($context, fn (int $userId, string $client): array => $this->proposals->approveWithCode(
+            $userId,
+            $proposalId,
+            $expectedDiffHash,
+            $confirmationCode,
+            $idempotencyKey,
+            $client
+        ));
+    }
+
+    public function rejectProposal(RequestContext $context, string $proposalId, string $idempotencyKey): array
+    {
+        return $this->propose($context, fn (int $userId, string $client): array => $this->proposals->rejectWithKey(
+            $userId,
+            $proposalId,
+            $idempotencyKey,
+            $client
+        ));
     }
 
     // ------------------------------------------------------------------
@@ -442,6 +512,62 @@ final class Tools
         return $this->propose($context, fn (int $userId, string $client): array => $this->builder->savePropChallenge($userId, $args, $client));
     }
 
+    public function proposeSaveAccount(
+        RequestContext $context,
+        string $name,
+        string $idempotencyKey,
+        ?string $id = null,
+        ?string $exchange = null,
+        ?string $type = null,
+        ?string $currency = null,
+        ?bool $include = null,
+        ?bool $primary = null,
+        ?string $lev = null,
+        ?string $goal = null,
+        ?string $date = null
+    ): array {
+        $args = ['name' => $name, 'idempotencyKey' => $idempotencyKey];
+        foreach ([
+            'id' => $id, 'exchange' => $exchange, 'type' => $type, 'currency' => $currency,
+            'include' => $include, 'primary' => $primary, 'lev' => $lev, 'goal' => $goal, 'date' => $date,
+        ] as $key => $value) {
+            if ($value !== null) {
+                $args[$key] = $value;
+            }
+        }
+
+        return $this->propose($context, fn (int $userId, string $client): array => $this->builder->saveAccount($userId, $args, $client));
+    }
+
+    public function proposeSaveCapitalFlow(
+        RequestContext $context,
+        string $type,
+        float $amount,
+        string $account,
+        string $currency,
+        string $idempotencyKey,
+        ?string $id = null,
+        ?string $date = null,
+        ?float $fiat = null,
+        ?float $fx = null,
+        ?string $note = null
+    ): array {
+        $args = [
+            'type' => $type,
+            'amount' => $amount,
+            'account' => $account,
+            'currency' => $currency,
+            'idempotencyKey' => $idempotencyKey,
+        ];
+        foreach (['id' => $id, 'date' => $date, 'fiat' => $fiat, 'fx' => $fx, 'note' => $note] as $key => $value) {
+            if ($value !== null) {
+                $args[$key] = $value;
+            }
+        }
+
+        return $this->propose($context, fn (int $userId, string $client): array => $this->builder->saveCapitalFlow($userId, $args, $client));
+    }
+
     private function propose(RequestContext $context, callable $build): array
     {
         if (!$this->writesEnabled) {
@@ -452,6 +578,9 @@ final class Tools
             throw new ToolCallException('Brak zakresu alphavault.write.');
         }
         $user = $this->user($context);
+        if ($this->pilotIds !== [] && !in_array((string) ($user['discordId'] ?? ''), $this->pilotIds, true)) {
+            throw new ToolCallException('Zapis MCP jest włączony tylko dla kont pilotażowych.');
+        }
         $client = $token->getClientId() ?? 'Agent MCP';
         try {
             return $build((int) $user['id'], $client);

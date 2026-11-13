@@ -199,6 +199,10 @@ final class Config
         $mcp = [
             'enabled' => $parseBool($env('MCP_ENABLED'), false),
             'writesEnabled' => $parseBool($env('MCP_WRITES_ENABLED'), false),
+            'pilotDiscordIds' => array_values(array_filter(array_map(
+                static fn (string $value): string => trim($value),
+                explode(',', (string) $env('MCP_PILOT_DISCORD_IDS', ''))
+            ), static fn (string $value): bool => $value !== '')),
             'issuer' => rtrim((string) $env('MCP_ISSUER', $appUrl), '/'),
             'resource' => rtrim((string) $env('MCP_RESOURCE', $appUrl . '/mcp'), '/'),
             'privateKeyPath' => (string) $env('MCP_PRIVATE_KEY_PATH', $root . '/keys/oauth-private.pem'),
