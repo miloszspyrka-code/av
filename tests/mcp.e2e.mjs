@@ -443,7 +443,10 @@ async function mainWrites() {
     proposalId, expectedDiffHash: diffHash, confirmationCode: issuedCode.code, idempotencyKey: approveKey,
   });
   assert.equal(approvedReplay.json.result.structuredContent.duplicate, true, approvedReplay.text);
-  const approvedAgain = await approveViaMcp(proposalId, diffHash, 'idem-e2e-approve-2-' + crypto.randomBytes(4).toString('hex'));
+  const approvedAgain = await call(tok.access_token, 'approve_proposal', {
+    proposalId, expectedDiffHash: diffHash, confirmationCode: issuedCode.code,
+    idempotencyKey: 'idem-e2e-approve-2-' + crypto.randomBytes(4).toString('hex'),
+  });
   assert.match(toolError(approvedAgain), /oczekując|nie jest już/i, approvedAgain.text);
   const afterApprove = JSON.parse(runPhp(path.join(ROOT, 'tests', 'mcp-helper.php'), ['state', String(a.userId)]));
   assert.equal(afterApprove.state.trades.length, beforeCount + 1);

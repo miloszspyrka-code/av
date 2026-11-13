@@ -348,7 +348,7 @@ try {
         && $balanceMainAfter === $balanceMainBefore, json_encode([$flow, $balanceMainBefore, $balanceMainAfter]));
 
     // 26. Aktualizacja usuniętego setupu nie wskrzesza rekordu.
-    $setupForUpdate = $builder->saveSetup($userA, ['name' => 'Setup do usunięcia', 'rules' => ['A1', 'B1'], 'idempotencyKey' => 'idem-setup-del-1'], 'test-client');
+    $setupForUpdate = $builder->saveSetup($userA, ['name' => 'Setup do usunięcia', 'rules' => ['Zasada A1', 'Zasada B1'], 'idempotencyKey' => 'idem-setup-del-1'], 'test-client');
     $service->approve($userA, $setupForUpdate['proposalId'], $userA);
     $stateRow = $db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userA]);
     $stateJson = json_decode((string) $stateRow['state'], true);
@@ -358,7 +358,7 @@ try {
             $deletedId = (string) $setup['id'];
         }
     }
-    $staleSetup = $builder->saveSetup($userA, ['id' => $deletedId, 'name' => 'Setup do usunięcia v2', 'rules' => ['A2', 'B2'], 'idempotencyKey' => 'idem-setup-del-2'], 'test-client');
+    $staleSetup = $builder->saveSetup($userA, ['id' => $deletedId, 'name' => 'Setup do usunięcia v2', 'rules' => ['Zasada A2', 'Zasada B2'], 'idempotencyKey' => 'idem-setup-del-2'], 'test-client');
     $staleSetupCode = $service->issueApprovalCode($userA, $staleSetup['proposalId'])['code'];
     $remaining = [];
     foreach ($stateJson['setups'] as $setup) {
