@@ -10,6 +10,7 @@ $root = dirname(__DIR__);
 require_once $root . '/app/Config.php';
 require_once $root . '/app/Db.php';
 require_once $root . '/app/HttpException.php';
+require_once $root . '/app/Encoding.php';
 require_once $root . '/app/Http.php';
 require_once $root . '/app/Auth.php';
 require_once $root . '/app/Discord.php';

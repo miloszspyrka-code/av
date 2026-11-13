@@ -145,6 +145,21 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             if (!is_array($state)) {
                 $state = null;
             }
+            if ($state !== null) {
+                $repaired = Encoding::repairValue($state);
+                if ($repaired !== $state) {
+                    $json = json_encode($repaired, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    if ($json !== false) {
+                        $db->execute(
+                            'UPDATE user_states SET state = ?, bytes = ? WHERE user_id = ?',
+                            [$json, strlen($json), $current['id']]
+                        );
+                        $auth->audit((int) $current['id'], 'state.repair_encoding', ['bytes' => strlen($json)]);
+                        $row['bytes'] = strlen($json);
+                    }
+                    $state = $repaired;
+                }
+            }
             Http::json([
                 'state' => $state,
                 'revision' => (int) $row['revision'],
@@ -180,6 +195,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                     'userId' => (int) $current['id'],
                 ], 409);
             }
+            $state = Encoding::repairValue($state);
             $json = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if ($json === false) {
                 Http::json(['error' => 'bad_state', 'message' => 'Nie można zakodować stanu.'], 400);
