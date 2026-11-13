@@ -1,0 +1,94 @@
+name: MCP tests
+
+# Testy OAuth/tools dla serwera MCP z wybranego refu.
+# Uruchamiaj z main: workflow_dispatch + ref (np. fix/mcp-consent).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref do testów MCP (branch/tag)"
+        required: true
+        default: "feat/mcp-phase1"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: MCP OAuth + tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: alpha_vault
+          MYSQL_USER: alpha_vault
+          MYSQL_PASSWORD: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, curl, mbstring, json, openssl, sodium
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          composer install --no-interaction --prefer-dist
+          npm ci --no-audit --no-fund
+
+      - name: Create test configuration
+        run: |
+          cat > tests/config.test.json <<'JSON'
+          {
+            "APP_URL": "http://127.0.0.1:4173",
+            "APP_ENV": "local",
+            "SESSION_SECRET": "ci-test-session-secret-0123456789abcdef",
+            "DB_HOST": "127.0.0.1",
+            "DB_PORT": "3306",
+            "DB_NAME": "alpha_vault",
+            "DB_USER": "alpha_vault",
+            "DB_PASSWORD": "test"
+          }
+          JSON
+
+      - name: Apply database schema
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: php app/db/migrate.php
+
+      - name: MCP tests
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+          PHP_BIN: php
+          MCP_TEST_PORT: "4175"
+          MCP_LOGIN_PORT: "4178"
+        run: |
+          set -euo pipefail
+          npm run test:mcp
+          npm run test:mcp:login

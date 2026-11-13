@@ -276,8 +276,7 @@ gh workflow run monitor-production.yml --repo miloszspyrka-code/av
 
 Błąd workflow oznacza powiadomienie GitHub do obserwujących repozytorium. Monitoring nie zastępuje LH Cron — tylko wykrywa zatrzymany sync lub awarię health.
 
-## 19. Integracje giełd i MetaTrader — konfiguracja produkcji
-
+## 19. Integracje giełd i MetaTrader - konfiguracja produkcji
 ### 19.1. Zmienne
 
 W `.app/config.json` (600, deny w `.htaccess`):
@@ -332,3 +331,18 @@ Plik `integrations/mt5/AlphaVault.mq5` kompiluje się w MetaEditorze. Wymaga:
 1. `WebRequest` dla `https://alphavault.pl`,
 2. kodu parowania z panelu,
 3. włączonego MetaTradera (lub VPS) — EA nie handluje.
+
+## 20. Serwer MCP (mcp.alphavault.pl)
+
+- Osobny front controller: `mcp/public/index.php`; aplikacja w `~/public_html/mcp.alphavault.pl/.app`.
+- Wdrożenie wyłącznie przez GitHub Actions: workflow `Deploy AlphaVault MCP` (`.github/workflows/deploy-mcp.yml`).
+- Uruchomienie z `main` z refem do wdrożenia:
+
+  ```powershell
+  gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<branch> -f dry_run=true
+  gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<branch> -f dry_run=false
+  ```
+
+- Workflow sprawdza sekrety, uruchamia `php -l` i `scripts/deploy-mcp.sh`: backup, rsync, migracja, klucze OAuth, health check.
+- `MCP_WRITES_ENABLED=false` jest wymuszone przez skrypt.
+- Workflow nie dotyka `alphavault.pl` ani WordPressa; environment `alphavault-production`.

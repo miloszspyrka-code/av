@@ -736,6 +736,13 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 - Environment `alphavault-production` dopuszcza deploy tylko z `main`.
 - Repo jest publiczne; secret scanning, push protection i Dependabot security updates są włączone.
 
+### 14.6. Serwer MCP
+
+- `mcp.alphavault.pl` ma osobny front controller `mcp/public/index.php` i `.app` w `~/public_html/mcp.alphavault.pl/.app`.
+- Wdrożenie: workflow `Deploy AlphaVault MCP` (`.github/workflows/deploy-mcp.yml`), uruchamiany z `main` z inputem `ref` (branch/tag do wdrożenia).
+- `scripts/deploy-mcp.sh` wykonuje backup, rsync, migrację, klucze OAuth i health check; `MCP_WRITES_ENABLED=false` jest wymuszone.
+- Workflow nie dotyka `alphavault.pl` ani WordPressa; używa environment `alphavault-production`.
+
 ## 15. Bezpieczeństwo
 
 | Obszar | Mechanizm |
