@@ -9,7 +9,7 @@ on:
       ref:
         description: "Ref do testów MCP (branch/tag)"
         required: true
-        default: "feat/mcp-phase1"
+        default: "fix/mcp-consent"
         type: string
 
 permissions:
