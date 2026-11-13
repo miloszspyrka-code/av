@@ -134,10 +134,16 @@ async function main() {
 
   const isLocal = /^http:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(BASE);
   if (isLocal) {
-    execFileSync('php', [path.join(ROOT, 'tests', 'seed-corrupt-state.php')], {
-      env: { ...process.env, ALPHA_VAULT_CONFIG: process.env.ALPHA_VAULT_CONFIG || 'tests/config.test.json' },
-      stdio: 'pipe'
-    });
+    try {
+      execFileSync('php', [path.join(ROOT, 'tests', 'seed-corrupt-state.php')], {
+        env: { ...process.env, ALPHA_VAULT_CONFIG: process.env.ALPHA_VAULT_CONFIG || 'tests/config.test.json' },
+        stdio: 'pipe'
+      });
+    } catch (err) {
+      console.error('seed stdout:', err.stdout?.toString() || '');
+      console.error('seed stderr:', err.stderr?.toString() || '');
+      throw err;
+    }
     log('seed uszkodzonego stanu (MySQL)', true);
   }
 
