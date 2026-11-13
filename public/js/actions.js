@@ -63,20 +63,26 @@
     AV.setHTML('#ticker', t.map(([s, p, c]) => '<span><b>' + s + '</b>' + AV.fmt(p, p < 10 ? 4 : p < 500 ? 2 : 0) + (c === null || c === undefined ? '' : ' <span class="' + (c >= 0 ? 'win' : 'loss') + '">' + (c >= 0 ? '+' : '\u2212') + AV.fmt(Math.abs(c), 1) + '%</span>') + '</span>').join(''));
   };
   AV.loadQuotes = async () => {
-    try {
-      const res = await AV.apiFetch('/api/quotes');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      if (!Array.isArray(data.quotes)) throw new Error('bad_quotes');
-      AV.tickerData = data.quotes
-        .filter((q) => q && typeof q.symbol === 'string' && Number.isFinite(Number(q.price)))
-        .map((q) => [q.symbol, Number(q.price), q.changePercent === null || q.changePercent === undefined ? null : Number(q.changePercent)]);
-      AV.renderTicker();
-      return true;
-    } catch (err) {
-      AV.api.lastError = err.message;
-      return false;
-    }
+    if (AV._quotesPending) return AV._quotesPending;
+    AV._quotesPending = (async () => {
+      try {
+        const res = await AV.apiFetch('/api/quotes');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!Array.isArray(data.quotes)) throw new Error('bad_quotes');
+        AV.tickerData = data.quotes
+          .filter((q) => q && typeof q.symbol === 'string' && Number.isFinite(Number(q.price)))
+          .map((q) => [q.symbol, Number(q.price), q.changePercent === null || q.changePercent === undefined ? null : Number(q.changePercent)]);
+        AV.renderTicker();
+        return true;
+      } catch (err) {
+        AV.api.lastError = err.message;
+        return false;
+      } finally {
+        AV._quotesPending = null;
+      }
+    })();
+    return AV._quotesPending;
   };
 
   AV.loadMcpStatus = async () => {
