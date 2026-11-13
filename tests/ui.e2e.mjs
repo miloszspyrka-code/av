@@ -440,7 +440,7 @@ try {
       .concat([mk('e2e_lock_a'), mk('e2e_lock_b')]);
     AV.renderLock();
   });
-  await page.click('#pastTrade');
+  await page.evaluate(() => document.getElementById('pastTrade').click());
   const beforeTrades = await page.evaluate(() => AV.state.trades.length);
   await page.fill('#ntPair', 'E2E/USDT');
   await page.fill('#ntEntry', '100');
