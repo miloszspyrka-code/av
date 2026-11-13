@@ -34,7 +34,7 @@
     $$('.view').forEach((s) => s.classList.toggle('on', s.id === v));
     $$('.navg button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
     $('#mw')?.classList.remove('open');
-    document.body.classList.remove('nav-open');
+    document.body?.classList.remove('nav-open');
     $('#navToggle')?.setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
     try { history.replaceState(null, '', '#/' + AV.viewSlug(v)); } catch {}
