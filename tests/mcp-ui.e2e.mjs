@@ -72,8 +72,10 @@ try {
   await page.waitForSelector('#mcpPendingSection');
   await page.evaluate(async () => {
     clearTimeout(AV._saveTimer);
+    clearTimeout(AV._pushTimer);
     if (AV.api.pushing) await AV.waitForPushIdle();
     if (AV.api.dirty) await AV.pushStateImmediate();
+    clearTimeout(AV._pushTimer);
   });
   const seeded = seedProposals(userId);
   await page.evaluate(async () => { AV.api.mcpLoaded = false; await AV.loadMcpProposals(); });
