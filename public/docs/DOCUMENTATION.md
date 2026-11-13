@@ -762,14 +762,14 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Routing | `tests/router.unit.mjs` | slugi widoków, aliasy starych adresów, `viewFromHash`, `showView` | 18/18 PASS |
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, macro, admin, eksport, prop | 23/23 PASS |
-| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak | 55/55 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak, nagłówek | 58/58 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 12/12 PASS |
 | PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 + PKCE Oura, rotacja tokenów i klucza, statusy, Apple, UI, bezpieczeństwo, wyłączenie Garmin/Whoop | PASS |
 | Konfiguracja urządzeń | `tests/wearables-config.test.php` | lista dostawców, brak fallbacku klucza, start OAuth 503, gotowość po ustawieniu klucza | 5/5 PASS |
 | Dokumentacja | `tests/docs.test.mjs` | linki, sekcje, spójność kopii publicznych | PASS |
-| Integracje giełd/API | `tests/integrations.e2e.mjs` | OKX, BingX, WEEX, MetaApi, EA, mocki | 19/19 PASS |
-| Integracje UI | `tests/ui-integrations.e2e.mjs` | formularze, dziennik, licznik transakcji | 11/11 PASS |
+| Integracje giełd/API | `tests/integrations.e2e.mjs` | OKX, BingX, WEEX, MetaApi, EA, mocki | 20/20 PASS |
+| Integracje UI | `tests/ui-integrations.e2e.mjs` | formularze, dziennik, licznik transakcji, chip nagłówka | 13/13 PASS |
 | Live Discord | `discord-sync-live-test.yml` | realne API → MySQL, 2 synchronizacje | 3/3, bez duplikatów |
 | Prod health/docs | `curl` + deploy verify | `/api/health`, `/docs/`, `.app` deny | PASS |
 | Prod sync | `bin/sync-discord-events.php` | realne API → produkcyjny MySQL | `success`, liczba w `sync.eventsCount` |
