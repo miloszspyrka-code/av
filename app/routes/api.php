@@ -151,14 +151,28 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
                 if ($repaired !== $state) {
                     $json = json_encode($repaired, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     if ($json !== false) {
-                        $db->execute(
-                            'UPDATE user_states SET state = ?, bytes = ? WHERE user_id = ?',
-                            [$json, strlen($json), $current['id']]
+                        $affected = $db->execute(
+                            'UPDATE user_states SET state = ?, bytes = ? WHERE user_id = ? AND revision = ?',
+                            [$json, strlen($json), $current['id'], (int) $row['revision']]
                         );
-                        $auth->audit((int) $current['id'], 'state.repair_encoding', ['bytes' => strlen($json)]);
-                        $row['bytes'] = strlen($json);
+                        if ($affected > 0) {
+                            $auth->audit((int) $current['id'], 'state.repair_encoding', ['bytes' => strlen($json)]);
+                            $row['bytes'] = strlen($json);
+                            $state = $repaired;
+                        } else {
+                            $latest = $db->queryOne(
+                                'SELECT state, revision, bytes, updated_at FROM user_states WHERE user_id = ?',
+                                [$current['id']]
+                            );
+                            if ($latest !== null) {
+                                $latestState = json_decode((string) $latest['state'], true);
+                                if (is_array($latestState)) {
+                                    $state = Encoding::repairValue($latestState);
+                                    $row = $latest;
+                                }
+                            }
+                        }
                     }
-                    $state = $repaired;
                 }
             }
             Http::json([
