@@ -103,7 +103,7 @@ RSYNC_FLAGS=(-rltz --delete --human-readable)
 if [ "$DRY_RUN" = "true" ]; then RSYNC_FLAGS+=(--dry-run --itemize-changes); fi
 
 log "Syncing public front controller..."
-rsync "${RSYNC_FLAGS[@]}" -e "$RSYNC_SSH" mcp/public/ "$SSH_TARGET:$DEPLOY_PATH/"
+rsync "${RSYNC_FLAGS[@]}" --exclude='.app' --exclude='app-path.php' -e "$RSYNC_SSH" mcp/public/ "$SSH_TARGET:$DEPLOY_PATH/"
 log "Syncing PHP application..."
 rsync "${RSYNC_FLAGS[@]}" --exclude=config.json -e "$RSYNC_SSH" app/ "$SSH_TARGET:$APP_PATH/app/"
 log "Syncing schema..."
