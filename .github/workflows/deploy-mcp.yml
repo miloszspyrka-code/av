@@ -10,7 +10,7 @@ on:
       ref:
         description: "Ref do wdrożenia MCP (branch/tag)"
         required: true
-        default: "feat/mcp-phase1"
+        default: "fix/mcp-consent"
         type: string
       dry_run:
         description: "Dry run - pokaż zmiany bez zapisu"
@@ -102,6 +102,20 @@ jobs:
         run: |
           set -euo pipefail
           find app mcp -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Verify deploy script guards
+        run: |
+          set -euo pipefail
+          bash -n scripts/deploy-mcp.sh
+          grep -q -- "--exclude='.app'" scripts/deploy-mcp.sh || {
+            echo "::error::deploy-mcp.sh musi wykluczać .app z publicznego rsync."
+            exit 1
+          }
+          grep -q "app/db/migrate.php" scripts/deploy-mcp.sh || {
+            echo "::error::deploy-mcp.sh musi uruchamiać app/db/migrate.php."
+            exit 1
+          }
+          echo "Deploy script guards present."
 
       - name: Deploy MCP
         env:
