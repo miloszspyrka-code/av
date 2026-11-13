@@ -149,11 +149,22 @@ final class OAuthController
 
             $session = $this->auth->readSession();
             if ($session === null) {
+                $this->consentLog('authorize_get_no_session', [
+                    'client' => $authRequest->getClient()->getIdentifier(),
+                ]);
                 $this->beginLogin('/oauth/authorize?' . http_build_query($request->getQueryParams()));
             }
 
             [$consentId, $csrf, $scopes] = $this->createConsent($authRequest, $resource, $session);
             $consentToken = $this->consentToken($authRequest, $resource, $session);
+            $this->consentLog('authorize_get', [
+                'user' => $this->uidHash($session),
+                'client' => $authRequest->getClient()->getIdentifier(),
+                'redirect_host' => (string) parse_url((string) $authRequest->getRedirectUri(), PHP_URL_HOST),
+                'resource' => $resource,
+                'consent_row' => $consentId !== '',
+                'token' => $consentToken !== '',
+            ]);
             $this->renderConsent(
                 $consentId,
                 $csrf,
@@ -168,6 +179,7 @@ final class OAuthController
         $this->auth->requireSameOrigin();
         $session = $this->auth->readSession();
         if ($session === null) {
+            $this->consentLog('authorize_post_no_session', ['query' => $_GET !== []]);
             if ($_GET !== []) {
                 Http::redirect('/oauth/login?return=' . rawurlencode('/oauth/authorize?' . http_build_query($_GET)));
             }
@@ -186,8 +198,25 @@ final class OAuthController
             );
         }
         $csrfOk = $row !== null && hash_equals(trim((string) $row['csrf']), $csrf);
-        $tokenData = $this->parseConsentToken($consentToken, $session);
+        $tokenReason = null;
+        $tokenData = $this->parseConsentToken($consentToken, $session, $tokenReason);
+        $this->consentLog('authorize_post', [
+            'user' => $this->uidHash($session),
+            'consent_id' => $consentId !== '',
+            'row' => $row !== null,
+            'csrf_len' => strlen($csrf),
+            'row_csrf_len' => $row !== null ? strlen((string) $row['csrf']) : null,
+            'csrf_match' => $csrfOk,
+            'token_present' => $consentToken !== '',
+            'token_valid' => $tokenData !== null,
+            'token_reason' => $tokenReason,
+            'decision' => $decision,
+        ]);
         if (!$csrfOk && $tokenData === null) {
+            $this->consentLog('consent_fallback', [
+                'reason' => $row === null ? 'row_missing' : 'csrf_mismatch',
+                'token_reason' => $tokenReason,
+            ]);
             $this->auth->audit((int) $session['user']['id'], 'mcp.oauth.consent_retry', [
                 'reason' => $row === null ? 'missing_or_expired' : 'csrf_mismatch',
             ]);
@@ -251,16 +280,33 @@ final class OAuthController
         }
 
         $request = $this->request()->withQueryParams($query);
+        $this->consentLog('consent_complete_start', [
+            'client' => (string) $data['client_id'],
+            'decision' => $decision,
+        ]);
         try {
             $authRequest = $this->oauth->server->validateAuthorizationRequest($request);
             $authRequest->setUser(new UserEntity((string) $session['user']['id']));
             $authRequest->setAuthorizationApproved($decision === 'allow');
             $response = $this->oauth->server->completeAuthorizationRequest($authRequest, new Response());
         } catch (OAuthServerException $err) {
+            $this->consentLog('consent_complete_error', [
+                'class' => get_class($err),
+                'message' => $err->getMessage(),
+            ]);
             $this->emitOAuthException($err);
         } catch (\Throwable $err) {
+            $this->consentLog('consent_complete_error', [
+                'class' => get_class($err),
+                'message' => $err->getMessage(),
+            ]);
             Http::html('<h1>500</h1><p>Nie udało się zakończyć autoryzacji.</p>', 500);
         }
+
+        $this->consentLog('consent_complete_ok', [
+            'client' => (string) $data['client_id'],
+            'decision' => $decision,
+        ]);
 
         if ($consentId !== '') {
             $this->db->execute('DELETE FROM mcp_consents WHERE id = ?', [$consentId]);
@@ -661,6 +707,7 @@ final class OAuthController
             );
         } catch (\Throwable $err) {
             error_log('[mcp-consent] ' . $err->getMessage());
+            $this->consentLog('consent_insert_error', ['message' => $err->getMessage()]);
             $consentId = '';
             $csrf = '';
         }
@@ -695,32 +742,71 @@ final class OAuthController
         return $body . '.' . $sig;
     }
 
-    private function parseConsentToken(string $token, array $session): ?array
+    private function consentLog(string $event, array $context = []): void
     {
+        $line = json_encode([
+            'ts' => gmdate('c'),
+            'event' => $event,
+            'ctx' => $context,
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($line === false) {
+            return;
+        }
+        $file = (string) ($this->config->mcp['logFile'] ?? '');
+        if ($file !== '') {
+            $dir = dirname($file);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0700, true);
+            }
+            if (@file_put_contents($file, $line . "\n", FILE_APPEND | LOCK_EX) !== false) {
+                @chmod($file, 0600);
+                return;
+            }
+        }
+        error_log('[mcp-consent] ' . $line);
+    }
+
+    private function uidHash(?array $session): string
+    {
+        $id = (int) ($session['user']['id'] ?? 0);
+
+        return $id > 0 ? substr(hash('sha256', 'mcp-uid:' . $id), 0, 12) : 'none';
+    }
+
+    private function parseConsentToken(string $token, array $session, ?string &$reason = null): ?array
+    {
+        $reason = 'ok';
         $parts = explode('.', $token);
         if (count($parts) !== 2) {
+            $reason = 'bad_format';
             return null;
         }
         [$body, $sig] = $parts;
         $expected = hash_hmac('sha256', $body, $this->config->sessionSecret);
         if (!hash_equals($expected, $sig)) {
+            $reason = 'bad_signature';
             return null;
         }
         $json = base64_decode(strtr($body, '-_', '+/'), true);
         if (!is_string($json)) {
+            $reason = 'bad_base64';
             return null;
         }
         $data = json_decode($json, true);
         if (!is_array($data)) {
+            $reason = 'bad_json';
             return null;
         }
         if ((int) ($data['exp'] ?? 0) < time()) {
+            $reason = 'expired';
             return null;
         }
         if ((int) ($data['uid'] ?? 0) !== (int) $session['user']['id']) {
+            $reason = 'uid_mismatch';
             return null;
         }
         if ((string) ($data['sid'] ?? '') !== (string) ($session['sessionId'] ?? '')) {
+            $reason = 'sid_mismatch';
             return null;
         }
 
