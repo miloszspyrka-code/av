@@ -38,6 +38,7 @@ jobs:
           echo "Sekrety obecne."
 
       - name: Check Discord application redirect URIs
+        id: uris
         run: |
           set -euo pipefail
           app="$(curl -fsS -H "Authorization: Bot ${DISCORD_BOT_TOKEN}" https://discord.com/api/v10/applications/@me)"
@@ -46,13 +47,10 @@ jobs:
           echo "application name: $(jq -r '.name' <<<"$app")"
           if [ "$app_id" != "$DISCORD_CLIENT_ID" ]; then
             echo "::error::Bot należy do aplikacji ${app_id}, a DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}."
-            exit 1
+            echo "missing=1" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           mapfile -t uris < <(jq -r '.redirect_uris // [] | .[]' <<<"$app")
-          if [ "${#uris[@]}" -eq 0 ]; then
-            echo "::error::Aplikacja Discord nie ma zarejestrowanych redirect_uri."
-            exit 1
-          fi
           for uri in "${uris[@]}"; do
             echo "registered redirect_uri: ${uri}"
           done
@@ -67,10 +65,10 @@ jobs:
               missing=1
             fi
           done
-          if [ "$missing" -ne 0 ]; then exit 1; fi
-          echo "Wszystkie wymagane redirect_uri są zarejestrowane."
+          echo "missing=${missing}" >> "$GITHUB_OUTPUT"
 
       - name: Check client secret against Discord token endpoint
+        id: secret
         run: |
           set -euo pipefail
           status="$(curl -sS -o token-response.json -w '%{http_code}' \
@@ -85,12 +83,27 @@ jobs:
           echo "token endpoint status: ${status}"
           echo "token endpoint error: ${error}"
           rm -f token-response.json
+          ok=0
           if [ "$error" = "invalid_client" ]; then
             echo "::error::DISCORD_CLIENT_SECRET jest nieprawidłowy dla DISCORD_CLIENT_ID ${DISCORD_CLIENT_ID}."
-            exit 1
-          fi
-          if [ "$error" != "invalid_grant" ]; then
+          elif [ "$error" = "invalid_grant" ]; then
+            echo "Client secret prawidłowy (invalid_grant dla nieistniejącego kodu)."
+            ok=1
+          else
             echo "::error::Nieoczekiwana odpowiedź Discorda; nie można potwierdzić sekretu."
+          fi
+          echo "ok=${ok}" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize
+        if: always()
+        run: |
+          set -euo pipefail
+          missing="${{ steps.uris.outputs.missing }}"
+          secret_ok="${{ steps.secret.outputs.ok }}"
+          echo "missing redirect_uri: ${missing}"
+          echo "client secret ok: ${secret_ok}"
+          if [ "${missing:-1}" != "0" ] || [ "${secret_ok:-0}" != "1" ]; then
+            echo "::error::Preflight OAuth Discord nie przeszedł."
             exit 1
           fi
-          echo "Client secret prawidłowy (invalid_grant dla nieistniejącego kodu)."
+          echo "OAuth Discord gotowy do logowania MCP."
