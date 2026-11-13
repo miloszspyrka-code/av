@@ -6,6 +6,7 @@ namespace AlphaVault\Mcp\Proposals;
 use AlphaVault\Config;
 use AlphaVault\Db;
 use AlphaVault\Mcp\Support\Dates;
+use AlphaVault\Mcp\Support\PropChallengeService;
 
 /**
  * Model propozycji zmian MCP.
@@ -17,7 +18,10 @@ final class ProposalService
 {
     public const TTL_MINUTES = 30;
     public const STATUSES = ['pending', 'approved', 'rejected', 'expired'];
-    public const KINDS = ['manual_trade', 'close_trade', 'trade_review', 'day_plan', 'checkin', 'setup', 'prop_challenge'];
+    public const KINDS = ['manual_trade', 'close_trade', 'trade_review', 'day_plan', 'checkin', 'setup', 'prop_challenge', 'account', 'capital_flow'];
+    public const APPROVAL_CODE_TTL_MINUTES = 10;
+    public const APPROVAL_CODE_ATTEMPTS = 5;
+    private const APPROVAL_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
     private const EXCHANGE_FIELDS = [
         'entry', 'exit', 'exitPrice', 'price', 'fill', 'fillPrice', 'result', 'pnl',
@@ -47,7 +51,7 @@ final class ProposalService
         ]));
 
         $existing = $this->db->queryOne(
-            'SELECT id, kind, target_ref, status, expires_at, payload_hash, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
+            'SELECT id, kind, target_ref, status, expires_at, payload_hash, base_revision, diff_hash, diff_json, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
             [$userId, $key]
         );
         if ($existing !== null) {
@@ -59,11 +63,12 @@ final class ProposalService
         $id = $this->uuid();
         $expires = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->modify('+' . self::TTL_MINUTES . ' minutes');
         $diff = $this->diff($before, $after);
+        $diffHash = $this->diffHash($kind, $targetRef, $diff);
 
         try {
             $this->db->execute(
-                'INSERT INTO mcp_proposals (id, user_id, client_name, kind, target_ref, base_revision, payload_hash, before_json, after_json, diff_json, idempotency_key, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO mcp_proposals (id, user_id, client_name, kind, target_ref, base_revision, payload_hash, diff_hash, before_json, after_json, diff_json, idempotency_key, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     $id,
                     $userId,
@@ -72,6 +77,7 @@ final class ProposalService
                     $targetRef,
                     $revision,
                     $payloadHash,
+                    $diffHash,
                     $before !== null ? $this->encode($before) : null,
                     $this->encode($after),
                     $this->encode($diff),
@@ -82,7 +88,7 @@ final class ProposalService
         } catch (\PDOException $err) {
             if ((string) $err->getCode() === '23000') {
                 $row = $this->db->queryOne(
-                    'SELECT id, kind, target_ref, status, expires_at, payload_hash, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
+                    'SELECT id, kind, target_ref, status, expires_at, payload_hash, base_revision, diff_hash, diff_json, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
                     [$userId, $key]
                 );
                 if ($row !== null) {
@@ -103,8 +109,12 @@ final class ProposalService
             'status' => 'pending',
             'kind' => $kind,
             'target' => $targetRef,
+            'baseRevision' => $revision,
+            'diffHash' => $diffHash,
+            'changes' => array_map(static fn (array $change): string => (string) $change['field'], $diff),
+            'diff' => $diff,
             'expiresAt' => $expires->format('Y-m-d\TH:i:s\Z'),
-            'note' => 'Propozycja czeka na zatwierdzenie w panelu AlphaVault. Nic nie zostało zmienione.',
+            'note' => 'Propozycja czeka na zatwierdzenie. Nic nie zostało zmienione. Aby zatwierdzić w rozmowie, użytkownik musi wygenerować jednorazowy kod w panelu AlphaVault.',
         ];
     }
 
@@ -120,25 +130,286 @@ final class ProposalService
             );
         }
         $rows = $this->db->query(
-            'SELECT id, kind, target_ref, base_revision, before_json, after_json, diff_json, status, created_at, expires_at, decided_at, client_name
+            'SELECT id, kind, target_ref, base_revision, diff_hash, before_json, after_json, diff_json, status, created_at, expires_at, decided_at, client_name,
+                    approval_code_hash, approval_code_expires_at, approval_code_used_at
              FROM mcp_proposals WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 50',
             [$userId, $status]
         );
 
-        return array_map(static fn (array $row): array => [
-            'id' => (string) $row['id'],
-            'kind' => (string) $row['kind'],
-            'target' => $row['target_ref'],
-            'baseRevision' => $row['base_revision'] !== null ? (int) $row['base_revision'] : null,
-            'before' => $row['before_json'] !== null ? json_decode((string) $row['before_json'], true) : null,
-            'after' => json_decode((string) $row['after_json'], true),
-            'diff' => json_decode((string) $row['diff_json'], true),
-            'status' => (string) $row['status'],
-            'createdAt' => $row['created_at'],
-            'expiresAt' => $row['expires_at'],
-            'decidedAt' => $row['decided_at'],
-            'clientName' => $row['client_name'],
-        ], $rows);
+        return array_map(fn (array $row): array => $this->present($row), $rows);
+    }
+
+    public function status(int $userId, string $proposalId): array
+    {
+        $this->expireStale($userId);
+        $row = $this->db->queryOne(
+            'SELECT id, kind, target_ref, base_revision, diff_hash, before_json, after_json, diff_json, status, created_at, expires_at, decided_at, client_name,
+                    approval_code_hash, approval_code_expires_at, approval_code_used_at
+             FROM mcp_proposals WHERE id = ? AND user_id = ?',
+            [$proposalId, $userId]
+        );
+        if ($row === null) {
+            throw new ProposalException('not_found', 'Propozycja nie istnieje.', 404);
+        }
+
+        return $this->present($row);
+    }
+
+    /**
+     * Jednorazowy kod potwierdzenia. Kod jest generowany wyłącznie w sesji
+     * panelu AlphaVault, przechowywany jako hash i nigdy nie wraca przez MCP.
+     */
+    public function issueApprovalCode(int $userId, string $proposalId): array
+    {
+        $pdo = $this->db->pdo();
+        $pdo->beginTransaction();
+        try {
+            $proposal = $this->db->queryOne(
+                'SELECT id, status, expires_at FROM mcp_proposals WHERE id = ? AND user_id = ? FOR UPDATE',
+                [$proposalId, $userId]
+            );
+            if ($proposal === null) {
+                throw new ProposalException('not_found', 'Propozycja nie istnieje.', 404);
+            }
+            if ((string) $proposal['status'] !== 'pending') {
+                throw new ProposalException('proposal_closed', 'Propozycja nie jest już oczekująca.', 409);
+            }
+            $proposalExpiry = strtotime((string) $proposal['expires_at'] . ' UTC');
+            if ($proposalExpiry === false || $proposalExpiry < time()) {
+                $this->db->execute("UPDATE mcp_proposals SET status = 'expired' WHERE id = ?", [$proposalId]);
+                $this->audit($userId, $proposalId, 'system', 'mcp.proposal.expire', []);
+                $pdo->commit();
+                throw new ProposalException('proposal_expired', 'Propozycja wygasła. Poproś agenta o nową.', 409);
+            }
+
+            $expiresTs = min(time() + self::APPROVAL_CODE_TTL_MINUTES * 60, $proposalExpiry);
+            $code = $this->generateApprovalCode();
+            $this->db->execute(
+                'UPDATE mcp_proposals SET approval_code_hash = ?, approval_code_expires_at = ?, approval_code_attempts = 0, approval_code_used_at = NULL WHERE id = ?',
+                [
+                    $this->hashApprovalCode($code),
+                    gmdate('Y-m-d H:i:s', $expiresTs),
+                    $proposalId,
+                ]
+            );
+            $this->audit($userId, $proposalId, 'user', 'mcp.proposal.code', [
+                'channel' => 'panel',
+                'expiresAt' => gmdate('Y-m-d\TH:i:s\Z', $expiresTs),
+            ]);
+            $pdo->commit();
+
+            return [
+                'proposalId' => $proposalId,
+                'code' => $code,
+                'expiresAt' => gmdate('Y-m-d\TH:i:s\Z', $expiresTs),
+                'note' => 'Wpisz ten kod w rozmowie z agentem. Kod jest jednorazowy i wygasa po 10 minutach.',
+            ];
+        } catch (\Throwable $err) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $err;
+        }
+    }
+
+    /**
+     * Zatwierdzenie propozycji przez MCP. Wymaga kodu wydanego w panelu,
+     * zgodnego hasha diffu i klucza idempotencji decyzji.
+     */
+    public function approveWithCode(int $userId, string $proposalId, string $expectedDiffHash, string $confirmationCode, string $idempotencyKey, string $clientName): array
+    {
+        $key = $this->decisionKey($idempotencyKey);
+        $pdo = $this->db->pdo();
+        $pdo->beginTransaction();
+        try {
+            $proposal = $this->db->queryOne(
+                'SELECT * FROM mcp_proposals WHERE id = ? AND user_id = ? FOR UPDATE',
+                [$proposalId, $userId]
+            );
+            if ($proposal === null) {
+                throw new ProposalException('not_found', 'Propozycja nie istnieje.', 404);
+            }
+            $replay = $this->decisionReplay($userId, $key, $proposalId, 'approved');
+            if ($replay !== null) {
+                $pdo->commit();
+                return $replay;
+            }
+            if ((string) $proposal['status'] !== 'pending') {
+                throw new ProposalException('proposal_closed', 'Propozycja nie jest już oczekująca.', 409);
+            }
+            if (strtotime((string) $proposal['expires_at'] . ' UTC') < time()) {
+                $this->db->execute("UPDATE mcp_proposals SET status = 'expired' WHERE id = ?", [$proposalId]);
+                $this->audit($userId, $proposalId, 'system', 'mcp.proposal.expire', []);
+                $pdo->commit();
+                throw new ProposalException('proposal_expired', 'Propozycja wygasła. Poproś agenta o nową.', 409);
+            }
+
+            $storedHash = $this->diffHashFor($proposal);
+            $expected = strtolower(trim($expectedDiffHash));
+            if ($expected === '' || !hash_equals($storedHash, $expected)) {
+                throw new ProposalException('diff_mismatch', 'Hash diffu nie zgadza się z propozycją. Odczytaj propozycję ponownie przez get_proposal_status.', 409);
+            }
+
+            $codeHash = (string) ($proposal['approval_code_hash'] ?? '');
+            $codeExpiry = $proposal['approval_code_expires_at'] !== null
+                ? strtotime((string) $proposal['approval_code_expires_at'] . ' UTC')
+                : false;
+            if ($codeHash === '' || $proposal['approval_code_used_at'] !== null || $codeExpiry === false || $codeExpiry < time()) {
+                throw new ProposalException('confirmation_required', 'Brak aktywnego kodu potwierdzenia. Poproś użytkownika o wygenerowanie kodu w panelu AlphaVault.', 403);
+            }
+            if (!$this->verifyApprovalCode($confirmationCode, $codeHash)) {
+                $attempts = (int) ($proposal['approval_code_attempts'] ?? 0) + 1;
+                $invalidate = $attempts >= self::APPROVAL_CODE_ATTEMPTS ? 1 : 0;
+                $this->db->execute(
+                    'UPDATE mcp_proposals
+                        SET approval_code_attempts = ?,
+                            approval_code_hash = IF(? = 1, NULL, approval_code_hash),
+                            approval_code_expires_at = IF(? = 1, NULL, approval_code_expires_at)
+                      WHERE id = ?',
+                    [$attempts, $invalidate, $invalidate, $proposalId]
+                );
+                $this->audit($userId, $proposalId, 'user', 'mcp.proposal.code_failed', [
+                    'channel' => 'mcp',
+                    'attempts' => $attempts,
+                    'invalidated' => $invalidate === 1,
+                ]);
+                $pdo->commit();
+                throw new ProposalException('invalid_confirmation', 'Kod potwierdzenia jest nieprawidłowy.', 403);
+            }
+
+            $row = $this->db->queryOne('SELECT state, revision FROM user_states WHERE user_id = ? FOR UPDATE', [$userId]);
+            $state = $row !== null ? json_decode((string) $row['state'], true) : [];
+            if (!is_array($state)) {
+                $state = [];
+            }
+            $revision = (int) ($row['revision'] ?? 0);
+            $expectedRevision = $proposal['base_revision'] !== null ? (int) $proposal['base_revision'] : 0;
+            if ($expectedRevision !== $revision) {
+                throw new ProposalException(
+                    'revision_conflict',
+                    'Dane zmieniły się od chwili przygotowania propozycji. Poproś agenta o nową propozycję.',
+                    409
+                );
+            }
+
+            $after = json_decode((string) $proposal['after_json'], true);
+            if (!is_array($after)) {
+                throw new ProposalException('bad_proposal', 'Propozycja jest uszkodzona.', 400);
+            }
+            $state = $this->apply($userId, $state, (string) $proposal['kind'], (string) ($proposal['target_ref'] ?? ''), $after);
+            $json = $this->encode($state);
+            $bytes = strlen($json);
+            if ($bytes > $this->config->maxStateBytes) {
+                throw new ProposalException('state_too_large', 'Stan przekracza dopuszczalny rozmiar.', 413);
+            }
+
+            if ($row === null) {
+                $this->db->execute(
+                    'INSERT INTO user_states (user_id, state, revision, bytes) VALUES (?, ?, 1, ?)',
+                    [$userId, $json, $bytes]
+                );
+                $revision = 1;
+            } else {
+                $this->db->execute(
+                    'UPDATE user_states SET state = ?, revision = ?, bytes = ? WHERE user_id = ?',
+                    [$json, $revision + 1, $bytes, $userId]
+                );
+                $revision++;
+            }
+
+            $result = [
+                'ok' => true,
+                'status' => 'approved',
+                'proposalId' => $proposalId,
+                'revision' => $revision,
+                'kind' => (string) $proposal['kind'],
+                'target' => (string) ($proposal['target_ref'] ?? ''),
+                'diffHash' => $storedHash,
+            ];
+            $this->db->execute(
+                "UPDATE mcp_proposals
+                    SET status = 'approved', decided_at = UTC_TIMESTAMP(), decided_by = ?,
+                        approval_code_used_at = UTC_TIMESTAMP(), decision_key = ?, decision_result_json = ?
+                  WHERE id = ?",
+                [$userId, $key, $this->encode($result), $proposalId]
+            );
+            $this->audit($userId, $proposalId, 'user', 'mcp.proposal.approve', [
+                'kind' => (string) $proposal['kind'],
+                'revision' => $revision,
+                'decidedBy' => $userId,
+                'channel' => 'mcp',
+                'client' => mb_substr($clientName !== '' ? $clientName : 'Agent MCP', 0, 100),
+                'diffHash' => $storedHash,
+            ]);
+            $pdo->commit();
+
+            return $result;
+        } catch (\Throwable $err) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ($err instanceof \PDOException && (string) $err->getCode() === '23000') {
+                throw new ProposalException('idempotency_conflict', 'Ten sam idempotencyKey użyto dla innej decyzji.', 409);
+            }
+            throw $err;
+        }
+    }
+
+    public function rejectWithKey(int $userId, string $proposalId, string $idempotencyKey, string $clientName): array
+    {
+        $key = $this->decisionKey($idempotencyKey);
+        $pdo = $this->db->pdo();
+        $pdo->beginTransaction();
+        try {
+            $proposal = $this->db->queryOne(
+                'SELECT id, status, expires_at FROM mcp_proposals WHERE id = ? AND user_id = ? FOR UPDATE',
+                [$proposalId, $userId]
+            );
+            if ($proposal === null) {
+                throw new ProposalException('not_found', 'Propozycja nie istnieje.', 404);
+            }
+            $replay = $this->decisionReplay($userId, $key, $proposalId, 'rejected');
+            if ($replay !== null) {
+                $pdo->commit();
+                return $replay;
+            }
+            if ((string) $proposal['status'] !== 'pending') {
+                throw new ProposalException('proposal_closed', 'Propozycja nie jest już oczekująca.', 409);
+            }
+            if (strtotime((string) $proposal['expires_at'] . ' UTC') < time()) {
+                $this->db->execute("UPDATE mcp_proposals SET status = 'expired' WHERE id = ?", [$proposalId]);
+                $this->audit($userId, $proposalId, 'system', 'mcp.proposal.expire', []);
+                $pdo->commit();
+                throw new ProposalException('proposal_expired', 'Propozycja wygasła. Poproś agenta o nową.', 409);
+            }
+            $result = [
+                'ok' => true,
+                'status' => 'rejected',
+                'proposalId' => $proposalId,
+            ];
+            $this->db->execute(
+                "UPDATE mcp_proposals
+                    SET status = 'rejected', decided_at = UTC_TIMESTAMP(), decided_by = ?, decision_key = ?, decision_result_json = ?
+                  WHERE id = ?",
+                [$userId, $key, $this->encode($result), $proposalId]
+            );
+            $this->audit($userId, $proposalId, 'user', 'mcp.proposal.reject', [
+                'decidedBy' => $userId,
+                'channel' => 'mcp',
+                'client' => mb_substr($clientName !== '' ? $clientName : 'Agent MCP', 0, 100),
+            ]);
+            $pdo->commit();
+
+            return $result;
+        } catch (\Throwable $err) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ($err instanceof \PDOException && (string) $err->getCode() === '23000') {
+                throw new ProposalException('idempotency_conflict', 'Ten sam idempotencyKey użyto dla innej decyzji.', 409);
+            }
+            throw $err;
+        }
     }
 
     public function approve(int $userId, string $proposalId, int $decidedBy): array
@@ -268,6 +539,149 @@ final class ProposalService
         );
     }
 
+    private function present(array $row): array
+    {
+        $diff = json_decode((string) ($row['diff_json'] ?? '[]'), true);
+        $before = $row['before_json'] !== null ? json_decode((string) $row['before_json'], true) : null;
+        $after = $row['after_json'] !== null ? json_decode((string) $row['after_json'], true) : null;
+        $status = (string) $row['status'];
+        $expiresTs = isset($row['expires_at']) ? strtotime((string) $row['expires_at'] . ' UTC') : false;
+        $expired = $status === 'pending' && $expiresTs !== false && $expiresTs < time();
+        $codeExpiry = isset($row['approval_code_expires_at']) && $row['approval_code_expires_at'] !== null
+            ? strtotime((string) $row['approval_code_expires_at'] . ' UTC')
+            : false;
+        $codeActive = $status === 'pending'
+            && !$expired
+            && (string) ($row['approval_code_hash'] ?? '') !== ''
+            && ($row['approval_code_used_at'] ?? null) === null
+            && $codeExpiry !== false
+            && $codeExpiry >= time();
+
+        return [
+            'id' => (string) $row['id'],
+            'proposalId' => (string) $row['id'],
+            'kind' => (string) $row['kind'],
+            'target' => $row['target_ref'],
+            'status' => $status,
+            'baseRevision' => $row['base_revision'] !== null ? (int) $row['base_revision'] : null,
+            'diffHash' => $this->diffHashFor($row),
+            'changes' => is_array($diff) ? array_values(array_map(static fn (array $change): string => (string) ($change['field'] ?? ''), $diff)) : [],
+            'before' => $before,
+            'after' => $after,
+            'diff' => is_array($diff) ? $diff : [],
+            'createdAt' => $row['created_at'] ?? null,
+            'expiresAt' => $row['expires_at'] ?? null,
+            'expiresAtIso' => isset($row['expires_at']) ? gmdate('Y-m-d\TH:i:s\Z', (int) strtotime((string) $row['expires_at'] . ' UTC')) : null,
+            'decidedAt' => $row['decided_at'] ?? null,
+            'clientName' => $row['client_name'] ?? null,
+            'canApprove' => $status === 'pending' && !$expired,
+            'approvalCodeActive' => $codeActive,
+            'approvalCodeExpiresAt' => $codeActive ? gmdate('Y-m-d\TH:i:s\Z', (int) $codeExpiry) : null,
+        ];
+    }
+
+    private function decisionKey(string $idempotencyKey): string
+    {
+        $key = trim($idempotencyKey);
+        if (mb_strlen($key) < 8 || mb_strlen($key) > 120) {
+            throw new ProposalException('bad_request', 'idempotencyKey musi mieć 8–120 znaków.', 400);
+        }
+
+        return $key;
+    }
+
+    private function decisionReplay(int $userId, string $key, string $proposalId, string $expectedStatus): ?array
+    {
+        $row = $this->db->queryOne(
+            'SELECT id, decision_result_json FROM mcp_proposals WHERE user_id = ? AND decision_key = ? LIMIT 1',
+            [$userId, $key]
+        );
+        if ($row === null) {
+            return null;
+        }
+        if ((string) $row['id'] !== $proposalId) {
+            throw new ProposalException('idempotency_conflict', 'Ten sam idempotencyKey użyto dla innej propozycji.', 409);
+        }
+        $result = json_decode((string) ($row['decision_result_json'] ?? ''), true);
+        if (!is_array($result)) {
+            $result = ['ok' => true, 'status' => $expectedStatus, 'proposalId' => $proposalId];
+        }
+        $result['duplicate'] = true;
+
+        return $result;
+    }
+
+    private function generateApprovalCode(): string
+    {
+        $alphabet = self::APPROVAL_CODE_ALPHABET;
+        $max = strlen($alphabet) - 1;
+        $raw = '';
+        for ($i = 0; $i < 8; $i++) {
+            $raw .= $alphabet[random_int(0, $max)];
+        }
+
+        return substr($raw, 0, 4) . '-' . substr($raw, 4, 4);
+    }
+
+    private function normalizeApprovalCode(string $code): string
+    {
+        return (string) preg_replace('/[^A-Z0-9]/', '', strtoupper(trim($code)));
+    }
+
+    private function hashApprovalCode(string $code): string
+    {
+        return hash('sha256', 'alphavault-approval:' . $this->normalizeApprovalCode($code));
+    }
+
+    private function verifyApprovalCode(string $code, string $storedHash): bool
+    {
+        $normalized = $this->normalizeApprovalCode($code);
+        if ($normalized === '' || strlen($normalized) !== 8) {
+            return false;
+        }
+
+        return hash_equals($storedHash, $this->hashApprovalCode($normalized));
+    }
+
+    private function diffHash(string $kind, string $targetRef, array $diff): string
+    {
+        return hash('sha256', $this->canonicalJson([
+            'kind' => $kind,
+            'target' => $targetRef,
+            'diff' => $diff,
+        ]));
+    }
+
+    /**
+     * Hash diffu jest liczony raz przy utworzeniu propozycji. Starsze wiersze
+     * bez zapisanego hasha dostają go przy pierwszym odczycie.
+     */
+    private function diffHashFor(array $row): string
+    {
+        $stored = trim((string) ($row['diff_hash'] ?? ''));
+        if ($stored !== '') {
+            return $stored;
+        }
+        $diff = json_decode((string) ($row['diff_json'] ?? '[]'), true);
+        $hash = $this->diffHash(
+            (string) ($row['kind'] ?? ''),
+            (string) ($row['target_ref'] ?? ''),
+            is_array($diff) ? $diff : []
+        );
+        if (($row['id'] ?? '') !== '') {
+            try {
+                $this->db->execute(
+                    'UPDATE mcp_proposals SET diff_hash = ? WHERE id = ? AND (diff_hash IS NULL OR diff_hash = ?)',
+                    [$hash, (string) $row['id'], '']
+                );
+            } catch (\Throwable) {
+                // Brak kolumny nie może blokować odczytu propozycji.
+            }
+        }
+
+        return $hash;
+    }
+
     private function apply(int $userId, array $state, string $kind, string $targetRef, array $after): array
     {
         switch ($kind) {
@@ -364,6 +778,9 @@ final class ProposalService
                     }
                 }
                 if (!$found) {
+                    if ($targetRef !== 'setup:new') {
+                        throw new ProposalException('target_missing', 'Setup nie istnieje już w Playbooku. Poproś agenta o nową propozycję.', 409);
+                    }
                     $setups[] = $after;
                 }
                 $state['setups'] = array_values($setups);
@@ -383,6 +800,9 @@ final class ProposalService
                     }
                 }
                 if (!$found) {
+                    if ($targetRef !== 'prop:new') {
+                        throw new ProposalException('target_missing', 'Challenge nie istnieje już w koncie. Poproś agenta o nową propozycję.', 409);
+                    }
                     $challenges[] = $after;
                     if (empty($prop['selectedId'])) {
                         $prop['selectedId'] = (string) ($after['id'] ?? '');
@@ -390,6 +810,55 @@ final class ProposalService
                 }
                 $prop['challenges'] = array_values($challenges);
                 $state['prop'] = $prop;
+                break;
+
+            case 'account':
+                $this->assertAccount($after, $targetRef === 'account:new');
+                $accounts = is_array($state['accounts'] ?? null) ? $state['accounts'] : [];
+                $accountId = str_starts_with($targetRef, 'account:') ? substr($targetRef, 8) : '';
+                $found = false;
+                foreach ($accounts as $i => $account) {
+                    if (is_array($account) && (string) ($account['id'] ?? '') === $accountId) {
+                        $accounts[$i] = $after;
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    if ($targetRef !== 'account:new') {
+                        throw new ProposalException('target_missing', 'Konto nie istnieje już w ustawieniach. Poproś agenta o nową propozycję.', 409);
+                    }
+                    $accounts[] = $after;
+                }
+                if (!empty($after['primary'])) {
+                    foreach ($accounts as $i => $account) {
+                        if (is_array($account) && (string) ($account['id'] ?? '') !== (string) ($after['id'] ?? '')) {
+                            $accounts[$i]['primary'] = false;
+                        }
+                    }
+                }
+                $state['accounts'] = array_values($accounts);
+                break;
+
+            case 'capital_flow':
+                $this->assertCapitalFlow($after);
+                $flows = is_array($state['flows'] ?? null) ? $state['flows'] : [];
+                $flowId = str_starts_with($targetRef, 'flow:') ? substr($targetRef, 5) : '';
+                $found = false;
+                foreach ($flows as $i => $flow) {
+                    if (is_array($flow) && (string) ($flow['id'] ?? '') === $flowId) {
+                        $flows[$i] = $after;
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    if ($targetRef !== 'flow:new') {
+                        throw new ProposalException('target_missing', 'Wpis kapitałowy nie istnieje już w historii. Poproś agenta o nową propozycję.', 409);
+                    }
+                    $flows[] = $after;
+                }
+                $state['flows'] = array_values($flows);
                 break;
 
             default:
@@ -491,6 +960,55 @@ final class ProposalService
         }
     }
 
+    private function assertAccount(array $after, bool $isNew): void
+    {
+        $allowed = ['id', 'name', 'exchange', 'type', 'currency', 'include', 'primary', 'lev', 'goal', 'date', 'start', 'balance'];
+        foreach ($after as $field => $_) {
+            if (!in_array($field, $allowed, true)) {
+                throw new ProposalException('bad_proposal', 'Pole ' . $field . ' nie należy do konfiguracji konta.', 400);
+            }
+        }
+        foreach (['id', 'name', 'currency'] as $field) {
+            if (!array_key_exists($field, $after)) {
+                throw new ProposalException('bad_proposal', 'Propozycja konta nie ma pola ' . $field . '.', 400);
+            }
+        }
+        if (trim((string) $after['name']) === '') {
+            throw new ProposalException('bad_proposal', 'Nazwa konta nie może być pusta.', 400);
+        }
+        if (!in_array((string) $after['currency'], PropChallengeService::CURRENCIES, true)) {
+            throw new ProposalException('bad_proposal', 'Nieprawidłowa waluta konta.', 400);
+        }
+        // Saldo pochodzi z giełdy albo z ręcznego salda panelu. MCP go nie zmienia.
+        if ($isNew && ((float) ($after['start'] ?? 0) !== 0.0 || (float) ($after['balance'] ?? 0) !== 0.0)) {
+            throw new ProposalException('exchange_data_readonly', 'Nowe konto MCP musi startować z saldem 0. Saldo ustawia panel albo synchronizacja giełdy.', 403);
+        }
+    }
+
+    private function assertCapitalFlow(array $after): void
+    {
+        $allowed = ['id', 'date', 'account', 'type', 'amount', 'currency', 'fiat', 'fx', 'op', 'tax'];
+        foreach ($after as $field => $_) {
+            if (!in_array($field, $allowed, true)) {
+                throw new ProposalException('bad_proposal', 'Pole ' . $field . ' nie należy do wpisu kapitałowego.', 400);
+            }
+        }
+        foreach (['id', 'date', 'account', 'type', 'amount', 'currency'] as $field) {
+            if (!array_key_exists($field, $after)) {
+                throw new ProposalException('bad_proposal', 'Propozycja wpisu nie ma pola ' . $field . '.', 400);
+            }
+        }
+        if (!in_array((string) $after['type'], ['Wpłata', 'Wypłata'], true)) {
+            throw new ProposalException('bad_proposal', 'Typ wpisu musi być Wpłata albo Wypłata.', 400);
+        }
+        if ((float) $after['amount'] <= 0) {
+            throw new ProposalException('bad_proposal', 'Kwota wpisu musi być większa od 0.', 400);
+        }
+        if (!in_array((string) $after['currency'], PropChallengeService::CURRENCIES, true)) {
+            throw new ProposalException('bad_proposal', 'Nieprawidłowa waluta wpisu.', 400);
+        }
+    }
+
     public function isExchangeTrade(int $userId, array $trade): bool
     {
         $id = (string) ($trade['id'] ?? '');
@@ -536,9 +1054,16 @@ final class ProposalService
             );
         }
 
+        $diff = json_decode((string) ($row['diff_json'] ?? '[]'), true);
+
         return [
             'proposalId' => (string) $row['id'],
             'status' => (string) $row['status'],
+            'kind' => (string) ($row['kind'] ?? ''),
+            'target' => $row['target_ref'] ?? null,
+            'baseRevision' => $row['base_revision'] !== null ? (int) $row['base_revision'] : null,
+            'diffHash' => $this->diffHashFor($row),
+            'changes' => is_array($diff) ? array_values(array_map(static fn (array $change): string => (string) ($change['field'] ?? ''), $diff)) : [],
             'expiresAt' => $row['expires_at'],
             'duplicate' => true,
         ];

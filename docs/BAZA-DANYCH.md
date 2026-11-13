@@ -30,7 +30,7 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `mcp_refresh_tokens` | refresh tokeny 30 dni z rotacją i unieważnianiem rodziny |
 | `mcp_login_requests` | stan logowania Discord na domenie MCP |
 | `mcp_consents` | ekran zgody OAuth: CSRF, scope, resource, TTL 30 min |
-| `mcp_proposals` | propozycje zmian od agenta oczekujące na decyzję użytkownika; `payload_hash`, `base_revision`, TTL 30 min |
+| `mcp_proposals` | propozycje zmian od agenta oczekujące na decyzję użytkownika; `payload_hash`, `diff_hash`, `base_revision`, TTL 30 min, jednorazowy `approval_code_hash` (TTL 10 min, limit 5 prób), `decision_key`/`decision_result_json` do idempotencji decyzji |
 | `mcp_audit` | audyt operacji MCP (agent, użytkownik, system) |
 | `mcp_idempotency` | rezerwa pod przyszłe operacje bezpośrednie |
 | `schema_migrations` | wersje migracji |

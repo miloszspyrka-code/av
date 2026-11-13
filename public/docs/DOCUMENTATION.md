@@ -234,17 +234,21 @@ Pełny kontrakt: [docs/API.md](API.md). Specyfikacja: [docs/openapi.yaml](openap
 
 Oura używa OAuth2 z jednorazowym `state` i PKCE S256 (`code_verifier` w `wearable_oauth_states`). Tokeny są szyfrowane AES-256-GCM wyłącznie kluczem `WEARABLES_ENCRYPTION_KEY` (brak fallbacku na `SESSION_SECRET`), a `WEARABLES_ENCRYPTION_KEY_PREVIOUS` obsługuje rotację. Odświeżanie respektuje `refresh_token_expires_at` i jest serializowane blokadą `GET_LOCK` na użytkowniku i dostawcy; nowy refresh token jest zapisywany atomowo. Apple Watch używa kodu parowania i tokenu urządzenia. Połączenie zapisuje metryki w `wearable_daily_metrics`, a `GET /api/wearables` liczy gotowość z dostępnych składników (sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%) i łączy ją z check-inem w proporcji 70/30. Odłączenie najpierw próbuje wycofać dostęp u dostawcy, a potem usuwa tokeny i metryki w transakcji. Garmin i Whoop są wyłączone na razie: `Wearables::PROVIDERS` zawiera tylko `apple` i `oura`, więc ich endpointy zwracają 404, a kafelki nie renderują się.
 
-### 6.2. MCP 2.0 — panel i propozycje
+### 6.2. MCP 2.1 — panel, propozycje i kod
 
 Panel MCP jest dostępny w widoku `#/mentor-ai`. Endpointy panelu:
 
 - `GET /api/mcp` — status, scope, oczekujące propozycje, audyt; wymaga sesji.
 - `POST /api/mcp/proposals/decide` — `{id, action}`; sesja, `requireSameOrigin`, rate limit 60/min.
+- `POST /api/mcp/proposals/{id}/approval-code` — jednorazowy kod do zatwierdzenia w rozmowie;
+  TTL 10 min, rate limit 10/min, w bazie tylko SHA-256.
 
 MCP (`mcp.alphavault.pl`) ma własny OAuth 2.1 i nie zapisuje stanu bezpośrednio. Narzędzia
-`propose_*` tworzą wiersz `mcp_proposals`; zatwierdzenie w panelu wykonuje transakcję MySQL
-z `SELECT ... FOR UPDATE`, sprawdza `base_revision`, inkrementuje `revision` i zapisuje audyt.
-Brak danych = puste tablice. Dane giełdowe są niezmienne. Szczegóły: [docs/MCP.md](https://github.com/miloszspyrka-code/av/blob/main/docs/MCP.md).
+`propose_*` tworzą wiersz `mcp_proposals`; zapis wykonuje transakcję MySQL z `SELECT ... FOR UPDATE`,
+sprawdza `base_revision`, inkrementuje `revision` i zapisuje audyt. Zatwierdzenie przez agenta
+(`approve_proposal`) wymaga kodu z panelu i zgodnego `diffHash`; sam tekst „potwierdzam” nie jest
+dowodem zgody. Odrzucenie przez MCP nie zmienia danych. Brak danych = puste tablice. Dane giełdowe
+są niezmienne. Szczegóły: [docs/MCP.md](https://github.com/miloszspyrka-code/av/blob/main/docs/MCP.md).
 
 ## 7. Discord Scheduled Events — pełny przepływ
 
@@ -510,7 +514,7 @@ Monitoring nie zapisuje tokenów ani treści wydarzeń. `/api/health` udostępni
 | `mcp_refresh_tokens` | refresh tokeny i rotacja | `id`, `user_id` |
 | `mcp_login_requests` | logowanie Discord na domenie MCP | `id`, `discord_state` |
 | `mcp_consents` | ekran zgody OAuth | `id`, `user_id` |
-| `mcp_proposals` | propozycje agenta do zatwierdzenia | `id`, `(user_id, idempotency_key)` |
+| `mcp_proposals` | propozycje agenta do zatwierdzenia | `id`, `(user_id, idempotency_key)`, `(user_id, decision_key)` |
 | `mcp_audit` | audyt agenta i użytkownika | `id`, `proposal_id` |
 | `mcp_idempotency` | rezerwa pod operacje bezpośrednie | `(user_id, idem_key)` |
 | `mcp_audit` | audyt MCP | `id` |
@@ -681,9 +685,12 @@ Zasady:
 
 `AV.renderMentor()` renderuje przewodnik integracji oraz listę propozycji MCP. `AV.loadMcpProposals()`
 pobiera `GET /api/mcp`; `AV.decideProposal(id, action)` wysyła decyzję do
-`POST /api/mcp/proposals/decide`. Po zatwierdzeniu `AV.reloadStateFromServer()` odświeża stan
-z MySQL, a lista propozycji jest pobierana ponownie. Diff pokazuje `before → after` dla każdego
-pola; konflikt rewizji wyświetla komunikat o konieczności przygotowania nowej propozycji.
+`POST /api/mcp/proposals/decide`; `AV.requestApprovalCode(id)` pobiera kod do
+`POST /api/mcp/proposals/{id}/approval-code` i pokazuje go w karcie propozycji. Kod jest jednorazowy,
+wygasa po 10 minutach i służy wyłącznie do zatwierdzenia w rozmowie z agentem. Po zatwierdzeniu
+`AV.reloadStateFromServer()` odświeża stan z MySQL, a lista propozycji jest pobierana ponownie.
+Diff pokazuje `before → after` dla każdego pola; konflikt rewizji wyświetla komunikat o konieczności
+przygotowania nowej propozycji.
 
 ## 12. Puste pola i stany brzegowe
 
@@ -781,10 +788,12 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 - `scripts/deploy-mcp.sh` wykonuje backup, rsync, migrację, klucze OAuth i health check; `MCP_WRITES_ENABLED=false` jest wymuszone.
 - Workflow nie dotyka `alphavault.pl` ani WordPressa; używa environment `alphavault-production`.
 
-MCP 2.0: `Deploy AlphaVault MCP` uruchamia `composer install`, `scripts/deploy-mcp.sh`, migrację
-`db/schema.sql` + `db/migrations/20261114_mcp2.sql`, klucze OAuth i health check. Skrypt wymusza
-`MCP_WRITES_ENABLED=false`; 7 narzędzi `propose_*` pozostaje ukryte. Deploy MCP nie dotyka
-`alphavault.pl` ani WordPressa.
+MCP 2.1: `Deploy AlphaVault MCP` uruchamia `composer install`, `scripts/deploy-mcp.sh`, migracje
+`db/schema.sql` + `db/migrations/20261114_mcp2.sql` + `db/migrations/20261115_mcp_approval.sql`,
+klucze OAuth i health check. Skrypt wymusza `MCP_WRITES_ENABLED=false`; 11 narzędzi zapisu pozostaje
+ukryte. Po włączeniu `MCP_WRITES_ENABLED=true` klient musi ponownie przejść OAuth, żeby uzyskać scope
+`alphavault.write`; stary token zachowuje tylko odczyt. Deploy MCP nie dotyka `alphavault.pl` ani
+WordPressa.
 
 ## 15. Bezpieczeństwo
 
@@ -812,10 +821,10 @@ MCP 2.0: `Deploy AlphaVault MCP` uruchamia `composer install`, `scripts/deploy-m
 | Rola / cron | `tests/role-guard.test.php` + `tests/role-recheck.e2e.mjs` | decyzje login, fail-open, 404, 429, lock, revoke sesji | 18/18 PASS |
 | Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
 | Prop parity | `tests/prop-parity.mjs` + `tests/prop-parity.php` | PHP ↔ JS: te same fixtures i metryki | PASS |
-| MCP propozycje | `tests/mcp.test.php` | idempotencja, konflikt rewizji, TTL, ochrona giełdy, izolacja, audyt | PASS |
-| MCP E2E | `tests/mcp.e2e.mjs` | OAuth 2.1, PKCE, DCR, 15 read + 7 propose, prompts, writes on/off | PASS |
+| MCP propozycje | `tests/mcp.test.php` | kod jednorazowy, idempotencja decyzji, konflikt rewizji, TTL, ochrona giełdy, `target_missing`, izolacja, audyt | PASS |
+| MCP E2E | `tests/mcp.e2e.mjs` | OAuth 2.1, PKCE, DCR, 17 read + 11 write, approve kodem, prompts, writes on/off | PASS |
 | MCP login | `tests/mcp-login.e2e.mjs` | mock Discord: rola, brak roli, duplikat konta | PASS |
-| MCP panel | `tests/mcp-ui.e2e.mjs` | diff, approve, reject, reload, trwałość | PASS |
+| MCP panel | `tests/mcp-ui.e2e.mjs` | diff, kod do rozmowy, approve, reject, reload, trwałość | PASS |
 | Routing | `tests/router.unit.mjs` | slugi widoków, aliasy starych adresów, `viewFromHash`, `showView` | 18/18 PASS |
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
 | Daty demo | `tests/demo-state.test.php` | przesunięcie fixture na dziś, idempotencja, plany jako punkt zaczepienia, błędne dane | 15/15 PASS |

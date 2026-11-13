@@ -230,9 +230,162 @@ try {
     ], new \DateTimeImmutable('2026-11-12 12:00:00', Dates::tz()));
     check('16. silnik prop: pusty i trailing', $empty['n'] === 0 && $empty['status'] === 'active' && $trailing['maxDrawdownAmount'] === 1200.0 && $trailing['peak'] === 10500.0, json_encode([$empty['status'], $trailing['maxDrawdownAmount'], $trailing['peak']]));
 
-    // 17. Audyt.
+    // 17. Zatwierdzenie przez MCP wymaga kodu z panelu.
+    $codeProposal = $builder->saveCheckin($userA, ['mood' => 'Spokój', 'energy' => 3, 'idempotencyKey' => 'idem-code-checkin-1'], 'test-client');
+    $missingCode = expectError(fn () => $service->approveWithCode($userA, $codeProposal['proposalId'], $codeProposal['diffHash'], 'ABCD-EFGH', 'idem-decision-1', 'test-client'));
+    check('17. brak kodu blokuje zatwierdzenie', $missingCode === 'confirmation_required', $missingCode);
+
+    // 18. Kod jednorazowy: błędny kod i limit prób.
+    $issued = $service->issueApprovalCode($userA, $codeProposal['proposalId']);
+    check('18. kod ma format XXXXX-XXXX', (bool) preg_match('/^[A-Z2-9]{4}-[A-Z2-9]{4}$/', (string) ($issued['code'] ?? '')), (string) ($issued['code'] ?? ''));
+    $wrongCode = expectError(fn () => $service->approveWithCode($userA, $codeProposal['proposalId'], $codeProposal['diffHash'], 'ZZZZ-ZZZZ', 'idem-decision-1', 'test-client'));
+    check('18b. błędny kod odrzucony', $wrongCode === 'invalid_confirmation', $wrongCode);
+
+    // 19. Zły diffHash blokuje zapis.
+    $wrongHash = expectError(fn () => $service->approveWithCode($userA, $codeProposal['proposalId'], str_repeat('a', 64), $issued['code'], 'idem-decision-1', 'test-client'));
+    check('19. zły diffHash odrzucony', $wrongHash === 'diff_mismatch', $wrongHash);
+
+    // 20. Poprawne zatwierdzenie i idempotentne powtórzenie.
+    $approvedByMcp = $service->approveWithCode($userA, $codeProposal['proposalId'], $codeProposal['diffHash'], $issued['code'], 'idem-decision-1', 'test-client');
+    $replayed = $service->approveWithCode($userA, $codeProposal['proposalId'], $codeProposal['diffHash'], $issued['code'], 'idem-decision-1', 'test-client');
+    $reusedCode = expectError(fn () => $service->approveWithCode($userA, $codeProposal['proposalId'], $codeProposal['diffHash'], $issued['code'], 'idem-decision-2', 'test-client'));
+    $row = $db->queryOne('SELECT state, revision FROM user_states WHERE user_id = ?', [$userA]);
+    $savedState = json_decode((string) $row['state'], true);
+    $todayCheckin = $savedState['checkins'][0] ?? null;
+    check('20. zatwierdzenie kodem i idempotencja decyzji', ($approvedByMcp['status'] ?? '') === 'approved'
+        && ($replayed['duplicate'] ?? false) === true
+        && $reusedCode === 'proposal_closed'
+        && (int) $todayCheckin['energy'] === 3, json_encode([$approvedByMcp, $replayed, $reusedCode]));
+
+    // 21. Odrzucenie przez MCP i powtórzenie.
+    $rejectTarget = $builder->saveCheckin($userA, ['mood' => 'Skupienie', 'energy' => 4, 'idempotencyKey' => 'idem-reject-mcp-1'], 'test-client');
+    $rejected = $service->rejectWithKey($userA, $rejectTarget['proposalId'], 'idem-reject-decision-1', 'test-client');
+    $rejectedReplay = $service->rejectWithKey($userA, $rejectTarget['proposalId'], 'idem-reject-decision-1', 'test-client');
+    $statusAfterReject = $service->status($userA, $rejectTarget['proposalId']);
+    check('21. odrzucenie przez MCP', ($rejected['status'] ?? '') === 'rejected'
+        && ($rejectedReplay['duplicate'] ?? false) === true
+        && ($statusAfterReject['status'] ?? '') === 'rejected', json_encode([$rejected, $statusAfterReject]));
+
+    // 22. Konto: utworzenie bez zmiany salda.
+    $accountProposal = $builder->saveAccount($userA, [
+        'name' => 'Konto agenta', 'exchange' => 'OKX', 'type' => 'Futures', 'currency' => 'USDT',
+        'include' => true, 'primary' => false, 'lev' => '10x', 'goal' => 'Test', 'idempotencyKey' => 'idem-account-1',
+    ], 'test-client');
+    $accountCode = $service->issueApprovalCode($userA, $accountProposal['proposalId'])['code'];
+    $service->approveWithCode($userA, $accountProposal['proposalId'], $accountProposal['diffHash'], $accountCode, 'idem-account-decision-1', 'test-client');
+    $row = $db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userA]);
+    $savedState = json_decode((string) $row['state'], true);
+    $createdAccount = null;
+    foreach ($savedState['accounts'] as $account) {
+        if (($account['name'] ?? '') === 'Konto agenta') {
+            $createdAccount = $account;
+        }
+    }
+    check('22. konto utworzone z saldem 0', $createdAccount !== null
+        && (float) $createdAccount['balance'] === 0.0
+        && (float) $createdAccount['start'] === 0.0, json_encode($createdAccount));
+
+    // 23. Konto: edycja nie zmienia salda i ustawia primary.
+    $balanceBefore = 0.0;
+    foreach ($savedState['accounts'] as $account) {
+        if (($account['id'] ?? '') === ($createdAccount['id'] ?? '')) {
+            $balanceBefore = (float) $account['balance'];
+        }
+    }
+    $accountUpdate = $builder->saveAccount($userA, [
+        'id' => (string) ($createdAccount['id'] ?? ''), 'name' => 'Konto agenta 2', 'primary' => true,
+        'idempotencyKey' => 'idem-account-2',
+    ], 'test-client');
+    $updateCode = $service->issueApprovalCode($userA, $accountUpdate['proposalId'])['code'];
+    $service->approveWithCode($userA, $accountUpdate['proposalId'], $accountUpdate['diffHash'], $updateCode, 'idem-account-decision-2', 'test-client');
+    $row = $db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userA]);
+    $savedState = json_decode((string) $row['state'], true);
+    $updatedAccount = null;
+    $primaryCount = 0;
+    foreach ($savedState['accounts'] as $account) {
+        if (!empty($account['primary'])) {
+            $primaryCount++;
+        }
+        if (($account['id'] ?? '') === ($createdAccount['id'] ?? '')) {
+            $updatedAccount = $account;
+        }
+    }
+    check('23. edycja konta zachowuje saldo i ustawia primary', $updatedAccount !== null
+        && ($updatedAccount['name'] ?? '') === 'Konto agenta 2'
+        && (float) $updatedAccount['balance'] === $balanceBefore
+        && $primaryCount === 1, json_encode([$updatedAccount, $primaryCount]));
+
+    // 24. Pola finansowe konta i wpisu odrzucone.
+    $accountBalance = expectError(fn () => $builder->saveAccount($userA, ['name' => 'Złe konto', 'balance' => 999, 'idempotencyKey' => 'idem-account-bad-1'], 'test-client'));
+    $tradeExitPrice = expectError(fn () => $builder->createTrade($userA, ['pair' => 'BTC/USDT', 'dir' => 'long', 'entry' => 1, 'size' => 1, 'exitPrice' => 2, 'idempotencyKey' => 'idem-trade-bad-2'], 'test-client'));
+    check('24. balance i exitPrice poza allowlistą', $accountBalance === 'exchange_data_readonly' && $tradeExitPrice === 'exchange_data_readonly', $accountBalance . '/' . $tradeExitPrice);
+
+    // 25. Wpłata: historia bez zmiany salda.
+    $balanceMainBefore = 0.0;
+    foreach ($savedState['accounts'] as $account) {
+        if (($account['name'] ?? '') === 'Main') {
+            $balanceMainBefore = (float) $account['balance'];
+        }
+    }
+    $flowProposal = $builder->saveCapitalFlow($userA, [
+        'type' => 'deposit', 'amount' => 500, 'account' => 'Main', 'currency' => 'PLN',
+        'fiat' => 2000, 'fx' => 1, 'note' => 'P2P test', 'idempotencyKey' => 'idem-flow-1',
+    ], 'test-client');
+    $flowCode = $service->issueApprovalCode($userA, $flowProposal['proposalId'])['code'];
+    $service->approveWithCode($userA, $flowProposal['proposalId'], $flowProposal['diffHash'], $flowCode, 'idem-flow-decision-1', 'test-client');
+    $row = $db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userA]);
+    $savedState = json_decode((string) $row['state'], true);
+    $flow = $savedState['flows'][0] ?? null;
+    $balanceMainAfter = 0.0;
+    foreach ($savedState['accounts'] as $account) {
+        if (($account['name'] ?? '') === 'Main') {
+            $balanceMainAfter = (float) $account['balance'];
+        }
+    }
+    check('25. wpłata zapisana bez zmiany salda', $flow !== null
+        && ($flow['type'] ?? '') === 'Wpłata'
+        && (float) $flow['amount'] === 500.0
+        && $balanceMainAfter === $balanceMainBefore, json_encode([$flow, $balanceMainBefore, $balanceMainAfter]));
+
+    // 26. Aktualizacja usuniętego setupu nie wskrzesza rekordu.
+    $setupForUpdate = $builder->saveSetup($userA, ['name' => 'Setup do usunięcia', 'rules' => ['Zasada A1', 'Zasada B1'], 'idempotencyKey' => 'idem-setup-del-1'], 'test-client');
+    $service->approve($userA, $setupForUpdate['proposalId'], $userA);
+    $stateRow = $db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userA]);
+    $stateJson = json_decode((string) $stateRow['state'], true);
+    $deletedId = '';
+    foreach ($stateJson['setups'] as $setup) {
+        if (($setup['name'] ?? '') === 'Setup do usunięcia') {
+            $deletedId = (string) $setup['id'];
+        }
+    }
+    $staleSetup = $builder->saveSetup($userA, ['id' => $deletedId, 'name' => 'Setup do usunięcia v2', 'rules' => ['Zasada A2', 'Zasada B2'], 'idempotencyKey' => 'idem-setup-del-2'], 'test-client');
+    $staleSetupCode = $service->issueApprovalCode($userA, $staleSetup['proposalId'])['code'];
+    $remaining = [];
+    foreach ($stateJson['setups'] as $setup) {
+        if ((string) ($setup['id'] ?? '') !== $deletedId) {
+            $remaining[] = $setup;
+        }
+    }
+    $stateJson['setups'] = $remaining;
+    $db->execute('UPDATE user_states SET state = ? WHERE user_id = ?', [json_encode($stateJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $userA]);
+    $missingTarget = expectError(fn () => $service->approveWithCode($userA, $staleSetup['proposalId'], $staleSetup['diffHash'], $staleSetupCode, 'idem-setup-del-decision-1', 'test-client'));
+    check('26. usunięty setup nie jest wskrzeszany', $missingTarget === 'target_missing', $missingTarget);
+
+    // 27. Lista oczekujących i status nie ujawniają kodu.
+    $pendingItems = $service->list($userA, 'pending');
+    $pendingShapeOk = true;
+    foreach ($pendingItems as $item) {
+        if (!array_key_exists('diffHash', $item) || array_key_exists('approval_code_hash', $item)) {
+            $pendingShapeOk = false;
+        }
+    }
+    check('27. lista propozycji bez hasha kodu', $pendingShapeOk && count($pendingItems) > 0, 'pending=' . count($pendingItems));
+
+    // 30. Audyt.
     $actions = array_column($service->auditLog($userA, 100), 'action');
-    check('17. audyt zawiera utworzenie i zatwierdzenie', in_array('mcp.proposal.create', $actions, true) && in_array('mcp.proposal.approve', $actions, true), implode(', ', array_unique($actions)));
+    check('30. audyt zawiera utworzenie, kod i zatwierdzenie', in_array('mcp.proposal.create', $actions, true)
+        && in_array('mcp.proposal.code', $actions, true)
+        && in_array('mcp.proposal.approve', $actions, true), implode(', ', array_unique($actions)));
 } catch (\Throwable $err) {
     $fail++;
     echo 'FAIL  wyjątek testu  · ' . $err->getMessage() . "\n";

@@ -500,6 +500,178 @@ final class ProposalBuilder
         return $this->proposals->create($userId, $clientName, 'prop_challenge', $before === null ? 'prop:new' : 'prop:' . $after['id'], $before, $after, $key, $this->fingerprint($args));
     }
 
+    public function saveAccount(int $userId, array $args, string $clientName): array
+    {
+        $key = $this->idempotencyKey($args);
+        $this->rejectFields($args, ['id', 'name', 'exchange', 'type', 'currency', 'include', 'primary', 'lev', 'goal', 'date', 'idempotencyKey']);
+        $state = $this->state($userId);
+        $id = trim((string) ($args['id'] ?? ''));
+        $before = null;
+        if ($id !== '') {
+            foreach ((array) ($state['accounts'] ?? []) as $account) {
+                if (is_array($account) && (string) ($account['id'] ?? '') === $id) {
+                    $before = $account;
+                    break;
+                }
+            }
+            if ($before === null) {
+                throw new ProposalException('not_found', 'Konto nie istnieje.', 404);
+            }
+        }
+
+        $name = trim((string) ($args['name'] ?? ($before['name'] ?? '')));
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 80) {
+            throw new ProposalException('bad_request', 'Nazwa konta musi mieć 2–80 znaków.', 400);
+        }
+        foreach ($this->accountNames($state) as $existingName) {
+            if (strcasecmp($existingName, $name) === 0 && $existingName !== (string) ($before['name'] ?? '')) {
+                throw new ProposalException('bad_request', 'Konto o tej nazwie już istnieje.', 400);
+            }
+        }
+        $exchange = trim((string) ($args['exchange'] ?? ($before['exchange'] ?? '')));
+        if (mb_strlen($exchange) > 80) {
+            throw new ProposalException('bad_request', 'Broker lub giełda może mieć maks. 80 znaków.', 400);
+        }
+        $type = trim((string) ($args['type'] ?? ($before['type'] ?? 'Futures')));
+        if (mb_strlen($type) > 40) {
+            throw new ProposalException('bad_request', 'Typ konta może mieć maks. 40 znaków.', 400);
+        }
+        $currency = strtoupper(trim((string) ($args['currency'] ?? ($before['currency'] ?? 'USDT'))));
+        if (!in_array($currency, PropChallengeService::CURRENCIES, true)) {
+            throw new ProposalException('bad_request', 'Nieprawidłowa waluta konta.', 400);
+        }
+        $lev = trim((string) ($args['lev'] ?? ($before['lev'] ?? '')));
+        if (mb_strlen($lev) > 20) {
+            throw new ProposalException('bad_request', 'Dźwignia może mieć maks. 20 znaków.', 400);
+        }
+        $goal = trim((string) ($args['goal'] ?? ($before['goal'] ?? '')));
+        if (mb_strlen($goal) > 200) {
+            throw new ProposalException('bad_request', 'Cel konta może mieć maks. 200 znaków.', 400);
+        }
+        $date = trim((string) ($args['date'] ?? ($before['date'] ?? '')));
+        if ($date === '') {
+            $date = gmdate('Y-m-d');
+        }
+        if (mb_strlen($date) > 20) {
+            throw new ProposalException('bad_request', 'Data konta może mieć maks. 20 znaków.', 400);
+        }
+        $include = array_key_exists('include', $args) ? (bool) $args['include'] : (bool) ($before['include'] ?? true);
+        $primary = array_key_exists('primary', $args) ? (bool) $args['primary'] : (bool) ($before['primary'] ?? false);
+
+        $after = [
+            'id' => $before !== null ? $id : 'acc_' . $this->shortId(),
+            'name' => $name,
+            'exchange' => $exchange,
+            'type' => $type,
+            'currency' => $currency,
+            // start i balance są przenoszone bez zmian; MCP ich nie ustawia.
+            'start' => (float) ($before['start'] ?? 0),
+            'date' => $date,
+            'lev' => $lev,
+            'goal' => $goal,
+            'balance' => (float) ($before['balance'] ?? 0),
+            'include' => $include,
+            'primary' => $primary,
+        ];
+
+        return $this->proposals->create(
+            $userId,
+            $clientName,
+            'account',
+            $before === null ? 'account:new' : 'account:' . $after['id'],
+            $before,
+            $after,
+            $key,
+            $this->fingerprint($args)
+        );
+    }
+
+    public function saveCapitalFlow(int $userId, array $args, string $clientName): array
+    {
+        $key = $this->idempotencyKey($args);
+        $this->rejectFields($args, ['id', 'date', 'account', 'type', 'amount', 'currency', 'fiat', 'fx', 'note', 'idempotencyKey']);
+        $state = $this->state($userId);
+        $id = trim((string) ($args['id'] ?? ''));
+        $before = null;
+        if ($id !== '') {
+            foreach ((array) ($state['flows'] ?? []) as $flow) {
+                if (is_array($flow) && (string) ($flow['id'] ?? '') === $id) {
+                    $before = $flow;
+                    break;
+                }
+            }
+            if ($before === null) {
+                throw new ProposalException('not_found', 'Wpis kapitałowy nie istnieje.', 404);
+            }
+        }
+
+        $typeRaw = strtolower(trim((string) ($args['type'] ?? ($before['type'] ?? 'deposit'))));
+        $type = match ($typeRaw) {
+            'deposit', 'wpłata', 'wplata' => 'Wpłata',
+            'withdrawal', 'withdraw', 'wypłata', 'wyplata' => 'Wypłata',
+            default => '',
+        };
+        if ($type === '') {
+            throw new ProposalException('bad_request', 'Typ wpisu musi być deposit albo withdrawal.', 400);
+        }
+        $date = trim((string) ($args['date'] ?? ($before['date'] ?? '')));
+        if ($date === '') {
+            $date = gmdate('Y-m-d');
+        }
+        if (!Dates::isValidKey($date)) {
+            throw new ProposalException('bad_request', 'date musi mieć format YYYY-MM-DD.', 400);
+        }
+        $ts = strtotime($date . ' 12:00:00 UTC');
+        if ($ts === false || $ts > time() + 86400 || $ts < time() - 5 * 365 * 86400) {
+            throw new ProposalException('bad_request', 'Data wpisu musi mieścić się w ostatnich 5 latach i nie może być z przyszłości.', 400);
+        }
+        $account = trim((string) ($args['account'] ?? ($before['account'] ?? '')));
+        if ($account === '' || !in_array($account, $this->accountNames($state), true)) {
+            throw new ProposalException('bad_request', 'Konto nie istnieje w ustawieniach AlphaVault.', 400);
+        }
+        $amount = $this->positiveNumber($args['amount'] ?? ($before['amount'] ?? null), 'amount');
+        $currency = strtoupper(trim((string) ($args['currency'] ?? ($before['currency'] ?? 'PLN'))));
+        if (!in_array($currency, PropChallengeService::CURRENCIES, true)) {
+            throw new ProposalException('bad_request', 'Nieprawidłowa waluta wpisu.', 400);
+        }
+        $fiat = array_key_exists('fiat', $args) ? (float) $args['fiat'] : (float) ($before['fiat'] ?? 0);
+        if (!is_finite($fiat) || $fiat < 0) {
+            throw new ProposalException('bad_request', 'fiat musi być liczbą większą lub równą 0.', 400);
+        }
+        $fx = array_key_exists('fx', $args) ? (float) $args['fx'] : (float) ($before['fx'] ?? 1);
+        if (!is_finite($fx) || $fx <= 0 || $fx > 1000) {
+            throw new ProposalException('bad_request', 'fx musi być w zakresie 0–1000.', 400);
+        }
+        $op = mb_substr(trim((string) ($args['note'] ?? ($before['op'] ?? ''))), 0, 200);
+
+        $after = array_merge($before ?? [], [
+            'id' => $before !== null ? $id : 'flow_' . $this->shortId(),
+            'date' => $date,
+            'account' => $account,
+            'type' => $type,
+            'amount' => $amount,
+            'currency' => $currency,
+            'fiat' => $fiat,
+            'fx' => $fx,
+            'op' => $op,
+            'tax' => $type === 'Wpłata' ? 'cost' : 'income',
+        ]);
+        if ($op === '' && $before === null) {
+            unset($after['op']);
+        }
+
+        return $this->proposals->create(
+            $userId,
+            $clientName,
+            'capital_flow',
+            $before === null ? 'flow:new' : 'flow:' . $after['id'],
+            $before,
+            $after,
+            $key,
+            $this->fingerprint($args)
+        );
+    }
+
     private function state(int $userId): array
     {
         $row = $this->db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userId]);
@@ -556,7 +728,7 @@ final class ProposalBuilder
 
     private function rejectFields(array $args, array $allowed): void
     {
-        $forbidden = ['entry', 'exit', 'exitPrice', 'price', 'fill', 'fillPrice', 'result', 'pnl', 'size', 'qty', 'quantity', 'sl', 'tp', 'leverage', 'fee', 'fees', 'balance', 'equity', 'source', 'exchangeId', 'externalId'];
+        $forbidden = ['entry', 'exit', 'exitPrice', 'price', 'fill', 'fillPrice', 'result', 'pnl', 'size', 'qty', 'quantity', 'sl', 'tp', 'leverage', 'fee', 'fees', 'balance', 'start', 'equity', 'source', 'exchangeId', 'externalId'];
         foreach ($args as $field => $_) {
             if (!in_array($field, $allowed, true)) {
                 if (in_array($field, $forbidden, true)) {

@@ -7,6 +7,7 @@ declare(strict_types=1);
  * Użycie:
  *   php tests/mcp-helper.php state <userId>
  *   php tests/mcp-helper.php decide <proposalId> <userId> approve|reject
+ *   php tests/mcp-helper.php code <proposalId> <userId>
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -26,6 +27,12 @@ try {
             'state' => $row !== null ? json_decode((string) $row['state'], true) : null,
             'revision' => (int) ($row['revision'] ?? 0),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit(0);
+    }
+    if ($command === 'code') {
+        $proposalId = (string) ($argv[2] ?? '');
+        $userId = (int) ($argv[3] ?? 0);
+        echo json_encode($service->issueApprovalCode($userId, $proposalId), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit(0);
     }
     if ($command === 'decide') {

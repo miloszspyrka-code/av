@@ -438,6 +438,107 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /api/mcp:
+    get:
+      tags: [API]
+      summary: Panel MCP — status, scope i oczekujące propozycje
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Propozycje pending, audyt i informacje o scope
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [endpoint, enabled, writesEnabled, scopes, proposals, proposalCount, audit]
+                properties:
+                  endpoint:
+                    type: string
+                  enabled:
+                    type: boolean
+                  writesEnabled:
+                    type: boolean
+                  scopes:
+                    type: array
+                    items:
+                      type: string
+                  proposals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/McpProposal'
+                  proposalCount:
+                    type: integer
+                  audit:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/mcp/proposals/decide:
+    post:
+      tags: [API]
+      summary: Zatwierdzenie lub odrzucenie propozycji MCP w panelu
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [id, action]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                action:
+                  type: string
+                  enum: [approve, reject]
+      responses:
+        '200':
+          description: Decyzja zapisana
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Konflikt rewizji, wygasła lub zamknięta propozycja
+
+  /api/mcp/proposals/{id}/approval-code:
+    post:
+      tags: [API]
+      summary: Jednorazowy kod do zatwierdzenia propozycji w rozmowie
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Kod jednorazowy (TTL 10 min)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [proposalId, code, expiresAt]
+                properties:
+                  proposalId:
+                    type: string
+                  code:
+                    type: string
+                    pattern: '^[A-Z2-9]{4}-[A-Z2-9]{4}$'
+                  expiresAt:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Propozycja wygasła lub została rozstrzygnięta
+
 components:
   securitySchemes:
     cookieAuth:
@@ -468,6 +569,35 @@ components:
         bytes: { type: integer }
         limit: { type: integer }
         userId: { type: integer }
+    McpProposal:
+      type: object
+      required: [proposalId, kind, target, status, diffHash, canApprove]
+      properties:
+        proposalId: { type: string }
+        kind:
+          type: string
+          enum: [manual_trade, close_trade, trade_review, day_plan, checkin, setup, prop_challenge, account, capital_flow]
+        target: { type: string }
+        status:
+          type: string
+          enum: [pending, approved, rejected, expired]
+        baseRevision: { type: integer }
+        diffHash: { type: string }
+        changes:
+          type: array
+          items: { type: string }
+        before: { type: object, nullable: true }
+        after: { type: object, nullable: true }
+        diff:
+          type: array
+          items: { type: object }
+        createdAt: { type: string }
+        expiresAt: { type: string }
+        decidedAt: { type: string, nullable: true }
+        clientName: { type: string }
+        canApprove: { type: boolean }
+        approvalCodeActive: { type: boolean }
+        approvalCodeExpiresAt: { type: string, nullable: true }
     Health:
       type: object
       properties:

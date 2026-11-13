@@ -148,8 +148,9 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji; Claude przez `https://claude.ai/api/mcp/auth_callback` |
 | Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
 | Status serwera MCP | ✅ | pill z `/api/mcp`: `MCP · TYLKO ODCZYT`, `MCP · ZAPIS` albo `MCP · WYŁĄCZONY` |
-| Oczekujące propozycje | ✅ | lista zmian od agenta z diffem, przyciskami Zatwierdź/Odrzuć i statusem po decyzji |
-| Zakres MCP 2.0 | ✅/— | 15 narzędzi odczytu zawsze; 7 narzędzi `propose_*` tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write` |
+| Oczekujące propozycje | ✅ | lista zmian od agenta z diffem, przyciskami Zatwierdź/Odrzuć, kodem do rozmowy i statusem po decyzji |
+| Zatwierdzanie w rozmowie | ✅ | jednorazowy kod (TTL 10 min, limit 5 prób) wydawany w panelu; agent zatwierdza `approve_proposal` tylko z tym kodem |
+| Zakres MCP 2.1 | ✅/— | 17 narzędzi odczytu zawsze; 11 narzędzi zapisu (`propose_*`, `approve_proposal`, `reject_proposal`) tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write` |
 | Zakres danych MCP | ✅ | tylko odczyt: profil, plan, transakcje, statystyki, check-iny, playbook, wydarzenia, makro; bez kluczy API, haseł inwestora i danych zdrowotnych |
 | Zgoda i wycofanie | ✅ | ekran zgody z zakresem, link do polityki §13.2, unieważnienie tokenu w `/oauth/connected` |
 | Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do integracji MCP |

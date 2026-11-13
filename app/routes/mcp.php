@@ -13,8 +13,9 @@ require_once dirname(__DIR__) . '/Mcp/Proposals/ProposalException.php';
 require_once dirname(__DIR__) . '/Mcp/Proposals/ProposalService.php';
 
 /**
- * Panelowa część MCP. Zatwierdzanie i odrzucanie propozycji odbywa się
- * wyłącznie w sesji panelu AlphaVault — nigdy przez token MCP.
+ * Panelowa część MCP. Sesja panelu jest jedynym miejscem, w którym powstaje
+ * jednorazowy kod potwierdzenia. Decyzja przez MCP wymaga tego kodu, więc
+ * agent nie może zatwierdzić własnej propozycji.
  */
 function av_handle_mcp_api(Config $config, Db $db, Auth $auth, ?array $user, string $method, string $path): void
 {
@@ -50,6 +51,12 @@ function av_handle_mcp_api(Config $config, Db $db, Auth $auth, ?array $user, str
                 ? $service->approve($userId, $matches[1], $userId)
                 : $service->reject($userId, $matches[1], $userId);
             Http::json($result);
+        }
+
+        if (preg_match('#^/api/mcp/proposals/([a-f0-9-]{36})/approval-code$#', $path, $matches) && $method === 'POST') {
+            $auth->requireSameOrigin();
+            $auth->rateLimit('mcp-approval-code', 10, 60000);
+            Http::json($service->issueApprovalCode($userId, $matches[1]));
         }
 
         if ($path === '/api/mcp/proposals/decide' && $method === 'POST') {

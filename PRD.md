@@ -228,16 +228,18 @@ Kalendarz makro i widget „MAKRO · ten tydzień” korzystają z jednego, wsp�
 - błąd API nie czyści ostatniego dobrego zestawu; sukces z `[]` czyści widok,
 - synchronizacja przez 5-min wrapper LH Cron z throttle 15 min (`bin/sync-macro-events.php`, znacznik `.runtime/macro.stamp`) oraz ręcznie.
 
-### FR-21 — MCP 2.0: kontekst i propozycje zmian
+### FR-21 — MCP 2.1: kontekst, propozycje i zatwierdzanie kodem
 
-MCP na `mcp.alphavault.pl` udostępnia agentom AI dane właściciela tokenu OAuth i bezpieczny mechanizm propozycji zmian.
+MCP na `mcp.alphavault.pl` udostępnia agentom AI dane właściciela tokenu OAuth i bezpieczny mechanizm zmian.
 
 - OAuth 2.1 + PKCE S256, scope `alphavault.read` i `alphavault.write`; write tylko za jawną zgodą.
-- 15 narzędzi odczytu: profil, pulpit, transakcje, statystyki, wydarzenia, plan, playbook, makro, prop, check-iny, konta, kapitał, połączenia, kontekst transakcji.
-- 7 narzędzi `propose_*` tworzy `mcp_proposals`; zapis wyłącznie po zatwierdzeniu w panelu AlphaVault.
-- Idempotencja, TTL 30 min, konflikt rewizji, audyt, transakcja MySQL z `SELECT ... FOR UPDATE`.
-- Dane giełdowe są niezmienne; recenzja transakcji giełdowej trafia do osobnego obszaru.
-- `MCP_WRITES_ENABLED=false` ukrywa narzędzia zapisujące i blokuje scope write.
+- 17 narzędzi odczytu: profil, pulpit, transakcje, statystyki, wydarzenia, plan, playbook, makro, prop, check-iny, konta, kapitał, połączenia, kontekst transakcji, lista i status propozycji.
+- 9 narzędzi `propose_*` tworzy `mcp_proposals`; zapis wyłącznie po decyzji użytkownika.
+- Zatwierdzanie w panelu albo w rozmowie kodem jednorazowym (TTL 10 min, limit 5 prób). Kod powstaje wyłącznie w sesji panelu; agent nie może zatwierdzić własnej propozycji ani uznać `userConfirmed` za zgodę.
+- Odrzucenie przez MCP nie zmienia danych.
+- Idempotencja propozycji i decyzji, TTL 30 min, konflikt rewizji, `diffHash`, audyt, transakcja MySQL z `SELECT ... FOR UPDATE`.
+- Dane giełdowe są niezmienne, także saldo i kapitał startowy konta; recenzja transakcji giełdowej trafia do osobnego obszaru.
+- `MCP_WRITES_ENABLED=false` ukrywa narzędzia zapisujące i blokuje scope write; włączenie wymaga ponownego OAuth klienta.
 
 ## 7. Wymagania niefunkcjonalne
 

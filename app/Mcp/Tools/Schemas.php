@@ -91,6 +91,7 @@ final class Schemas
             'impact' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 3],
             'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100, 'default' => 50],
             'offset' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100000, 'default' => 0],
+            'includePast' => ['type' => 'boolean', 'default' => false, 'description' => 'Domyślnie kalendarz zwraca wydarzenia od dziś w przód. true udostępnia również historię.'],
         ]);
     }
 
@@ -215,6 +216,64 @@ final class Schemas
         ], ['name', 'rules', 'idempotencyKey']);
     }
 
+    public static function inputProposeAccount(): array
+    {
+        return self::input([
+            'id' => ['type' => 'string', 'maxLength' => 64],
+            'name' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 80],
+            'exchange' => ['type' => 'string', 'maxLength' => 80],
+            'type' => ['type' => 'string', 'maxLength' => 40],
+            'currency' => ['type' => 'string', 'enum' => ['USD', 'USDT', 'EUR', 'PLN']],
+            'include' => ['type' => 'boolean'],
+            'primary' => ['type' => 'boolean'],
+            'lev' => ['type' => 'string', 'maxLength' => 20],
+            'goal' => ['type' => 'string', 'maxLength' => 200],
+            'date' => ['type' => 'string', 'maxLength' => 20],
+            'idempotencyKey' => self::idem(),
+        ], ['name', 'idempotencyKey']);
+    }
+
+    public static function inputProposeCapitalFlow(): array
+    {
+        return self::input([
+            'id' => ['type' => 'string', 'maxLength' => 64],
+            'date' => ['type' => 'string', 'pattern' => '^\\d{4}-\\d{2}-\\d{2}$'],
+            'account' => ['type' => 'string', 'maxLength' => 100],
+            'type' => ['type' => 'string', 'enum' => ['deposit', 'withdrawal', 'Wpłata', 'Wypłata']],
+            'amount' => ['type' => 'number', 'exclusiveMinimum' => 0],
+            'currency' => ['type' => 'string', 'enum' => ['USD', 'USDT', 'EUR', 'PLN']],
+            'fiat' => ['type' => 'number', 'minimum' => 0],
+            'fx' => ['type' => 'number', 'exclusiveMinimum' => 0, 'maximum' => 1000],
+            'note' => ['type' => 'string', 'maxLength' => 200],
+            'idempotencyKey' => self::idem(),
+        ], ['type', 'amount', 'account', 'currency', 'idempotencyKey']);
+    }
+
+    public static function inputListPendingProposals(): array { return self::input(); }
+
+    public static function inputProposalStatus(): array
+    {
+        return self::input(['proposalId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64]], ['proposalId']);
+    }
+
+    public static function inputApproveProposal(): array
+    {
+        return self::input([
+            'proposalId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
+            'expectedDiffHash' => ['type' => 'string', 'minLength' => 64, 'maxLength' => 64],
+            'confirmationCode' => ['type' => 'string', 'minLength' => 8, 'maxLength' => 12],
+            'idempotencyKey' => self::idem(),
+        ], ['proposalId', 'expectedDiffHash', 'confirmationCode', 'idempotencyKey']);
+    }
+
+    public static function inputRejectProposal(): array
+    {
+        return self::input([
+            'proposalId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
+            'idempotencyKey' => self::idem(),
+        ], ['proposalId', 'idempotencyKey']);
+    }
+
     public static function inputProposePropChallenge(): array
     {
         return self::input([
@@ -275,9 +334,59 @@ final class Schemas
             'status' => ['type' => 'string'],
             'kind' => ['type' => 'string'],
             'target' => ['type' => 'string'],
+            'baseRevision' => ['type' => 'integer'],
+            'diffHash' => ['type' => 'string'],
+            'changes' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'diff' => ['type' => 'array'],
             'expiresAt' => ['type' => 'string'],
             'duplicate' => ['type' => 'boolean'],
             'note' => ['type' => 'string'],
+        ]);
+    }
+
+    public static function outputProposalStatus(): array
+    {
+        return self::object([
+            'proposalId' => ['type' => 'string'],
+            'kind' => ['type' => 'string'],
+            'target' => ['type' => 'string'],
+            'status' => ['type' => 'string'],
+            'baseRevision' => ['type' => 'integer'],
+            'diffHash' => ['type' => 'string'],
+            'changes' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'before' => self::nullable(['type' => 'object']),
+            'after' => self::nullable(['type' => 'object']),
+            'diff' => ['type' => 'array'],
+            'createdAt' => self::nullable(['type' => 'string']),
+            'expiresAt' => self::nullable(['type' => 'string']),
+            'expiresAtIso' => self::nullable(['type' => 'string']),
+            'decidedAt' => self::nullable(['type' => 'string']),
+            'clientName' => self::nullable(['type' => 'string']),
+            'canApprove' => ['type' => 'boolean'],
+            'approvalCodeActive' => ['type' => 'boolean'],
+            'approvalCodeExpiresAt' => self::nullable(['type' => 'string']),
+        ]);
+    }
+
+    public static function outputProposalList(): array
+    {
+        return self::object([
+            'items' => ['type' => 'array'],
+            'total' => ['type' => 'integer'],
+        ]);
+    }
+
+    public static function outputProposalDecision(): array
+    {
+        return self::object([
+            'ok' => ['type' => 'boolean'],
+            'status' => ['type' => 'string'],
+            'proposalId' => ['type' => 'string'],
+            'revision' => ['type' => 'integer'],
+            'kind' => ['type' => 'string'],
+            'target' => ['type' => 'string'],
+            'diffHash' => ['type' => 'string'],
+            'duplicate' => ['type' => 'boolean'],
         ]);
     }
 }
