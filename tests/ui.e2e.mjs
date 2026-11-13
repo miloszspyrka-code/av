@@ -432,7 +432,7 @@ try {
       id, date: new Date().toISOString(), pair: 'E2E/LOCK', dir: 'l', entry: '100', exit: '99', sl: '98', tp: '104',
       size: '1', result: -10, r: -1, grade: 'B', checklist: 6, checkTotal: 7, errors: [], emotion: 'Spokój',
       note: '', mentor: '', setup: 'E2E', session: 'Londyn', mae: 0, mfe: 0, durationMin: 20, fee: 0,
-      plan: true, source: 'E2E', account: 'E2E', screens: {}
+      plan: true, source: 'E2E', screens: {}
     });
     AV.state.settings.safetyEnabled = true;
     AV.state.trades = AV.state.trades
