@@ -607,10 +607,10 @@ try {
     const base = () => ({ accounts: [{ name: 'A', include: true }], trades: [], plans: {}, checkins: [] });
     const iso = (offset) => new Date(AV.addDays(new Date(), offset)).toISOString();
     const key = (offset) => AV.dateKey(AV.addDays(new Date(), offset));
-    const trade = (offset, extra = {}) => ({ date: iso(offset), result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
+    const trade = (offset, extra = {}) => ({ date: iso(offset), pair: 'BTC/USDT', dir: 'l', result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
     const plan = (state, offset, approved = true) => {
       const k = key(offset);
-      state.plans[k] = { date: k, approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
+      state.plans[k] = { date: k, market: 'BTC', bias: 'long', approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
     };
     const badge = (state, index) => AV.badges(state)[index];
     const out = {};
