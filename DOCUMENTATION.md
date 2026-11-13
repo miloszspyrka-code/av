@@ -569,6 +569,8 @@ Routing jest po stronie przeglądarki: jeden `public/index.html`, widoki przeł�
 | `gieldy` | `#/gieldy` | Giełdy i API |
 | `ust` | `#/konto` | Konto i zasady |
 
+Widok `#/mentor-ai` to karta podłączenia MCP: adres `https://mcp.alphavault.pl/mcp`, kopiowanie do schowka, zakładki Claude/ChatGPT/Grok z krokami i linkiem do oficjalnej instrukcji. Nie zawiera czatu ani analiz.
+
 Zasady:
 
 - Slugi są ASCII, małymi literami, bez diakrytyków; myślnik zamiast spacji.

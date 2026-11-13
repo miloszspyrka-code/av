@@ -832,30 +832,45 @@
   };
 
   AV.bindMentor = () => {
-    $('#mTabs')?.addEventListener('click', (e) => {
-      const b = e.target.closest('button'); if (!b) return;
-      $$('#mTabs button').forEach((x) => x.classList.toggle('on', x === b));
-      $$('.mt').forEach((m) => m.style.display = m.id === b.dataset.t ? 'block' : 'none');
+    $('#mcpTabs')?.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-mcp-client]');
+      if (!b) return;
+      AV.mcpClient = b.dataset.mcpClient;
+      AV.renderMcpGuide();
     });
-    $('#mChips')?.addEventListener('click', (e) => {
-      const c = e.target.closest('[data-q]'); if (c) AV.ask(+c.dataset.q);
-    });
-    document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-ask]');
-      if (b) AV.ask(+b.dataset.ask);
-    });
-    $('#mktInst')?.addEventListener('click', (e) => {
-      const c = e.target.closest('.chip'); if (!c) return;
-      AV.ui.mktInst = c.dataset.i;
-      $$('#mktInst .chip').forEach((x) => x.classList.toggle('on', x === c));
-      AV.renderMarketAnalysis();
-    });
-    $('#reAn')?.addEventListener('click', () => {
-      AV.renderMarketAnalysis(); AV.renderWeekly(); AV.renderMentor();
-      AV.toast('Analiza odświeżona');
+    $('#mcpCopy')?.addEventListener('click', async () => {
+      const url = ($('#mcpUrl')?.textContent || '').trim();
+      if (!url) return;
+      let copied = true;
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        copied = false;
+      }
+      if (!copied) {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch {}
+        ta.remove();
+      }
+      const btn = $('#mcpCopy');
+      if (btn) {
+        btn.classList.add('copied');
+        AV.setText('#mcpCopyLabel', 'Skopiowano');
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          AV.setText('#mcpCopyLabel', 'Kopiuj adres');
+        }, 1800);
+      }
+      AV.toast('Adres MCP skopiowany');
     });
     $('#proClose')?.addEventListener('click', () => $('#pro').classList.remove('on'));
-    $('#proGo')?.addEventListener('click', () => { $('#pro').classList.remove('on'); AV.showView('mentor'); AV.ask(0); });
+    $('#proGo')?.addEventListener('click', () => { $('#pro').classList.remove('on'); AV.showView('mentor'); });
   };
 
   /* ---------- akademia ---------- */
@@ -1547,7 +1562,6 @@
       AV.logout();
       location.href = '/';
     });
-    AV.ensureChat();
     AV.setPlan(AV.state.subscription.plan === 'solo', true);
     AV.renderAll();
     AV.bindMisc(); AV.bindPlan(); AV.bindJournal(); AV.bindPlaybook(); AV.bindNewTrade();

@@ -124,6 +124,21 @@ try {
   }
   log('nawigacja wszystkich widoków', true, views.length + ' widoków');
 
+  // Mentor AI: karta podłączenia MCP
+  await page.click('.navg button[data-v="mentor"]');
+  await page.waitForSelector('.mcp-card');
+  assert.equal((await page.locator('#mcpUrl').innerText()).trim(), 'https://mcp.alphavault.pl/mcp');
+  assert.equal(await page.locator('#mcpTabs button.on').getAttribute('data-mcp-client'), 'grok');
+  assert.equal(await page.locator('#msgs').count(), 0);
+  await page.click('#mcpTabs button[data-mcp-client="claude"]');
+  assert.match(await page.locator('#mcpSteps').innerText(), /Customize → Connectors/);
+  assert.equal((await page.locator('#mcpDocsLabel').innerText()).trim(), 'Claude');
+  assert.match(await page.locator('#mcpDocs').getAttribute('href'), /support\.claude\.com/);
+  await page.click('#mcpCopy');
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('#toast').innerText(), /skopiowany/i);
+  log('Mentor AI: karta MCP + zakładki + kopiowanie', true);
+
   // backup stanu po stronie klienta (do przywrócenia po testach zapisu)
   const backup = await page.evaluate(() => JSON.stringify(AV.state));
 
@@ -346,13 +361,12 @@ try {
   assert.ok(deleted, 'challenge nie usunięty');
   log('prop: usuwanie challenge', deleted);
 
-  // mentor
+  // mentor: karta MCP nadal dostępna po zapisach
   await page.click('.navg button[data-v="mentor"]');
-  const beforeChat = await page.locator('#msgs .msg').count();
-  await page.locator('#mChips .chip').first().click();
-  await page.waitForFunction((n) => document.querySelectorAll('#msgs .msg').length >= n + 2, beforeChat, { timeout: 5000 });
-  const afterChat = await page.locator('#msgs .msg').count();
-  log('mentor: odpowiedź', afterChat >= beforeChat + 2, beforeChat + ' → ' + afterChat);
+  await page.waitForSelector('.mcp-card');
+  assert.equal((await page.locator('#mcpUrl').innerText()).trim(), 'https://mcp.alphavault.pl/mcp');
+  assert.equal(await page.locator('#msgs').count(), 0);
+  log('mentor: karta MCP po zapisach', true);
 
   // krok mentora prowadzi do planu dnia
   await page.evaluate(() => { AV.renderDashMentor({ closed: [] }); AV.showView('pulpit'); });
