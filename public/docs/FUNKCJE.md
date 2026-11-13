@@ -52,13 +52,15 @@ Legenda:
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Rynek, bias, uzasadnienie | ✅ | zapis do `plans[data]` |
-| Kluczowe poziomy | ✅ | dodawanie/usuwanie, walidacja ceny |
+| Rynek, bias, uzasadnienie | ✅ | klikalne chipy rynku i biasu; zapis do `plans[data]` i natychmiastowy PUT `/api/state` |
+| Kluczowe poziomy | ✅ | dodawanie/usuwanie, walidacja ceny; pusty wiersz zostaje w szkicu |
 | Scenariusze główny/awaryjny | ✅ | |
 | Limity (ryzyko, max transakcji, godzina) | ✅ | wpływają na pulpit |
 | „Czego dziś nie robię” | ✅ | |
-| Zatwierdzenie planu | ✅ | timestamp, widoczny na pulpicie |
-| Kopiuj z wczoraj | ✅ | |
+| Zatwierdzenie planu | ✅ | timestamp, widoczny na pulpicie; potwierdzenie zapisu w MySQL |
+| Kopiuj z wczoraj | ✅ | natychmiastowy zapis w MySQL |
+| Autosave szkicu | ✅ | debounce 700 ms; błąd zapisu pokazany toastem |
+| Trwały zapis w MySQL | ✅ | `user_states.state.plans[YYYY-MM-DD]`; przeładowanie odtwarza plan z bazy |
 | Dziś/Wczoraj/Historia | ✅ | historia planów, podgląd |
 | Trzymanie się planu | ✅ | 5 dni wstecz |
 

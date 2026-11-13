@@ -214,6 +214,16 @@ async function main() {
   assert.equal(saved.json.state.prop.selectedId, propFixture.id);
   log('prop challenge zapisany w MySQL', true, savedProp.name);
 
+  const wwwOrigin = ORIGIN.replace(/^(https?:\/\/)(?!www\.)/, '$1www.');
+  const wwwPut = await req('/api/state', {
+    method: 'PUT',
+    body: JSON.stringify({ state: originalState, baseRevision: saved.json.revision }),
+    headers: { Origin: wwwOrigin }
+  });
+  assert.equal(wwwPut.res.status, 200, wwwPut.text);
+  assert.ok(wwwPut.json.revision > saved.json.revision);
+  log('zapis z Origin www.* = 200', true, wwwOrigin);
+
   const conflict = await req('/api/state', {
     method: 'PUT',
     body: JSON.stringify({ state: originalState, baseRevision: state.json.revision }),
@@ -224,7 +234,7 @@ async function main() {
 
   const badOrigin = await req('/api/state', {
     method: 'PUT',
-    body: JSON.stringify({ state: originalState, baseRevision: saved.json.revision }),
+    body: JSON.stringify({ state: originalState, baseRevision: wwwPut.json.revision }),
     headers: { Origin: 'https://evil.example' }
   });
   assert.equal(badOrigin.res.status, 403);
@@ -250,7 +260,7 @@ async function main() {
   originalState.prop = propBefore;
   const restore = await req('/api/state', {
     method: 'PUT',
-    body: JSON.stringify({ state: originalState, baseRevision: saved.json.revision }),
+    body: JSON.stringify({ state: originalState, baseRevision: wwwPut.json.revision }),
     headers: { Origin: ORIGIN }
   });
   assert.equal(restore.res.status, 200, restore.text);

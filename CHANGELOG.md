@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.9.5 — 2026-11-13
+
+### Naprawione
+- Plan dnia: chipy rynku (`BTC/ETH/SOL/NAS100/XAUUSD`) i biasu (`Long/Short/Neutralnie/Nie gram`) mają obsługę kliknięcia; wcześniej zmieniały tylko wygląd w innych miejscach i nie trafiały do stanu.
+- Zatwierdzenie i „Skopiuj z wczoraj” czekają na `PUT /api/state`; sukces jest potwierdzany, a błąd zapisu pokazany toastem zamiast cichego pozostawienia zmian tylko w przeglądarce.
+- `renderPlan()` nie nadpisuje pól, gdy użytkownik pisze w edytorze planu (render po notowaniach nie kasuje treści).
+- Autosave planu wydłużony z 200 ms do 700 ms i połączony z natychmiastowym zapisem akcji; mniej PUT-ów całego stanu.
+- `www.alphavault.pl` przekierowuje 301 na `alphavault.pl`, a `requireSameOrigin()` akceptuje bliźniaczy host `www`, więc zapis nie kończy się 403 przy wejściu z `www`.
+
+### Testy
+- UI e2e: chipy rynku/biasu, poziomy, zatwierdzenie, odczyt planu z MySQL przez `GET /api/state` i odtworzenie po pełnym reloadzie.
+- API e2e: `PUT /api/state` z `Origin` hosta `www.*` = 200, obcy origin nadal 403.
+
 ## 3.9.4 — 2026-11-13
 
 ### Dodane

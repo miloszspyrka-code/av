@@ -146,16 +146,51 @@ try {
   // backup stanu po stronie klienta (do przywrócenia po testach zapisu)
   const backup = await page.evaluate(() => JSON.stringify(AV.state));
 
-  // plan: dodaj i usuń poziom, zatwierdź
+  // plan: chipy rynku/biasu, poziomy, zatwierdzenie i trwały zapis w MySQL
   await page.click('.navg button[data-v="plan"]');
   const beforeLevels = await page.locator('#lvls .lvl').count();
   await page.click('#addLvl');
   const afterAdd = await page.locator('#lvls .lvl').count();
-  await page.locator('#lvls .lvl').last().locator('.x').click();
-  if (!(await page.locator('#planWhy').inputValue()).trim()) await page.fill('#planWhy', 'E2E: plan dnia');
+  const levelRow = page.locator('#lvls .lvl').last();
+  await levelRow.locator('input').first().fill('70 123');
+  await levelRow.locator('input').nth(1).fill('E2E poziom');
+  await page.click('#planMarkets .chip[data-m="ETH"]');
+  await page.click('#planBias .chip[data-b="short"]');
+  const chips = await page.evaluate(() => ({
+    market: document.querySelector('#planMarkets .chip.on')?.dataset.m,
+    bias: document.querySelector('#planBias .chip.on')?.dataset.b
+  }));
+  const why = 'E2E: plan dnia ' + Date.now();
+  await page.fill('#planWhy', why);
   await page.click('#savePlan');
-  const approved = await page.evaluate(() => !!AV.state.plans[AV.dateKey(new Date())]?.approvedAt);
-  log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved);
+  await page.waitForFunction(async () => {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data.state?.plans?.[AV.dateKey(new Date())]?.approvedAt;
+  }, null, { timeout: 15000 });
+  const approved = await page.evaluate(() => {
+    const p = AV.state.plans[AV.dateKey(new Date())];
+    return { ok: !!p?.approvedAt, market: p?.market, bias: p?.bias, levels: p?.levels?.length, why: p?.why };
+  });
+  log('plan dnia: chipy rynku i biasu', chips.market === 'ETH' && chips.bias === 'short', JSON.stringify(chips));
+  log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved.ok && approved.levels >= 1, JSON.stringify(approved));
+
+  // trwałość: przeładowanie czyta plan z MySQL
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated, null, { timeout: 15000 });
+  await page.click('.navg button[data-v="plan"]');
+  const planReload = await page.evaluate(() => {
+    const p = AV.state.plans[AV.dateKey(new Date())];
+    return {
+      market: document.querySelector('#planMarkets .chip.on')?.dataset.m,
+      bias: document.querySelector('#planBias .chip.on')?.dataset.b,
+      why: document.querySelector('#planWhy')?.value,
+      levels: document.querySelectorAll('#lvls .lvl').length,
+      approved: !!p?.approvedAt
+    };
+  });
+  log('plan dnia: zapis w bazie po reloadzie', planReload.market === 'ETH' && planReload.bias === 'short' && planReload.why === why && planReload.levels >= 1 && planReload.approved, JSON.stringify(planReload));
 
   // dziennik: filtry
   await page.click('.navg button[data-v="trans"]');

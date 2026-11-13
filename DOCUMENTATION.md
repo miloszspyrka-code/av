@@ -571,6 +571,8 @@ Routing jest po stronie przeglądarki: jeden `public/index.html`, widoki przeł�
 
 Widok `#/mentor-ai` to strona integracji MCP: adres `https://mcp.alphavault.pl/mcp` z kopiowaniem, przepływ „jak to działa”, zakładki ChatGPT/Claude/Grok z krokami konfiguracji, karty korzyści i bezpieczeństwa oraz nota o dostępności integracji. Nie zawiera czatu ani analiz.
 
+Plan dnia (`#/plan`) trzyma dane w `user_states.state.plans[YYYY-MM-DD]`. Kliknięcie rynku lub biasu, dodanie/usunięcie poziomu, zatwierdzenie i „Skopiuj z wczoraj” zapisują szkic i wysyłają `PUT /api/state`; zatwierdzenie czeka na odpowiedź serwera i pokazuje wynik („Zapisano w bazie” albo błąd). Tekst planu ma autosave z debounce 700 ms. `renderPlan()` nie nadpisuje formularza, gdy fokus jest wewnątrz edytora, więc render po notowaniach nie kasuje wpisywanej treści.
+
 Zasady:
 
 - Slugi są ASCII, małymi literami, bez diakrytyków; myślnik zamiast spacji.
@@ -772,7 +774,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
 | Daty demo | `tests/demo-state.test.php` | przesunięcie fixture na dziś, idempotencja, plany jako punkt zaczepienia, błędne dane | 15/15 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, macro, admin, eksport, prop | 23/23 PASS |
-| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak, nagłówek | 58/58 PASS |
+| UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, plan dnia z reloadem z MySQL, 8 odznak, nagłówek | 60/60 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 12/12 PASS |
 | PWA mobile | `tests/pwa.e2e.mjs` | manifest, SW, instalacja, powiadomienie, deep link, 10 s, push, offline | 20/20 PASS |
 | Urządzenia | `tests/wearables.e2e.mjs` | OAuth2 + PKCE Oura, rotacja tokenów i klucza, statusy, Apple, UI, bezpieczeństwo, wyłączenie Garmin/Whoop | PASS |

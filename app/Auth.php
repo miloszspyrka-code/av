@@ -251,7 +251,21 @@ final class Auth
     public function requireSameOrigin(): void
     {
         $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
-        if ($origin !== '' && $origin !== $this->config->origin) {
+        if ($origin === '') {
+            return;
+        }
+        $allowed = [$this->config->origin];
+        $parts = parse_url($this->config->origin);
+        if (is_array($parts) && !empty($parts['host'])) {
+            $host = strtolower((string) $parts['host']);
+            $altHost = str_starts_with($host, 'www.') ? substr($host, 4) : 'www.' . $host;
+            $alt = (string) ($parts['scheme'] ?? 'https') . '://' . $altHost;
+            if (isset($parts['port'])) {
+                $alt .= ':' . $parts['port'];
+            }
+            $allowed[] = $alt;
+        }
+        if (!in_array($origin, array_values(array_unique($allowed)), true)) {
             Http::json(['error' => 'bad_origin', 'message' => 'Nieprawidłowe źródło żądania.'], 403);
         }
     }
