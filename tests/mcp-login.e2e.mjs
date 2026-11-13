@@ -111,7 +111,7 @@ function makeConfig() {
     DISCORD_GUILD_ID: 'test-guild',
     DISCORD_REQUIRED_ROLE_ID: 'test-role',
     DISCORD_API_BASE: DISCORD,
-    DISCORD_OAUTH_BASE: DISCORD,
+    DISCORD_OAUTH_BASE: DISCORD + '/api',
     DISCORD_USER_BASE: DISCORD,
     MCP_ENABLED: 'true',
     MCP_WRITES_ENABLED: 'false',
