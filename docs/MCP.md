@@ -448,7 +448,7 @@ Migracja: dopisanie tabel do `db/schema.sql` + osobny plik `db/migrations/202611
 | Prompt injection w opisach Discord | model wykona niechcianą akcję | opisy jako dane, zapisy tylko za wyraźną intencją, potwierdzenia |
 | DCR/open redirect | phishing przez fałszywego klienta | allowlista redirect hostów, ekran zgody, rate limit |
 | Rozszerzenie zakresu na „wszystko” | ryzyko i złożoność | fazy 1–3; brak ustawień bezpieczeństwa i sync |
-| Prywatność | dane tradingowe trafiają do OpenAI/xAI | aktualizacja polityki prywatności, zgoda, minimalizacja danych |
+| Prywatność | dane tradingowe trafiają do OpenAI/Anthropic/xAI | polityka prywatności §13.2, ekran zgody, tryb read-only, minimalizacja danych, wycofanie tokenu |
 
 **Decyzje wymagane przed implementacją:**
 
@@ -457,7 +457,7 @@ Migracja: dopisanie tabel do `db/schema.sql` + osobny plik `db/migrations/202611
 3. Logowanie: osobny Discord redirect URI (rekomendowane) czy SSO handoff.
 4. Pilot: lista Discord ID.
 5. Czy dopuścić `delete_trade` w fazie 2.
-6. Aktualizacja polityki prywatności/regulaminu pod ChatGPT/Grok.
+6. Polityka prywatności/regulamin pod ChatGPT/Claude/Grok — zrobione w wersji 1.1 (13.11.2026).
 
 ## 13. Definition of Done dla wdrożenia MCP
 
@@ -469,7 +469,7 @@ Migracja: dopisanie tabel do `db/schema.sql` + osobny plik `db/migrations/202611
 6. `npm test`, `test:ui`, `test:ui:empty`, `test:events`, `test:docs` zielone.
 7. Logi nie zawierają tokenów, notatek, `raw_payload` ani screenów.
 8. Monitoring i rollback opisane i sprawdzone.
-9. Polityka prywatności i regulamin zaktualizowane.
+9. Polityka prywatności i regulamin zaktualizowane; MCP opisany w §13.2, ekran zgody zawiera zakres i link do polityki.
 10. Pilot 24 h bez błędów; dopiero potem pełne włączenie.
 
 ## 14. Powiązania
