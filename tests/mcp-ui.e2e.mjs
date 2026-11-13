@@ -67,17 +67,23 @@ try {
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated && Number(AV.currentUserId) > 0);
   const userId = await page.evaluate(() => Number(AV.currentUserId));
   assert.ok(userId > 0, 'brak userId');
+
+  await page.click('.navg button[data-v="mentor"]');
+  await page.waitForSelector('#mcpPendingSection');
   await page.evaluate(async () => {
     clearTimeout(AV._saveTimer);
     if (AV.api.pushing) await AV.waitForPushIdle();
     if (AV.api.dirty) await AV.pushStateImmediate();
   });
   const seeded = seedProposals(userId);
-
-  await page.click('.navg button[data-v="mentor"]');
-  await page.waitForSelector('#mcpPendingSection');
   await page.evaluate(async () => { AV.api.mcpLoaded = false; await AV.loadMcpProposals(); });
   await page.waitForFunction(() => document.querySelectorAll('.mcp-proposal').length === 2, null, { timeout: 10000 });
+  const revDebug = await page.evaluate(async () => {
+    const res = await AV.apiFetch('/api/mcp');
+    const data = await res.json();
+    return { revision: AV.api.revision, bases: data.proposals.map((p) => p.baseRevision) };
+  });
+  console.log('revision debug:', JSON.stringify(revDebug));
   log('panel: dwie propozycje widoczne', (await page.locator('.mcp-proposal').count()) === 2);
 
   const diffText = await page.locator('.mcp-proposal').first().innerText();
