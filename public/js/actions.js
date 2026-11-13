@@ -754,15 +754,15 @@
 
   /* ---------- kalkulator ---------- */
   AV.calc = { mode: 'crypto', dir: 'long' };
-  AV.fillInst = () => {
+  AV.fillInst = (withQuotes = true) => {
     const list = AV.INST[AV.calc.mode];
     AV.setHTML('#cInst', list.map((x, i) => '<option value="' + i + '">' + AV.esc(x[0]) + '</option>').join(''));
     AV.show('#levWrap', AV.calc.mode === 'crypto');
-    AV.selectInstrument();
+    AV.selectInstrument(withQuotes);
   };
-  AV.selectInstrument = () => {
+  AV.selectInstrument = (withQuotes = true) => {
     AV.setPrice();
-    AV.loadInstrumentQuotes();
+    if (withQuotes) AV.loadInstrumentQuotes();
   };
   AV.setPrice = () => {
     const x = AV.INST[AV.calc.mode][+$('#cInst').value || 0];
@@ -879,7 +879,7 @@
       $$('.qk .chip').forEach((x) => x.classList.remove('on'));
       AV.autoLv();
     });
-    AV.fillInst();
+    AV.fillInst(false);
   };
 
   /* ---------- mentor ---------- */
@@ -1685,7 +1685,8 @@
     AV.bindCalc(); AV.bindMentor(); AV.bindAcademy(); AV.bindTax(); AV.bindCalendar();
     AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats();
     if (AV.bindProp) AV.bindProp();
-    AV.renderTicker(); AV.loadQuotes(); AV.loadMcpStatus(); AV.tickCountdowns();
+    AV.renderTicker(); AV.tickCountdowns();
+    if (AV.api.authenticated) { AV.loadQuotes(); AV.loadMcpStatus(); }
     AV.updateEnvBadge();
     const params = new URLSearchParams(location.search);
     const connected = params.get('connected');
