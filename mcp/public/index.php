@@ -34,6 +34,11 @@ try {
 $method = \AlphaVault\Http::method();
 $path = \AlphaVault\Http::path();
 
+// OAuth w popupie ChatGPT/Grok: nie odcinaj window.opener przez COOP.
+if (str_starts_with($path, '/oauth/')) {
+    header('Cross-Origin-Opener-Policy: unsafe-none', true);
+}
+
 $oauth = new \AlphaVault\Mcp\Http\OAuthController($config, $db, $auth, $discord);
 
 if ($path === '/health' && $method === 'GET') {

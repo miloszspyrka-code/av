@@ -327,6 +327,17 @@ final class OAuthController
         if (!is_array($body)) {
             parse_str((string) $request->getBody(), $body);
         }
+        $grantType = (string) ($body['grant_type'] ?? '');
+        $tokenClientId = (string) ($body['client_id'] ?? '');
+        $tokenRedirect = (string) ($body['redirect_uri'] ?? '');
+        $this->consentLog('token_request', [
+            'grant' => $grantType,
+            'client' => $tokenClientId,
+            'redirect_host' => (string) parse_url($tokenRedirect, PHP_URL_HOST),
+            'code' => (string) ($body['code'] ?? '') !== '',
+            'verifier' => (string) ($body['code_verifier'] ?? '') !== '',
+            'resource' => (string) ($body['resource'] ?? ''),
+        ]);
         $resource = (string) ($body['resource'] ?? $this->config->mcp['resource']);
         if (!$this->isAllowedResource($resource)) {
             Http::json(['error' => 'invalid_target', 'message' => 'Nieprawidłowy resource.'], 400);
@@ -335,8 +346,16 @@ final class OAuthController
         try {
             $response = $this->oauth->server->respondToAccessTokenRequest($request, new Response());
         } catch (OAuthServerException $err) {
+            $this->consentLog('token_error', [
+                'class' => get_class($err),
+                'message' => $err->getMessage(),
+            ]);
             $this->emitOAuthException($err);
         }
+        $this->consentLog('token_ok', [
+            'grant' => $grantType,
+            'client' => $tokenClientId,
+        ]);
 
         $clientId = (string) ($body['client_id'] ?? '');
         if ($clientId !== '') {
