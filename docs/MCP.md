@@ -250,6 +250,13 @@ CI: `.github/workflows/ci.yml` — krok `MCP security tests`, `MCP prop parity`,
 | `MCP_LOG_FILE` | `logs/mcp.log` | log zgody i błędów |
 | `SESSION_COOKIE` | `av_session` / `mcp_session` | cookie sesji |
 
+### 12.1. Prywatność
+
+Dane tradingowe są przekazywane wyłącznie klientowi AI, którego połączenie użytkownik autoryzował.
+Polityka prywatności §13.2 opisuje zakres MCP, zgody i wycofanie tokenu:
+[/polityka-prywatnosci](https://alphavault.pl/polityka-prywatnosci). Ekran zgody pokazuje zakres
+dostępu i link do polityki; token można unieważnić na `/oauth/connected`.
+
 ## 13. Powiązania
 
 - [PRD.md](../PRD.md)
@@ -260,3 +267,4 @@ CI: `.github/workflows/ci.yml` — krok `MCP security tests`, `MCP prop parity`,
 - [DEPLOY.md](DEPLOY.md)
 - [TESTOWANIE.md](TESTOWANIE.md)
 - [AGENTS.md](../AGENTS.md)
+- [Polityka prywatności](https://alphavault.pl/polityka-prywatnosci)
