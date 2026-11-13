@@ -27,7 +27,7 @@ function av_handle_mcp_api(Config $config, Db $db, Auth $auth, ?array $user, str
             $pending = $service->list($userId, 'pending');
             Http::json([
                 'endpoint' => 'https://mcp.alphavault.pl/mcp',
-                'enabled' => (bool) $config->mcp['enabled'],
+                'enabled' => true,
                 'writesEnabled' => (bool) $config->mcp['writesEnabled'],
                 'scopes' => (bool) $config->mcp['writesEnabled']
                     ? ['alphavault.read', 'alphavault.write']
