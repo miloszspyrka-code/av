@@ -280,8 +280,8 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; linki w stopce, logowaniu i zakupie |
-| Regulamin | ✅ | osobna strona `/regulamin`; linki w stopce, logowaniu i zakupie |
+| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; linki w stopce, logowaniu, zakupie, modalu Akademii oraz ekranach wygaśnięcia i braku roli |
+| Regulamin | ✅ | osobna strona `/regulamin`; linki w stopce, logowaniu, zakupie, modalu Akademii oraz ekranach wygaśnięcia i braku roli |
 | „Czym jest Akademia?” | ✅ | modal |
 | Zakup + zgody | 🟡 | modal, checkboxy, aktywacja planu demo; brak Stripe |
 

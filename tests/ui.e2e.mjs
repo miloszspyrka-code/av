@@ -79,6 +79,22 @@ try {
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated);
   log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + sesja');
 
+  // linki prawne w modalu Akademii oraz na ekranach wygaśnięcia i braku roli
+  await page.evaluate(() => document.querySelector('[data-doc="ak"]').click());
+  await page.waitForSelector('#docM.on');
+  const docLinks = await page.evaluate(() => ({
+    privacy: !!document.querySelector('#docB a[href="/polityka-prywatnosci"]'),
+    terms: !!document.querySelector('#docB a[href="/regulamin"]'),
+    contact: !!document.querySelector('#docB a[href^="mailto:kontakt@alphamoves.pl"]')
+  }));
+  log('modal Akademii: linki prawne', docLinks.privacy && docLinks.terms && docLinks.contact, JSON.stringify(docLinks));
+  await page.evaluate(() => document.querySelector('#docM [data-close]').click());
+  const gateLinks = await page.evaluate(() => ({
+    expired: !!document.querySelector('#expired a[href="/polityka-prywatnosci"]') && !!document.querySelector('#expired a[href="/regulamin"]'),
+    role: !!document.querySelector('#roleGate a[href="/polityka-prywatnosci"]') && !!document.querySelector('#roleGate a[href="/regulamin"]')
+  }));
+  log('ekrany wygaśnięcia i roli: linki prawne', gateLinks.expired && gateLinks.role, JSON.stringify(gateLinks));
+
   const rows = await page.locator('#tbody tr').count();
   assert.equal(rows, 47);
   log('dziennik z bazy', rows === 47, rows + ' transakcji');
