@@ -6,6 +6,7 @@ namespace AlphaVault\Mcp\Proposals;
 use AlphaVault\Config;
 use AlphaVault\Db;
 use AlphaVault\Mcp\Support\Dates;
+use AlphaVault\Mcp\Support\PropChallengeService;
 
 /**
  * Model propozycji zmian MCP.
