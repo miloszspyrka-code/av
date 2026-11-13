@@ -135,7 +135,7 @@ async function main() {
   const isLocal = /^http:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(BASE);
   if (isLocal) {
     try {
-      execFileSync('php', [path.join(ROOT, 'tests', 'seed-corrupt-state.php')], {
+      execFileSync('php', [path.join(ROOT, 'tests', 'seed-corrupt-state.php'), String(me.json.user.id)], {
         env: { ...process.env, ALPHA_VAULT_CONFIG: process.env.ALPHA_VAULT_CONFIG || 'tests/config.test.json' },
         stdio: 'pipe'
       });

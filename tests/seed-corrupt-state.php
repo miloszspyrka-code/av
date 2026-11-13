@@ -9,12 +9,16 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 [$config, $db] = require $root . '/app/bootstrap.php';
 
-$row = $db->queryOne("SELECT id FROM users WHERE discord_id = 'demo-local' LIMIT 1");
-if ($row === null) {
-    fwrite(STDERR, "Brak użytkownika demo.\n");
+$userId = isset($argv[1]) ? (int) $argv[1] : 0;
+if ($userId <= 0) {
+    fwrite(STDERR, "Brak ID użytkownika demo.\n");
     exit(1);
 }
-$userId = (int) $row['id'];
+$row = $db->queryOne('SELECT id FROM users WHERE id = ? LIMIT 1', [$userId]);
+if ($row === null) {
+    fwrite(STDERR, "Nie ma użytkownika o ID {$userId}.\n");
+    exit(1);
+}
 
 $correct = 'Cześć {imie}. Widzę dziś 0 straty i gotowość 66/100, więc jestem w pogotowiu.';
 if (!function_exists('iconv')) {
