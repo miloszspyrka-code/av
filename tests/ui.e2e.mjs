@@ -148,6 +148,25 @@ try {
   const mentorCopy = await page.evaluate(() => document.querySelector('#mentor')?.innerText || '');
   log('MCP: tylko odczyt bez fałszywego statusu', mentorCopy.includes('MCP · TYLKO ODCZYT') && !mentorCopy.includes('SERWER MCP GOTOWY'), 'ok');
 
+  // statystyki: zero transakcji nie może pokazywać fikcyjnych liczb
+  const emptyStats = await page.evaluate(() => {
+    const backup = AV.state.trades;
+    AV.state.trades = [];
+    AV.renderStats();
+    const out = {
+      pf: document.querySelector('#stPf')?.textContent.trim() || '',
+      wr: document.querySelector('#stWr')?.textContent.trim() || '',
+      plan: document.querySelector('#stPlan')?.textContent.trim() || '',
+      fees: document.querySelector('#stFees')?.textContent.trim() || '',
+      checklist: document.querySelector('#checklistStats')?.textContent || '',
+      insight: document.querySelector('#gradeInsight')?.textContent || ''
+    };
+    AV.state.trades = backup;
+    AV.renderStats();
+    return out;
+  });
+  log('statystyki: puste dane bez fikcji', emptyStats.pf === '—' && emptyStats.wr === '—' && emptyStats.plan === '—' && emptyStats.fees === '0,00' && emptyStats.checklist.includes('Brak danych') && !emptyStats.checklist.includes('7/7') && !emptyStats.insight.includes('Tak trzymaj'), JSON.stringify(emptyStats));
+
   // Mentor AI: integracje MCP
   await page.click('.navg button[data-v="mentor"]');
   await page.waitForSelector('.mcp-endpoint-card');
@@ -518,6 +537,21 @@ try {
     AV.renderLock();
   });
   await page.evaluate(() => document.getElementById('pastTrade').click());
+  const emptyForm = await page.evaluate(() => ({
+    pair: document.querySelector('#ntPair')?.value || '',
+    entry: document.querySelector('#ntEntry')?.value || '',
+    size: document.querySelector('#ntSize')?.value || '',
+    sl: document.querySelector('#ntSl')?.value || '',
+    tp: document.querySelector('#ntTp')?.value || '',
+    note: document.querySelector('#ntNote')?.value || '',
+    checklist: document.querySelector('#clN')?.textContent.trim() || '',
+    grades: document.querySelectorAll('.gp.on').length,
+    risk: document.querySelector('#ntRisk')?.textContent || ''
+  }));
+  log('nowa transakcja: formularz pusty', !emptyForm.pair && !emptyForm.entry && !emptyForm.size && !emptyForm.sl && !emptyForm.tp && !emptyForm.note, JSON.stringify(emptyForm));
+  log('nowa transakcja: checklista 0 i brak oceny', emptyForm.checklist === '0/7' && emptyForm.grades === 0, emptyForm.checklist + ' / ' + emptyForm.grades);
+  log('nowa transakcja: limit i ryzyko osobno', emptyForm.risk.includes('Limit') && emptyForm.risk.includes('Ryzyko'), emptyForm.risk.slice(0, 100));
+
   const beforeTrades = await page.evaluate(() => AV.state.trades.length);
   await page.fill('#ntPair', 'E2E/USDT');
   await page.fill('#ntEntry', '100');
@@ -529,6 +563,11 @@ try {
   const afterTrades = await page.evaluate(() => AV.state.trades.length);
   log('nowa transakcja: zapis', afterTrades === beforeTrades + 1, beforeTrades + ' → ' + afterTrades);
   const addedId = await page.evaluate(() => AV.state.trades.find((t) => t.pair === 'E2E/USDT')?.id);
+  const addedTrade = await page.evaluate(() => {
+    const t = AV.state.trades.find((x) => x.pair === 'E2E/USDT');
+    return t ? { risk: t.risk, riskPct: t.riskPct, mae: t.mae, mfe: t.mfe } : null;
+  });
+  log('nowa transakcja: ryzyko zapisane, MAE/MFE puste', !!addedTrade && addedTrade.risk === 1 && addedTrade.mae === null && addedTrade.mfe === null, JSON.stringify(addedTrade));
   if (addedId) {
     await page.evaluate((id) => AV.closeTradeModal(id), addedId);
     await page.fill('#ctExit', '105');
