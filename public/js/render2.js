@@ -697,8 +697,12 @@
     const active = ['weex', 'okx', 'bingx'].map((k) => [k, c[k]]).find(([, v]) => v.connected);
     const badge = $('#syncBadge');
     if (badge) {
+      const hasConnection = !!active || !!c.mt.connected;
       const last = active && active[1].lastSync ? new Date(active[1].lastSync).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
-      badge.innerHTML = '<span class="dot"></span>' + (active ? active[0].toUpperCase() : (c.mt.connected ? 'MetaTrader' : 'brak połączeń')) + (last ? ' · ' + last : '');
+      badge.hidden = !hasConnection;
+      badge.innerHTML = hasConnection
+        ? '<span class="dot"></span>' + (active ? active[0].toUpperCase() : 'MetaTrader') + (last ? ' · ' + last : '')
+        : '';
     }
   };
 

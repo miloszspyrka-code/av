@@ -100,6 +100,12 @@ try {
   await page.click('#demoEnter');
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated, null, { timeout: 15000 });
   log('logowanie demo', true);
+  const headerBefore = await page.evaluate(() => ({
+    hidden: document.querySelector('#syncBadge').hidden,
+    text: document.querySelector('#syncBadge').textContent
+  }));
+  assert.equal(headerBefore.hidden, true, 'chip giełd bez połączeń: ' + headerBefore.text);
+  log('nagłówek: chip giełd ukryty bez połączeń', true);
 
   await page.click('.navg button[data-v="gieldy"]');
   await page.waitForSelector('#exBody');
@@ -126,6 +132,13 @@ try {
   await waitConnected('okx');
   await page.waitForFunction(() => (document.querySelector('#exBody')?.textContent || '').includes('Zaimportowane transakcje'), null, { timeout: 25000 });
   log('OKX: połączenie przez UI + import', true);
+  const headerAfter = await page.evaluate(() => ({
+    hidden: document.querySelector('#syncBadge').hidden,
+    text: document.querySelector('#syncBadge').textContent
+  }));
+  assert.equal(headerAfter.hidden, false, 'chip giełd po połączeniu');
+  assert.match(headerAfter.text, /OKX/, 'chip pokazuje OKX: ' + headerAfter.text);
+  log('nagłówek: chip giełd pokazuje OKX po połączeniu', true, headerAfter.text.trim());
 
   // WEEX — klucz z prawem handlu przechodzi
   await page.click('.exl button[data-ex="weex"]');

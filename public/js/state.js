@@ -25,6 +25,7 @@
     pushing: false,
     dirty: false,
     lastError: null,
+    saveError: null,
     lastSavedAt: null,
     events: null,
     eventsLoaded: false,
@@ -529,10 +530,12 @@
       AV.api.revision = payload.revision;
       AV.api.lastSavedAt = Date.now();
       AV.api.lastError = null;
+      AV.api.saveError = null;
       AV.updateEnvBadge();
       return true;
     } catch (err) {
       AV.api.lastError = err.message;
+      AV.api.saveError = err.message;
       console.warn('Nie udało się zapisać stanu na serwerze:', err.message);
       AV.updateEnvBadge();
       return false;
@@ -559,10 +562,13 @@
     const el = document.getElementById('envBadge');
     if (!el) return;
     if (AV.api.online && AV.api.authenticated) {
-      el.textContent = 'POŁĄCZONO Z MYSQL' + (AV.api.lastError ? ' · ostatni zapis: błąd' : '');
+      el.hidden = !AV.api.saveError;
+      el.textContent = el.hidden ? '' : 'ALPHA VAULT · ostatni zapis nie powiódł się';
     } else if (AV.api.online) {
+      el.hidden = false;
       el.textContent = 'ALPHA VAULT · logowanie przez Discord';
     } else {
+      el.hidden = false;
       el.textContent = 'TRYB OFFLINE · dane tylko w tej przeglądarce';
     }
   };

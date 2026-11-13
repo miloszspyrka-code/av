@@ -93,6 +93,7 @@ main:before{content:'';position:absolute;top:-200px;right:-150px;width:700px;hei
 .chipst{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);white-space:nowrap;border:1px solid var(--line);border-radius:99px;padding:5px 11px;background:rgba(255,255,255,.02)}
 .chipst.lk{border-color:rgba(255,93,98,.35);color:#ffb0b2;background:var(--lossS);cursor:pointer}
 .chipst .i{width:14px;height:14px}
+.chipst[hidden]{display:none}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--win);box-shadow:0 0 0 3px rgba(79,207,138,.15)}
 .wrap{position:relative;max-width:1180px;margin:0 auto;padding:38px 40px 110px}
 .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--alpha)}
@@ -422,7 +423,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
 </svg>
 
-<div class="demo" id="envBadge">ALPHA VAULT · łączę z bazą…</div>
+<div class="demo" id="envBadge">ALPHA VAULT</div>
 
 <!-- ================= LOGOWANIE ================= -->
 <div id="auth">
@@ -500,7 +501,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <div class="top">
   <div class="ticker" id="ticker"></div>
   <div class="chipst lk lkb" data-go="nowa"><svg class="i"><use href="#i-lock"/></svg>Tryb ochronny · <span class="cdt mono">--:--:--</span></div>
-  <div class="chipst" id="syncBadge"><span class="dot"></span>WEEX · 10:30</div>
+  <div class="chipst" id="syncBadge" hidden><span class="dot"></span></div>
 </div>
 <div class="wrap">
 

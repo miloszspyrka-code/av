@@ -75,7 +75,7 @@ try {
   log('modal logowania', await page.locator('#demoEnter').isVisible(), 'Discord niepodłączony → demo');
 
   await page.click('#demoEnter');
-  await page.waitForFunction(() => document.querySelector('#envBadge')?.textContent.includes('POŁĄCZONO Z MYSQL'), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector('#auth')?.classList.contains('hide'), null, { timeout: 15000 });
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated);
   log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + sesja');
 
@@ -129,11 +129,11 @@ try {
 
   // plan: dodaj i usuń poziom, zatwierdź
   await page.click('.navg button[data-v="plan"]');
-  await page.fill('#planWhy', 'E2E: plan dnia na potrzeby testu');
   const beforeLevels = await page.locator('#lvls .lvl').count();
   await page.click('#addLvl');
   const afterAdd = await page.locator('#lvls .lvl').count();
   await page.locator('#lvls .lvl').last().locator('.x').click();
+  if (!(await page.locator('#planWhy').inputValue()).trim()) await page.fill('#planWhy', 'E2E: plan dnia');
   await page.click('#savePlan');
   const approved = await page.evaluate(() => !!AV.state.plans[AV.dateKey(new Date())]?.approvedAt);
   log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved);
@@ -164,19 +164,25 @@ try {
   const calcFx = await page.locator('#rMainL').innerText();
   log('kalkulator krypto + FX', calc !== '—' && calcFx.includes('MT4'), calc + ' / ' + calcFx);
 
-  // cena live z API: bez etykiety demo i bez adnotacji planu w nagłówku
+  // cena live z API: bez etykiety demo i bez technicznych etykiet w nagłówku
   await page.click('#calcMode [data-m="crypto"]');
   await page.selectOption('#cInst', { label: 'SOL/USDT' });
   await page.waitForFunction(() => document.querySelector('#cPrice b')?.textContent === '81,48', null, { timeout: 15000 });
   const liveCalc = await page.evaluate(() => ({
     shown: document.querySelector('#cPrice b').textContent,
     label: document.querySelector('#cPrice').parentElement.querySelector('.label').textContent,
-    badge: document.querySelector('#envBadge').textContent
+    envHidden: document.querySelector('#envBadge').hidden,
+    envText: document.querySelector('#envBadge').textContent,
+    syncHidden: document.querySelector('#syncBadge').hidden,
+    syncText: document.querySelector('#syncBadge').textContent,
+    ticker: document.querySelector('#ticker').textContent
   }));
   assert.equal(liveCalc.shown, '81,48');
   assert.ok(!/demo/i.test(liveCalc.label), 'etykieta bez demo: ' + liveCalc.label);
-  assert.ok(!/Alpha \+ Akademia|zapis automatyczny/i.test(liveCalc.badge), 'nagłówek bez planu: ' + liveCalc.badge);
-  log('cena live z API + czysty nagłówek', true, 'SOL/USDT ' + liveCalc.shown + ' · ' + liveCalc.badge);
+  assert.ok(liveCalc.envHidden && !/mysql|połączono/i.test(liveCalc.envText), 'pasek bez statusu bazy: ' + liveCalc.envText);
+  assert.ok(liveCalc.syncHidden && !/brak połączeń/i.test(liveCalc.syncText), 'chip giełd ukryty bez połączeń: ' + liveCalc.syncText);
+  assert.ok(liveCalc.ticker.includes('BTC') && liveCalc.ticker.includes('NAS100'), 'ticker z API: ' + liveCalc.ticker);
+  log('cena live z API + czysty nagłówek', true, 'SOL/USDT ' + liveCalc.shown + ' · 8 notowań w tickerze');
 
   // statystyki
   await page.click('.navg button[data-v="stat"]');
@@ -419,12 +425,22 @@ try {
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');
-  const lockActive = await page.locator('#lockWrap.locked').count() > 0;
-  if (lockActive) {
-    await page.click('#pastTrade');
-  } else {
-    log('nowa transakcja: tryb ochronny nieaktywny', true, 'pomijam obejście limitu');
-  }
+  // Fixture demo ma stałą datę; wymuś 2 straty dziś, żeby tryb ochronny był deterministyczny.
+  await page.evaluate(() => {
+    const today = AV.dateKey(new Date());
+    const mk = (id) => ({
+      id, date: new Date().toISOString(), pair: 'E2E/LOCK', dir: 'l', entry: '100', exit: '99', sl: '98', tp: '104',
+      size: '1', result: -10, r: -1, grade: 'B', checklist: 6, checkTotal: 7, errors: [], emotion: 'Spokój',
+      note: '', mentor: '', setup: 'E2E', session: 'Londyn', mae: 0, mfe: 0, durationMin: 20, fee: 0,
+      plan: true, source: 'E2E', screens: {}
+    });
+    AV.state.settings.safetyEnabled = true;
+    AV.state.trades = AV.state.trades
+      .filter((t) => AV.dateKey(new Date(t.date)) !== today)
+      .concat([mk('e2e_lock_a'), mk('e2e_lock_b')]);
+    AV.renderLock();
+  });
+  await page.evaluate(() => document.getElementById('pastTrade').click());
   const beforeTrades = await page.evaluate(() => AV.state.trades.length);
   await page.fill('#ntPair', 'E2E/USDT');
   await page.fill('#ntEntry', '100');
