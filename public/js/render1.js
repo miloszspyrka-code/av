@@ -328,6 +328,10 @@
         '<td class="mono ' + (t.result > 0 ? 'win' : t.result < 0 ? 'loss' : '') + '" style="text-align:right;font-weight:800">' + (open ? '–' : AV.signed(t.result, 2, '')) + '</td></tr>';
     }).join(''));
     AV.show('#jEmpty', !arr.length);
+    if (!arr.length) {
+      const empty = $('#jEmpty');
+      if (empty) empty.textContent = AV.includedTrades(AV.state).length ? 'Brak transakcji spełniających filtry.' : 'Brak transakcji. Dodaj pierwszą w „Nowa transakcja” albo zaimportuj CSV.';
+    }
     AV.$$('#fRes button').forEach((b) => b.classList.toggle('on', b.dataset.f === AV.ui.jFilter));
     AV.$$('#fGrade button').forEach((b) => b.classList.toggle('on', b.dataset.f === AV.ui.jGrade));
     const count = $('.navg button[data-v="trans"] .badge');
@@ -465,7 +469,7 @@
       '<span class="label">Ocena jakości</span><div class="chips sel" id="suGrade"><span class="chip ' + (!x || x.grade === 'A' ? 'on' : '') + '" data-g="A">A</span><span class="chip ' + (x?.grade === 'B' ? 'on' : '') + '" data-g="B">B</span><span class="chip ' + (x?.grade === 'C' ? 'on' : '') + '" data-g="C">C</span></div>' +
       '<span class="label">3 zasady wejścia</span>' +
       [0, 1, 2].map((i) => '<input class="input" id="suRule' + i + '" value="' + AV.attr(x?.rules?.[i] || '') + '" placeholder="Zasada ' + (i + 1) + '" style="margin-bottom:8px">').join('') +
-      '<label class="check" style="margin-top:10px"><span class="box" id="suBadBox"></span><span>Oznacz jako setup, którego nie powinnaś grać</span></label>' +
+      '<label class="check" style="margin-top:10px"><span class="box" id="suBadBox"></span><span>Oznacz jako setup, którego nie grasz</span></label>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="suSave">Zapisz setup</button></div>', { maxWidth: '620px' });
     let bad = !!x?.bad;
     const box = $('#suBadBox', body);

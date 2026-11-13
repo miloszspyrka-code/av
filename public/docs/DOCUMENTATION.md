@@ -571,7 +571,7 @@ Routing jest po stronie przeglądarki: jeden `public/index.html`, widoki przeł�
 | `gieldy` | `#/gieldy` | Giełdy i API |
 | `ust` | `#/konto` | Konto i zasady |
 
-Widok `#/mentor-ai` to strona integracji MCP: adres `https://mcp.alphavault.pl/mcp` z kopiowaniem, przepływ „jak to działa”, zakładki ChatGPT/Claude/Grok z krokami konfiguracji, karty korzyści i bezpieczeństwa oraz nota o dostępności integracji. Claude korzysta z callbacku `https://claude.ai/api/mcp/auth_callback`, który musi być dopuszczony w allowliście OAuth. Karta wskazuje tryb tylko do odczytu i linkuje do polityki prywatności §13.2. Połączenie wymaga ekranu zgody na domenie MCP; token unieważnia się w `/oauth/connected`. Widok nie zawiera czatu ani analiz.
+Widok `#/mentor-ai` to strona integracji MCP: adres `https://mcp.alphavault.pl/mcp` z kopiowaniem, przepływ „jak to działa”, zakładki ChatGPT/Claude/Grok z krokami konfiguracji, karty korzyści i bezpieczeństwa oraz nota o dostępności integracji. Claude korzysta z callbacku `https://claude.ai/api/mcp/auth_callback`, który musi być dopuszczony w allowliście OAuth. Karta wskazuje tryb tylko do odczytu i linkuje do polityki prywatności §13.2. Połączenie wymaga ekranu zgody na domenie MCP; token unieważnia się w `/oauth/connected`. Pill statusu czyta `/api/mcp` i pokazuje `MCP · TYLKO ODCZYT`, `MCP · ZAPIS` albo `MCP · WYŁĄCZONY`; nie jest statyczny. Widok nie zawiera czatu ani analiz.
 
 Plan dnia (`#/plan`) trzyma dane w `user_states.state.plans[YYYY-MM-DD]`. Kliknięcie rynku lub biasu, dodanie/usunięcie poziomu, zatwierdzenie i "Skopiuj z wczoraj" zapisują szkic i wysyłają `PUT /api/state`; zatwierdzenie czeka na odpowiedź serwera i pokazuje wynik ("Zapisano w bazie" albo błąd). Zatwierdzenie wymaga rynku, kierunku, uzasadnienia i co najmniej jednego poziomu. Tekst planu ma autosave z debounce 700 ms. `renderPlan()` nie nadpisuje formularza, gdy fokus jest wewnątrz edytora, więc render po notowaniach nie kasuje wpisywanej treści.
 
@@ -582,7 +582,7 @@ Zgodność z planem jest liczona po dacie transakcji, parze i kierunku (`AV.plan
 Zasady:
 
 - Slugi są ASCII, małymi literami, bez diakrytyków; myślnik zamiast spacji.
-- Stare adresy (`#/akad`, `#/trans`, `#/ust`, …) nadal działają jako aliasy i są przepisywane na czytelny slug przy pierwszym `showView`.
+- Stare adresy (`#/akad`, `#/trans`, `#/ust`, …) oraz warianty `*3` (`#/plan3`, `#/dziennik3`, `#/playbook3`, `#/akad3`) nadal działają jako aliasy i są przepisywane na czytelny slug przy pierwszym `showView`.
 - Hash jest porównywany bez wielkości liter i z pominięciem końcowego `/`.
 - Id widoków pozostają wewnętrznym kontraktem (`data-v`, `data-go`, `#id` sekcji, `AV.showView('akad')`) — nie zmieniaj ich przy zmianie adresu; zmieniaj tylko `AV.viewSlugs`.
 
@@ -645,6 +645,8 @@ Zasady:
 - `pwa.js` rejestruje `/sw.js`, obsługuje `beforeinstallprompt`, `appinstalled` i przyciski `[data-install]`, `[data-pwa-notify]`.
 - `sw.js` cache'uje powłokę (HTML/JS/ikony), ale **nie** cache'uje `/api/` ani `/auth/`; nawigacja jest network-first z fallbackiem offline.
 - `AV.pwa.notify()` używa `registration.showNotification()` (iOS/Android) albo `Notification` w przeglądarce; `notifyTradeClosed()` wysyła deep link `/?qa=<tradeId>`.
+- Nagrania Akademii nie mają playera: modal pokazuje link do Discorda, gdzie znajduje się materiał.
+- Notowania instrumentów są pobierane dopiero po wejściu w `#/kalkulator`; start nie wysyła trzech zapytań `/api/quotes`.
 - `notificationclick` fokusuje istniejące okno albo otwiera nowe z deep linkiem; `AV.quickAddFromUrl()` otwiera modal i czyści parametr z URL.
 - `AV.openQuickAdd()` wybiera transakcję: wskazany `id` → najnowsza bez emocji/oceny → najnowsza zamknięta → najnowsza. Modal pokazuje prawdziwe dane, nie statyczny BTC.
 - Zapis quick add: emocja + ocena wymagane, zdjęcie opcjonalne (`capture="environment"`). Czas od otwarcia do zapisu jest mierzony w `AV.ui.qaLastSeconds`.
