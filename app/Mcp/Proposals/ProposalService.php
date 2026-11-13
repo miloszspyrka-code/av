@@ -40,6 +40,7 @@ final class ProposalService
         if (!in_array($kind, self::KINDS, true)) {
             throw new ProposalException('bad_request', 'Nieznany typ propozycji.', 400);
         }
+        error_log('[mcp-idem-create] kind=' . $kind . ' target=' . $targetRef . ' fp=' . var_export($fingerprint, true));
         $payloadHash = hash('sha256', $this->canonicalJson([
             'kind' => $kind,
             'target' => $targetRef,
