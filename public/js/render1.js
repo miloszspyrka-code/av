@@ -120,7 +120,7 @@
       pnlEl.innerHTML = (today.pnl >= 0 ? '+' : '−') + AV.fmt(Math.abs(AV.disp(today.pnl)), 2) + ' <span class="mut" style="font-size:14px;font-weight:500">' + AV.curLabel() + '</span>';
       pnlEl.className = 'val ' + (today.pnl >= 0 ? 'win' : 'loss');
     }
-    const plan = s.plans[AV.dateKey(new Date())] || {};
+    const plan = (s.plans || {})[AV.dateKey(new Date())] || {};
     const lossLimit = Math.max(1, Number(s.settings.maxLosses) || 2);
     AV.setText('#dayLosses', today.losses + ' / ' + lossLimit);
     AV.$('#lossBar').style.width = AV.clamp(today.losses / lossLimit * 100, 0, 100) + '%';
@@ -184,20 +184,27 @@
   AV.renderPlan = () => {
     const s = AV.state;
     const key = AV.planDate;
+    if (!s.plans || typeof s.plans !== 'object') s.plans = {};
     const p = s.plans[key] || AV.planTemplate(key);
     AV.$$('#planSeg button').forEach((b) => b.classList.toggle('on', b.dataset.day === '0' ? key === AV.dateKey(new Date()) : b.dataset.day === '-1' ? key === AV.dateKey(AV.addDays(new Date(), -1)) : b.dataset.day === 'hist'));
-    $$('#planMarkets .chip').forEach((c) => c.classList.toggle('on', c.dataset.m === p.market));
-    $$('#planBias .chip').forEach((c) => c.classList.toggle('on', c.dataset.b === p.bias));
-    AV.setVal('#planWhy', p.why || '');
-    AV.setVal('#planIfMain', p.ifMain || '');
-    AV.setVal('#planThenMain', p.thenMain || '');
-    AV.setVal('#planIfAlt', p.ifAlt || '');
-    AV.setVal('#planThenAlt', p.thenAlt || '');
-    AV.setVal('#planRisk', p.risk || '');
-    AV.setVal('#planMaxTrades', p.maxTrades || '');
-    AV.setVal('#planUntil', p.until || '');
-    AV.setVal('#planNotDo', p.notDo || '');
-    $('#lvls').innerHTML = (p.levels || []).map((l) => AV.levelRow(l)).join('') || '<div class="dim" style="padding:8px 0">Brak poziomów. Dodaj pierwszy.</div>';
+    // Nie nadpisuj formularza, w którym użytkownik właśnie pisze (np. render po notowaniach).
+    const editor = $('#planEditor');
+    const active = document.activeElement;
+    const editing = !!(editor && active && active !== document.body && editor.contains(active));
+    if (!editing) {
+      $$('#planMarkets .chip').forEach((c) => c.classList.toggle('on', c.dataset.m === p.market));
+      $$('#planBias .chip').forEach((c) => c.classList.toggle('on', c.dataset.b === p.bias));
+      AV.setVal('#planWhy', p.why || '');
+      AV.setVal('#planIfMain', p.ifMain || '');
+      AV.setVal('#planThenMain', p.thenMain || '');
+      AV.setVal('#planIfAlt', p.ifAlt || '');
+      AV.setVal('#planThenAlt', p.thenAlt || '');
+      AV.setVal('#planRisk', p.risk || '');
+      AV.setVal('#planMaxTrades', p.maxTrades || '');
+      AV.setVal('#planUntil', p.until || '');
+      AV.setVal('#planNotDo', p.notDo || '');
+      $('#lvls').innerHTML = (p.levels || []).map((l) => AV.levelRow(l)).join('') || '<div class="dim" style="padding:8px 0">Brak poziomów. Dodaj pierwszy.</div>';
+    }
     AV.renderPlanSide();
     AV.renderPlanHistory();
     AV.renderAdherence();
@@ -205,27 +212,28 @@
 
   AV.levelRow = (l = {}) => '<div class="lvl"><select class="input"><option' + (l.type === 'Opór' ? ' selected' : '') + '>Opór</option><option' + (l.type === 'Wsparcie' ? ' selected' : '') + '>Wsparcie</option></select><input class="input mono" value="' + AV.attr(l.price || '') + '" placeholder="cena"><input class="input" value="' + AV.attr(l.note || '') + '" placeholder="opis"><span class="x">✕</span></div>';
 
-  AV.readPlanForm = () => {
+  AV.readPlanForm = (opts = {}) => {
     const levels = $$('#lvls .lvl').map((row) => ({
       type: row.querySelector('select').value,
       price: row.querySelectorAll('input')[0].value.trim(),
       note: row.querySelectorAll('input')[1].value.trim()
-    })).filter((l) => l.price || l.note);
+    }));
     return {
       date: AV.planDate,
       market: $('#planMarkets .chip.on')?.dataset.m || 'BTC',
       bias: $('#planBias .chip.on')?.dataset.b || 'long',
       why: $('#planWhy').value.trim(),
-      levels,
+      levels: opts.pruneEmptyLevels ? levels.filter((l) => l.price || l.note) : levels,
       ifMain: $('#planIfMain').value.trim(), thenMain: $('#planThenMain').value.trim(),
       ifAlt: $('#planIfAlt').value.trim(), thenAlt: $('#planThenAlt').value.trim(),
       risk: $('#planRisk').value.trim(), maxTrades: $('#planMaxTrades').value.trim(),
       until: $('#planUntil').value.trim(), notDo: $('#planNotDo').value.trim(),
-      approvedAt: (AV.state.plans[AV.planDate] || {}).approvedAt || null
+      approvedAt: ((AV.state.plans || {})[AV.planDate] || {}).approvedAt || null
     };
   };
 
   AV.renderPlanSide = () => {
+    if (!AV.state.plans || typeof AV.state.plans !== 'object') AV.state.plans = {};
     const p = AV.state.plans[AV.planDate] || AV.readPlanForm();
     const day = new Date(AV.planDate + 'T12:00:00');
     AV.setText('#planSideDay', 'Twój plan · ' + day.toLocaleDateString('pl-PL', { weekday: 'long' }));
@@ -255,7 +263,7 @@
     const showHist = AV.ui.planHistOpen || AV.planDate !== AV.dateKey(new Date()) && AV.planDate !== AV.dateKey(AV.addDays(new Date(), -1));
     card.style.display = showHist ? '' : 'none';
     if (!showHist) return;
-    const plans = Object.values(AV.state.plans).sort((a, b) => b.date.localeCompare(a.date));
+    const plans = Object.values(AV.state.plans || {}).sort((a, b) => b.date.localeCompare(a.date));
     AV.setHTML('#planHistory', plans.length ? plans.map((p) => '<div class="kv" style="cursor:pointer" data-plan-open="' + p.date + '"><span>' + new Date(p.date + 'T12:00:00').toLocaleDateString('pl-PL', { weekday: 'long', day: '2-digit', month: '2-digit' }) + ' · ' + AV.esc(p.market) + ' ' + AV.esc(p.bias) + '</span><b class="' + (p.approvedAt ? 'win' : 'dim') + '">' + (p.approvedAt ? '✓ zatwierdzony' : 'szkic') + '</b></div>').join('') : '<div class="dim">Brak zapisanych planów.</div>');
   };
 
@@ -512,7 +520,7 @@
       AV.ui.ntChecks['R:R ≥ 2'] = !!(risk && reward && reward / risk >= 2);
     }
     if (points.includes('Poziom z planu')) {
-      const p = AV.state.plans[AV.dateKey(new Date())];
+      const p = (AV.state.plans || {})[AV.dateKey(new Date())];
       const near = (p?.levels || []).some((l) => {
         const x = AV.pnum(l.price);
         return x && en && Math.abs(x - en) / en < 0.003;

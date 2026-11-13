@@ -54,7 +54,7 @@ npm ci
 npm test                 # API: 23 scenariusze
 npm run test:prop        # silnik prop challenge: 27 scenariuszy
 npm run test:router      # adresy podstron (hash routing): 18 scenariuszy
-npm run test:ui          # UI: 58 scenariuszy
+npm run test:ui          # UI: 60 scenariuszy
 npm run test:tax         # PIT-38: 8 scenariuszy (MySQL + UI)
 npm run test:isolation   # izolacja użytkowników: 9 scenariuszy
 npm run test:pwa         # PWA mobile: 20 scenariuszy
