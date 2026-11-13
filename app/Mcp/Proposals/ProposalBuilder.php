@@ -143,11 +143,11 @@ final class ProposalBuilder
         if ($trade === null) {
             throw new ProposalException('not_found', 'Transakcja nie istnieje.', 404);
         }
-        if (($trade['result'] ?? null) !== null) {
-            throw new ProposalException('already_closed', 'Transakcja jest już zamknięta.', 409);
-        }
         if ($this->proposals->isExchangeTrade($userId, $trade)) {
             throw new ProposalException('exchange_data_readonly', 'Transakcji importowanej z giełdy nie można zamknąć przez MCP.', 403);
+        }
+        if (($trade['result'] ?? null) !== null) {
+            throw new ProposalException('already_closed', 'Transakcja jest już zamknięta.', 409);
         }
 
         $entry = (float) ($trade['entry'] ?? 0);
