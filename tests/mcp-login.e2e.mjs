@@ -3,9 +3,9 @@
  * E2E logowania MCP przez Discord (fake upstream IdP):
  * - pierwsze logowanie tworzy konto,
  * - kolejne logowanie nie tworzy duplikatu,
- * - brak roli i brak czĹ‚onkostwa dajÄ… 403 bez konta,
- * - istniejÄ…ce konto jest aktualizowane po Discord ID,
- * - po logowaniu dziaĹ‚a OAuth consent + token + get_profile.
+ * - brak roli i brak członkostwa dają 403 bez konta,
+ * - istniejące konto jest aktualizowane po Discord ID,
+ * - po logowaniu działa OAuth consent + token + get_profile.
  */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -333,7 +333,7 @@ try {
   assert.match(firstProfile.id, /^av_\d+$/);
   assert.equal(dbScalar("SELECT COUNT(*) AS v FROM users WHERE discord_id = 'mcp-discord-ok'"), '1');
 
-  // 2. Drugie logowanie tego samego uĹĽytkownika: bez duplikatu, aktualizacja.
+  // 2. Drugie logowanie tego samego użytkownika: bez duplikatu, aktualizacja.
   const second = await startLogin();
   const secondCallback = await callback(second, 'role-ok-2');
   assert.equal(secondCallback.res.status, 302, secondCallback.text);
@@ -350,13 +350,13 @@ try {
   assert.equal(noRoleCallback.res.status, 403, noRoleCallback.text);
   assert.equal(dbScalar("SELECT COUNT(*) AS v FROM users WHERE discord_id = 'mcp-discord-none'"), '0');
 
-  // 4. Brak czĹ‚onkostwa: 403, brak konta.
+  // 4. Brak członkostwa: 403, brak konta.
   const notMember = await startLogin();
   const notMemberCallback = await callback(notMember, 'notmember');
   assert.equal(notMemberCallback.res.status, 403, notMemberCallback.text);
   assert.equal(dbScalar("SELECT COUNT(*) AS v FROM users WHERE discord_id = 'mcp-discord-notmember'"), '0');
 
-  // 5. IstniejÄ…ce konto po Discord ID: aktualizacja, nie duplikat.
+  // 5. Istniejące konto po Discord ID: aktualizacja, nie duplikat.
   const existingId = dbScalar("SELECT id AS v FROM users WHERE discord_id = 'mcp-discord-ok'");
   assert.ok(existingId !== '0');
   const existing = await startLogin();
