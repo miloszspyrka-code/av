@@ -76,6 +76,7 @@ Legenda:
 | Szczegóły transakcji | ✅ | wykres, MAE/MFE, checklist, notatka, mentor |
 | Screeny przed/po | ✅ | upload, drag&drop, Ctrl+V; JPEG w stanie |
 | Dodanie transakcji | ✅ | formularz startuje pusty; walidacja kierunku SL/TP; ryzyko = \|entry − SL\| × size; ostrzeżenie przy przekroczeniu limitu |
+| Pusty dziennik | ✅ | komunikat „Brak transakcji” bez filtrów; „Brak transakcji spełniających filtry” tylko przy aktywnym filtrze |
 | Edycja transakcji | ✅ | formularz wypełniony danymi |
 | Usunięcie transakcji | ✅ | potwierdzenie |
 | Zamknięcie otwartej pozycji | ✅ | cena wyjścia lub wynik ręczny, R, czas trwania; MAE/MFE tylko z importu |
@@ -144,7 +145,7 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Jak to działa | ✅ | przepływ Alpha Vault → Serwer MCP → Asystent AI |
 | Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji; Claude przez `https://claude.ai/api/mcp/auth_callback` |
 | Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
-| Status serwera MCP | ✅ | statyczny pill „MCP · TYLKO ODCZYT” |
+| Status serwera MCP | ✅ | pill z `/api/mcp`: `MCP · TYLKO ODCZYT`, `MCP · ZAPIS` albo `MCP · WYŁĄCZONY` |
 | Zakres danych MCP | ✅ | tylko odczyt: profil, plan, transakcje, statystyki, check-iny, playbook, wydarzenia, makro; bez kluczy API, haseł inwestora i danych zdrowotnych |
 | Zgoda i wycofanie | ✅ | ekran zgody z zakresem, link do polityki §13.2, unieważnienie tokenu w `/oauth/connected` |
 | Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do integracji MCP |
@@ -187,7 +188,7 @@ Limity liczone są z **zamkniętych** transakcji. Silnik nie zna ruchów śródd
 | Błąd synchronizacji | ✅ | ostatni dobry zestaw pozostaje; UI pokazuje stan „błąd synchronizacji” |
 | Rezerwacja konsultacji | ✅ | niezależna od synchronizacji, zapis w stanie |
 | Dołącz / przypomnienie | ✅ | link do `https://discord.com/events/{guild}/{event}`; przypomnienie przeglądarki bez zmian |
-| Nagrania | 🟡 | karta i modal demo; brak playera |
+| Nagrania | ✅ | karta i modal z linkiem do Discorda; bez fałszywego playera |
 | Materiały / postęp kursu | ✅ | postęp w stanie |
 | Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
 
@@ -238,7 +239,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Oura Ring | ✅ | OAuth2 + PKCE, `daily_readiness` + `sleep` (scope `daily`), rotacja refresh tokenów |
 | Garmin Connect | ⏸️ | wyłączony na razie — kod i konfiguracja zachowane, brak wpisu w UI/API |
 | Whoop | ⏸️ | wyłączony na razie — kod i konfiguracja zachowane, brak wpisu w UI/API |
-| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
+| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu; karta ukryta bez danych |
 | Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
 | Odłączenie urządzenia | ✅ | wycofuje dostęp u dostawcy (jeśli API to wspiera), usuwa tokeny i metryki z bazy |
 
@@ -330,4 +331,4 @@ Każdy widok ma własny, czytelny adres w hashu, więc link można wysłać lub 
 
 `#/pulpit` · `#/plan` · `#/dziennik` · `#/playbook` · `#/nowa-transakcja` · `#/kalkulator` · `#/prop-challenge` · `#/akademia` · `#/statystyki` · `#/podatki` · `#/mentor-ai` · `#/kalendarz` · `#/cialo-i-glowa` · `#/gieldy` · `#/konto`
 
-Stare krótkie adresy (`#/trans`, `#/akad`, `#/ust`, `#/stat`, `#/kal`, `#/cialo`, …) nadal otwierają właściwy widok i są automatycznie przepisywane na czytelny slug. Pełna tabela i zasady: `DOCUMENTATION.md §11.1a`.
+Stare krótkie adresy (`#/trans`, `#/akad`, `#/ust`, `#/stat`, `#/kal`, `#/cialo`, …) oraz warianty `*3` (`#/plan3`, `#/dziennik3`, `#/playbook3`, `#/akad3`) nadal otwierają właściwy widok i są automatycznie przepisywane na czytelny slug. Pełna tabela i zasady: `DOCUMENTATION.md §11.1a`.

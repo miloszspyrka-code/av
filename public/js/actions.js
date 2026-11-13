@@ -26,6 +26,11 @@
   /* Slug -> id widoku. Stare krótkie adresy (#/akad) nadal działają. */
   AV.slugViews = {};
   AV.views.forEach((id) => { AV.slugViews[AV.viewSlugs[id] || id] = id; AV.slugViews[id] = id; });
+  ['plan3', 'dziennik3', 'playbook3', 'akad3', 'stat3', 'kalk3'].forEach((legacy) => {
+    const base = legacy.replace(/3$/, '');
+    const id = AV.slugViews[base];
+    if (id) AV.slugViews[legacy] = id;
+  });
   AV.viewSlug = (v) => AV.viewSlugs[v] || v;
   AV.currentView = 'pulpit';
   AV.showView = (v) => {
@@ -45,9 +50,10 @@
     if (v === 'ust') AV.renderSettings();
     if (v === 'kal') AV.renderCalendar();
     if (v === 'cialo') AV.renderBody();
-    if (v === 'mentor') AV.renderMentor();
+    if (v === 'mentor') { AV.renderMentor(); AV.loadMcpStatus(); }
     if (v === 'gieldy') { AV.renderExchangeList(); AV.renderEx(AV.exKey); }
     if (v === 'nowa') { AV.renderNewTradeForm(); AV.renderLock(); }
+    if (v === 'kalk') AV.loadInstrumentQuotes();
   };
 
   /* ---------- ticker ---------- */
@@ -57,19 +63,41 @@
     AV.setHTML('#ticker', t.map(([s, p, c]) => '<span><b>' + s + '</b>' + AV.fmt(p, p < 10 ? 4 : p < 500 ? 2 : 0) + (c === null || c === undefined ? '' : ' <span class="' + (c >= 0 ? 'win' : 'loss') + '">' + (c >= 0 ? '+' : '\u2212') + AV.fmt(Math.abs(c), 1) + '%</span>') + '</span>').join(''));
   };
   AV.loadQuotes = async () => {
+    if (AV._quotesPending) return AV._quotesPending;
+    AV._quotesPending = (async () => {
+      try {
+        const res = await AV.apiFetch('/api/quotes');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!Array.isArray(data.quotes)) throw new Error('bad_quotes');
+        AV.tickerData = data.quotes
+          .filter((q) => q && typeof q.symbol === 'string' && Number.isFinite(Number(q.price)))
+          .map((q) => [q.symbol, Number(q.price), q.changePercent === null || q.changePercent === undefined ? null : Number(q.changePercent)]);
+        AV.renderTicker();
+        return true;
+      } catch (err) {
+        AV.api.lastError = err.message;
+        return false;
+      } finally {
+        AV._quotesPending = null;
+      }
+    })();
+    return AV._quotesPending;
+  };
+
+  AV.loadMcpStatus = async () => {
+    const el = document.querySelector('.mcp-server-status');
+    if (!el) return;
     try {
-      const res = await AV.apiFetch('/api/quotes');
+      const res = await AV.apiFetch('/api/mcp');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      if (!Array.isArray(data.quotes)) throw new Error('bad_quotes');
-      AV.tickerData = data.quotes
-        .filter((q) => q && typeof q.symbol === 'string' && Number.isFinite(Number(q.price)))
-        .map((q) => [q.symbol, Number(q.price), q.changePercent === null || q.changePercent === undefined ? null : Number(q.changePercent)]);
-      AV.renderTicker();
-      return true;
-    } catch (err) {
-      AV.api.lastError = err.message;
-      return false;
+      const label = !data.enabled ? 'MCP · WYŁĄCZONY' : data.writesEnabled ? 'MCP · ZAPIS' : 'MCP · TYLKO ODCZYT';
+      el.innerHTML = '<span class="mcp-dot"></span>' + label;
+      el.dataset.state = data.enabled ? (data.writesEnabled ? 'write' : 'read') : 'off';
+    } catch {
+      el.innerHTML = '<span class="mcp-dot"></span>MCP · STATUS NIEDOSTĘPNY';
+      el.dataset.state = 'unknown';
     }
   };
 
@@ -726,15 +754,15 @@
 
   /* ---------- kalkulator ---------- */
   AV.calc = { mode: 'crypto', dir: 'long' };
-  AV.fillInst = () => {
+  AV.fillInst = (withQuotes = true) => {
     const list = AV.INST[AV.calc.mode];
     AV.setHTML('#cInst', list.map((x, i) => '<option value="' + i + '">' + AV.esc(x[0]) + '</option>').join(''));
     AV.show('#levWrap', AV.calc.mode === 'crypto');
-    AV.selectInstrument();
+    AV.selectInstrument(withQuotes);
   };
-  AV.selectInstrument = () => {
+  AV.selectInstrument = (withQuotes = true) => {
     AV.setPrice();
-    AV.loadInstrumentQuotes();
+    if (withQuotes) AV.loadInstrumentQuotes();
   };
   AV.setPrice = () => {
     const x = AV.INST[AV.calc.mode][+$('#cInst').value || 0];
@@ -793,7 +821,9 @@
       return;
     }
     const ml = bal * risk / 100, slP = Math.abs(en - sl) / en, tpP = tp ? Math.abs(tp - en) / en : 0;
-    const rr = tpP / slP, rrh = rr >= 3 ? 'wystarczy ~25% skuteczności' : rr >= 2 ? 'wystarczy ~34% skuteczności' : rr > 0 ? 'poniżej 1:2, przemyśl cel' : '';
+    const rr = tpP / slP;
+    const breakeven = rr > 0 ? Math.round(100 / (1 + rr)) : null;
+    const rrh = breakeven == null ? '' : breakeven <= 50 ? 'wystarczy ~' + breakeven + '% skuteczności' : 'poniżej 1:1, przemyśl cel';
     if (AV.calc.mode === 'crypto') {
       const no = ml / slP, mg = no / lev, pf = no * tpP;
       AV.setText('#rMainL', 'Za tę kwotę wejdź w trade');
@@ -849,7 +879,7 @@
       $$('.qk .chip').forEach((x) => x.classList.remove('on'));
       AV.autoLv();
     });
-    AV.fillInst();
+    AV.fillInst(false);
   };
 
   /* ---------- mentor ---------- */
@@ -992,7 +1022,7 @@
   };
 
   AV.openRecording = (title) => {
-    AV.openModal('<div class="eyebrow">Nagranie</div><h1 style="font-size:26px;margin-top:6px">' + AV.esc(title) + '</h1><div style="aspect-ratio:16/9;background:radial-gradient(ellipse at 50% 30%,rgba(var(--a),.18),transparent 60%),#0b0a09;border:1px solid var(--line2);border-radius:16px;display:grid;place-items:center;margin-top:16px"><div style="text-align:center"><div style="width:60px;height:60px;border-radius:50%;background:var(--alpha);color:var(--ink);display:grid;place-items:center;margin:0 auto 10px">' + AV.ic('play', 'width:24px;height:24px') + '</div><span class="dim" style="font-size:12.5px">Odtwarzanie w wersji produkcyjnej</span></div></div><p class="mut" style="margin-top:14px;font-size:13.5px">Nagrania live\u2019ów są dostępne w bibliotece Akademii. W tym podglądzie panel odtwarzacza jest demonstracyjny.</p><div style="display:flex;gap:10px;margin-top:18px"><button class="btn p" data-gclose>Zamknij</button></div>', { maxWidth: '720px' });
+    AV.openModal('<div class="eyebrow">Nagranie</div><h1 style="font-size:26px;margin-top:6px">' + AV.esc(title) + '</h1><div style="background:var(--panel2);border:1px solid var(--line2);border-radius:16px;padding:22px;margin-top:16px"><p class="mut" style="font-size:14px;line-height:1.6">Nagranie jest dostępne na serwerze Alpha Moves na Discordzie. Otwórz kanał Akademii i wybierz materiał.</p><a class="btn p" style="margin-top:16px;display:inline-flex" href="https://discord.com" target="_blank" rel="noopener">Otwórz Discord ↗</a></div><div style="display:flex;gap:10px;margin-top:18px"><button class="btn g" data-gclose>Zamknij</button></div>', { maxWidth: '620px' });
   };
   AV.openRecordings = () => {
     const list = ['Najczęstsze błędy na starcie', 'Obsługa giełdy krok po kroku', 'Blockchain bez żargonu', 'Plan dnia od A do Z', 'Psychologia straty'];
@@ -1655,7 +1685,8 @@
     AV.bindCalc(); AV.bindMentor(); AV.bindAcademy(); AV.bindTax(); AV.bindCalendar();
     AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats();
     if (AV.bindProp) AV.bindProp();
-    AV.renderTicker(); AV.loadQuotes(); AV.loadInstrumentQuotes(); AV.tickCountdowns();
+    AV.renderTicker(); AV.tickCountdowns();
+    if (AV.api.authenticated) { AV.loadQuotes(); AV.loadMcpStatus(); }
     AV.updateEnvBadge();
     const params = new URLSearchParams(location.search);
     const connected = params.get('connected');
@@ -1666,7 +1697,7 @@
     }
     setInterval(AV.tickCountdowns, 1000);
     setInterval(AV.loadQuotes, 60000);
-    setInterval(AV.loadInstrumentQuotes, 60000);
+    setInterval(() => { if (AV.currentView === 'kalk') AV.loadInstrumentQuotes(); }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) { AV.renderCalendar(); AV.macroNotify(); if (AV.propNotify) AV.propNotify(); } }, 60000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadEvents(); }, 300000);
     setInterval(() => { if (AV.isLoggedIn()) AV.loadMacroEvents(); }, 300000);
@@ -1674,7 +1705,7 @@
     const roleCheckEvery = Math.max(300, Number(AV.api.roleRecheckSeconds) || 300) * 1000 + 15000;
     setInterval(() => { if (AV.api.online && AV.api.authenticated) AV.checkAccess(); }, roleCheckEvery);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') { AV.loadQuotes(); AV.loadInstrumentQuotes(); }
+      if (document.visibilityState === 'visible') { AV.loadQuotes(); if (AV.currentView === 'kalk') AV.loadInstrumentQuotes(); }
       if (document.visibilityState === 'visible' && AV.isLoggedIn()) {
         AV.loadEvents(); AV.loadMacroEvents(); AV.loadWearables();
         if (Date.now() - (AV.api.lastRoleCheckAt || 0) > roleCheckEvery) AV.checkAccess();

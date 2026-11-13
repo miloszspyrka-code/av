@@ -588,6 +588,7 @@
     }
 
     const r = AV.readiness(s);
+    AV.show('#bodyReadyCard', r.score != null);
     AV.setText('#bodyReady', r.score == null ? '' : String(r.score));
     AV.setText('#bodyReadyTitle', r.title || '');
     AV.setText('#bodyReadyDesc', r.desc || '');

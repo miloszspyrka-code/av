@@ -19,7 +19,7 @@
 :root{
  --ink:#080707;--bg2:#0d0c0b;--panel:#121110;--panel2:#191715;--panel3:#221f1c;
  --line:rgba(255,255,255,.065);--line2:rgba(255,255,255,.11);
- --cream:#f5f1eb;--mut:#b7b0a6;--dim:#7f786f;
+ --cream:#f5f1eb;--mut:#b7b0a6;--dim:#918a80;
  --a:217,178,95;--alpha:rgb(var(--a));--alpha2:#f1d48e;--alphaS:rgba(var(--a),.11);--alphaG:rgba(var(--a),.35);
  --win:#4fcf8a;--winS:rgba(79,207,138,.12);--loss:#ff5d62;--lossS:rgba(255,93,98,.12);--warn:#f4b942;--warnS:rgba(244,185,66,.12);
  --r:20px;--ease:cubic-bezier(.2,.8,.2,1)
@@ -1090,7 +1090,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <button class="btn p" id="saveCheck" style="margin-top:16px">Zapisz check-in</button></div>
     </div>
     <div class="grid">
-      <div class="card hl"><div class="ready"><div class="ring" id="bodyRing" style="width:128px;height:128px"><div style="width:106px;height:106px"><b id="bodyReady"></b><small>GOTOWOŚĆ</small></div></div>
+      <div class="card hl" id="bodyReadyCard"><div class="ready"><div class="ring" id="bodyRing" style="width:128px;height:128px"><div style="width:106px;height:106px"><b id="bodyReady"></b><small>GOTOWOŚĆ</small></div></div>
         <div><div class="lbl" id="bodyReadyDay">Dziś</div><h2 style="margin-top:6px;font-size:22px" id="bodyReadyTitle"></h2><p class="mut" style="font-size:14px;line-height:1.55;margin-top:6px" id="bodyReadyDesc"></p></div></div></div>
       <div class="grid g4">
         <div class="card"><div class="lbl">Sen</div><div class="val" id="metricSleep"></div><div class="trend" id="metricSleepTrend"></div></div>
