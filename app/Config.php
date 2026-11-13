@@ -198,7 +198,7 @@ final class Config
                 static fn (string $value): string => strtolower(trim($value)),
                 explode(',', (string) $env(
                     'MCP_ALLOWED_REDIRECT_HOSTS',
-                    'chatgpt.com,chat.openai.com,platform.openai.com,grok.com,x.ai,localhost,127.0.0.1'
+                    'chatgpt.com,chat.openai.com,platform.openai.com,grok.com,x.ai,claude.ai,claude.com,localhost,127.0.0.1'
                 ))
             ), static fn (string $value): bool => $value !== '')),
             'logFile' => (string) $env('MCP_LOG_FILE', $root . '/logs/mcp.log'),

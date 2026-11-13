@@ -13,7 +13,7 @@
 MCP jest osobnym front controllerem PHP 8.3 na domenie `mcp.alphavault.pl`, korzystającym z tej samej bazy MySQL co AlphaVault. Nie ma stałego procesu Node.js, drugiej bazy ani VPS.
 
 ```text
-ChatGPT / Grok / MCP Inspector
+ChatGPT / Claude / Grok / MCP Inspector
         │ HTTPS + OAuth 2.1 Bearer
         ▼
 https://mcp.alphavault.pl/mcp
@@ -87,7 +87,7 @@ Biblioteki (wersje przypięte w `composer.lock`):
 - `resource` (RFC 8707) walidowany; token ma `aud=https://mcp.alphavault.pl/mcp`.
 - Access token: 1 h, JWT RS256, `typ=at+jwt`, `kid`.
 - Refresh token: 30 dni, rotacja; ponowne użycie starego tokenu kończy się `invalid_grant`.
-- DCR: dokładne `redirect_uris`, HTTPS, allowlista hostów (`chatgpt.com`, `openai.com`, `grok.com`, `x.ai`); `localhost` tylko poza produkcją.
+- DCR: dokładne `redirect_uris`, HTTPS, allowlista hostów (`chatgpt.com`, `openai.com`, `grok.com`, `x.ai`, `claude.ai`, `claude.com`); `localhost` tylko poza produkcją. Claude używa `https://claude.ai/api/mcp/auth_callback`.
 - Tokeny w `Authorization: Bearer`; nigdy w URL, logach, wynikach narzędzi ani repo.
 - 401 z `WWW-Authenticate: Bearer resource_metadata="...", scope="alphavault.read"`.
 - 403 z `insufficient_scope` przy braku uprawnienia.
@@ -219,7 +219,7 @@ Nie wykonano interaktywnego logowania prawdziwym kontem Discord przez agenta (br
 
 ### Faza 3 — klienci
 
-- Instrukcje połączenia: OpenCode, ChatGPT, Grok.
+- Instrukcje połączenia: OpenCode, ChatGPT, Claude, Grok.
 - Rzeczywisty test OAuth i wywołań narzędzi w każdym kliencie.
 - Jeśli klient nie wspiera DCR/OAuth, udokumentować przyczynę i wariant zgodności.
 
@@ -263,6 +263,14 @@ Następnie `/mcps` → `alphavault` → sign in. OpenCode użyje DCR, bo serwer 
 4. Sprawdź `tools/list` i wywołaj `get_profile`.
 
 Custom connectors mogą wymagać odpowiedniego planu/workspace. To ograniczenie klienta, nie serwera.
+
+### Claude
+
+1. Ustawienia → Connectors → Add custom connector → Web.
+2. URL: `https://mcp.alphavault.pl/mcp`.
+3. Uwierzytelnianie: OAuth; zatwierdź consent w przeglądarce.
+4. Callback Claude: `https://claude.ai/api/mcp/auth_callback` (dopuszczony w allowliście DCR).
+5. Sprawdź `tools/list` i wywołaj `get_profile`.
 
 ### Grok
 
