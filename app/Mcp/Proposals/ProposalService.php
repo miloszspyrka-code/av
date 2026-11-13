@@ -529,6 +529,7 @@ final class ProposalService
                 === $this->canonicalJson($this->payloadForHash($after));
         }
         if (!$matches) {
+            error_log('[mcp-idem-debug] stored=' . $storedHash . ' incoming=' . ($incomingHash ?? 'legacy') . ' fp=' . var_export($fingerprint, true));
             throw new ProposalException(
                 'idempotency_conflict',
                 'Ten sam idempotencyKey użyto z inną treścią. Użyj nowego klucza.',
