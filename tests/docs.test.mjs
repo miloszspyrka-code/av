@@ -124,11 +124,13 @@ const legal = [
     file: 'public/regulamin.html',
     title: 'Regulamin serwisów Alpha Moves',
     canonical: 'https://alphavault.pl/regulamin',
+    date: '12 listopada 2026',
   },
   {
     file: 'public/polityka-prywatnosci.html',
     title: 'Polityka prywatności i plików cookies',
     canonical: 'https://alphavault.pl/polityka-prywatnosci',
+    date: '13 listopada 2026',
   },
 ];
 
@@ -138,7 +140,7 @@ for (const entry of legal) {
   if (!fs.existsSync(full)) continue;
   const content = fs.readFileSync(full, 'utf8');
   check(content.includes(entry.title), entry.file + ': tytuł');
-  check(content.includes('12 listopada 2026'), entry.file + ': data obowiązywania');
+  check(content.includes(entry.date), entry.file + ': data obowiązywania');
   check(content.includes('8652572005') && content.includes('384033683'), entry.file + ': NIP i REGON');
   check(content.includes('kontakt@alphamoves.pl'), entry.file + ': kontakt');
   check(content.includes(entry.canonical), entry.file + ': canonical');

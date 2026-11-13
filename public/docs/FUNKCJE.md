@@ -147,9 +147,11 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji; Claude przez `https://claude.ai/api/mcp/auth_callback` |
 | Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
 | Status serwera MCP | ✅ | statyczny pill „MCP · TYLKO ODCZYT” |
+| Zakres danych MCP | ✅ | tylko odczyt: profil, plan, transakcje, statystyki, check-iny, playbook, wydarzenia, makro; bez kluczy API, haseł inwestora i danych zdrowotnych |
+| Zgoda i wycofanie | ✅ | ekran zgody z zakresem, link do polityki §13.2, unieważnienie tokenu w `/oauth/connected` |
 | Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do integracji MCP |
 
-Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko stronę integracji zewnętrznego asystenta z MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne.
+Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko stronę integracji zewnętrznego asystenta z MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne. Dane opuszczają aplikację dopiero po świadomym połączeniu asystenta i zatwierdzeniu zgody.
 
 ---
 
@@ -286,7 +288,7 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; linki w stopce, logowaniu, zakupie, modalu Akademii oraz ekranach wygaśnięcia i braku roli |
+| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; §13.2 opisuje MCP, odbiorców, zakres, retencję i wycofanie zgody; linki w stopce, logowaniu, zakupie, modalu Akademii, Mentorze AI oraz ekranach wygaśnięcia i braku roli |
 | Regulamin | ✅ | osobna strona `/regulamin`; linki w stopce, logowaniu, zakupie, modalu Akademii oraz ekranach wygaśnięcia i braku roli |
 | „Czym jest Akademia?” | ✅ | modal |
 | Zakup + zgody | 🟡 | modal, checkboxy, aktywacja planu demo; brak Stripe |

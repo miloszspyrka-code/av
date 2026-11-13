@@ -95,6 +95,17 @@ try {
   }));
   log('ekrany wygaśnięcia i roli: linki prawne', gateLinks.expired && gateLinks.role, JSON.stringify(gateLinks));
 
+  const policy = await page.evaluate(async () => {
+    const html = await (await fetch('/polityka-prywatnosci')).text();
+    return {
+      mcp: html.includes('13.2. Zewnętrzni asystenci przez MCP'),
+      provider: html.includes('OpenAI (ChatGPT), Anthropic (Claude), xAI (Grok)'),
+      readOnly: html.includes('trybie tylko do odczytu'),
+      revoke: html.includes('oauth/connected')
+    };
+  });
+  log('polityka prywatności: sekcja MCP i wycofanie zgody', policy.mcp && policy.provider && policy.readOnly && policy.revoke, JSON.stringify(policy));
+
   const rows = await page.locator('#tbody tr').count();
   assert.equal(rows, 47);
   log('dziennik z bazy', rows === 47, rows + ' transakcji');
