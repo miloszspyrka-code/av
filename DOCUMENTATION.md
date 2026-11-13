@@ -582,7 +582,7 @@ Routing jest po stronie przeglądarki: jeden `public/index.html`, widoki przeł�
 | `akad` | `#/akademia` | Akademia Alpha |
 | `stat` | `#/statystyki` | Statystyki |
 | `tax` | `#/podatki` | Podatki PIT-38 |
-| `mentor` | `#/mentor-ai` | Mentor AI |
+| `mentor` | `#/mentor-ai` | Integracje AI |
 | `kal` | `#/kalendarz` | Kalendarz makro |
 | `cialo` | `#/cialo-i-glowa` | Ciało i głowa |
 | `gieldy` | `#/gieldy` | Giełdy i API |

@@ -159,10 +159,12 @@ try {
       twofa: ust.includes('2FA na Discordzie'),
       sessions: ust.includes('Aktywne sesje') || !!document.querySelector('#outAll'),
       apiCode: !!document.querySelector('[data-setting="apiCode"]'),
-      deviceSession: ust.includes('Sesja na tym urządzeniu')
+      deviceSession: ust.includes('Sesja na tym urządzeniu'),
+      simExp: !!document.querySelector('#simExp'),
+      simSolo: !!document.querySelector('#simSolo')
     };
   });
-  log('konto: brak fałszywego 2FA/sesji/kodu API', !trust.twofa && !trust.sessions && !trust.apiCode && trust.deviceSession, JSON.stringify(trust));
+  log('konto: brak fałszywego 2FA/sesji/kodu API', !trust.twofa && !trust.sessions && !trust.apiCode && trust.deviceSession && !trust.simExp && !trust.simSolo, JSON.stringify(trust));
   await page.click('.navg button[data-v="gieldy"]');
   const exCopy = await page.evaluate(() => document.querySelector('#gieldy')?.innerText || '');
   log('giełdy: klucz tylko do odczytu', exCopy.includes('tylko odczyt') && !exCopy.includes('dowolne (odczyt wystarcza)'), exCopy.slice(0, 120));
@@ -175,6 +177,8 @@ try {
   await page.waitForTimeout(300);
   const mentorCopy = await page.evaluate(() => document.querySelector('#mentor')?.innerText || '');
   log('MCP: status z API bez fałszywego live', /MCP · (TYLKO ODCZYT|ZAPIS|WYŁĄCZONY|STATUS NIEDOSTĘPNY)/.test(mentorCopy) && !mentorCopy.includes('SERWER MCP GOTOWY'), 'ok');
+  const navLabel = await page.locator('.navg button[data-v="mentor"]').innerText();
+  log('sidebar: Integracje AI', navLabel.includes('Integracje AI') && !navLabel.includes('Mentor AI'), navLabel);
 
   // statystyki: zero transakcji nie może pokazywać fikcyjnych liczb
   const emptyStats = await page.evaluate(() => {
@@ -264,6 +268,8 @@ try {
   });
   log('plan dnia: chipy rynku i biasu', chips.market === 'ETH' && chips.bias === 'short', JSON.stringify(chips));
   log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved.ok && approved.levels >= 1, JSON.stringify(approved));
+  const adherence = await page.evaluate(() => document.querySelector('#adherenceHint')?.textContent || '');
+  log('plan: bez fikcyjnych statystyk', !adherence.includes('31,40') && !adherence.includes('42,10'), adherence);
   const navBadges = await page.evaluate(() => {
     const p = document.querySelector('.navg button[data-v="plan"] .badge');
     const a = document.querySelector('.navg button[data-v="akad"] .badge');
@@ -314,6 +320,8 @@ try {
   await page.click('#calcMode [data-m="fx"]');
   const calcFx = await page.locator('#rMainL').innerText();
   log('kalkulator krypto + FX', calc !== '—' && calcFx.includes('MT4'), calc + ' / ' + calcFx);
+  const levWarn = await page.locator('#levWarn').isVisible();
+  log('kalkulator: ostrzeżenie o dźwigni', levWarn, levWarn ? 'widoczne' : 'brak');
 
   // cena live z API: bez etykiety demo i bez technicznych etykiet w nagłówku
   await page.click('#calcMode [data-m="crypto"]');
@@ -534,7 +542,7 @@ try {
     AV.renderJournal();
     return text;
   });
-  log('dziennik: pusty stan bez filtrów', emptyJournal.includes('Brak transakcji') && !emptyJournal.includes('spełniających filtry'), emptyJournal);
+  log('dziennik: pusty stan z CTA', emptyJournal.includes('Dodaj transakcję') && emptyJournal.includes('Giełdy i API') && !emptyJournal.includes('spełniających filtry'), emptyJournal);
 
   // kalendarz
   await page.click('.navg button[data-v="kal"]');

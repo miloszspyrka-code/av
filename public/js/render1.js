@@ -292,9 +292,21 @@
   AV.renderAdherence = () => {
     const a = AV.planAdherence(AV.state);
     AV.setText('#adherenceVal', a.approved + ' z ' + a.total + ' dni');
-    const approved = a.days.filter((d) => d.ok);
-    const not = a.days.filter((d) => !d.ok);
-    AV.setText('#adherenceHint', 'w dni zgodne z planem średnio +31,40 · w pozostałe −42,10');
+    const closed = AV.closedTrades(AV.state);
+    const buckets = { ok: { n: 0, sum: 0 }, no: { n: 0, sum: 0 } };
+    a.days.forEach((d) => {
+      const key = AV.dateKey(d.d);
+      const dayTrades = closed.filter((t) => AV.dateKey(t.date) === key);
+      if (!dayTrades.length) return;
+      const bucket = d.ok ? buckets.ok : buckets.no;
+      bucket.n += dayTrades.length;
+      bucket.sum += dayTrades.reduce((sum, t) => sum + (Number(t.result) || 0), 0);
+    });
+    const avg = (b) => (b.n ? AV.signed(b.sum / b.n, 2, ' USDT') : '');
+    const parts = [];
+    if (buckets.ok.n) parts.push('w dni zgodne z planem średnio ' + avg(buckets.ok));
+    if (buckets.no.n) parts.push('w pozostałe ' + avg(buckets.no));
+    AV.setText('#adherenceHint', parts.join(' · '));
     AV.setHTML('#adherenceHist', a.days.map((d) => '<i style="background:var(--' + (d.ok ? 'winS' : 'lossS') + ');color:var(--' + (d.ok ? 'win' : 'loss') + ')">' + d.d.toLocaleDateString('pl-PL', { weekday: 'short' }).replace('.', '') + '</i>').join(''));
   };
 
@@ -330,7 +342,13 @@
     AV.show('#jEmpty', !arr.length);
     if (!arr.length) {
       const empty = $('#jEmpty');
-      if (empty) empty.textContent = AV.includedTrades(AV.state).length ? 'Brak transakcji spełniających filtry.' : 'Brak transakcji. Dodaj pierwszą w „Nowa transakcja” albo zaimportuj CSV.';
+      if (empty) {
+        if (AV.includedTrades(AV.state).length) {
+          empty.textContent = 'Brak transakcji spełniających filtry.';
+        } else {
+          empty.innerHTML = '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn p sm" type="button" data-journal-add>Dodaj transakcję</button><button class="btn g sm" type="button" data-journal-exchanges>Giełdy i API</button></div>';
+        }
+      }
     }
     AV.$$('#fRes button').forEach((b) => b.classList.toggle('on', b.dataset.f === AV.ui.jFilter));
     AV.$$('#fGrade button').forEach((b) => b.classList.toggle('on', b.dataset.f === AV.ui.jGrade));
