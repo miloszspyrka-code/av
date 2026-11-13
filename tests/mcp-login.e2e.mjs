@@ -217,18 +217,18 @@ async function finishConsent(client, verifier, challenge, sessionCookie) {
   });
   const auth = await req('/oauth/authorize?' + q.toString(), { headers: { Cookie: sessionCookie } });
   assert.equal(auth.res.status, 200, auth.text);
-  const token = /name="consent_token" value="([^"]+)"/.exec(auth.text);
+  const consentToken = /name="consent_token" value="([^"]+)"/.exec(auth.text);
   const formAction = /<form method="post" action="([^"]+)"/.exec(auth.text);
-  assert.ok(token && formAction);
+  assert.ok(consentToken && formAction);
   const action = formAction[1].replace(/&amp;/g, '&');
-  const formBody = new URLSearchParams({ consent_id: 'wrong', csrf: 'wrong', consent_token: token[1], decision: 'allow' }).toString();
+  const formBody = new URLSearchParams({ consent_id: 'wrong', csrf: 'wrong', consent_token: consentToken[1], decision: 'allow' }).toString();
   const post = await req(action, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: sessionCookie },
     body: formBody,
   });
   assert.equal(post.res.status, 302, post.text);
-  const retryBody = new URLSearchParams({ consent_id: 'wrong', csrf: 'wrong', consent_token: token[1] + 'x', decision: 'allow' }).toString();
+  const retryBody = new URLSearchParams({ consent_id: 'wrong', csrf: 'wrong', consent_token: consentToken[1] + 'x', decision: 'allow' }).toString();
   const retry = await req(action, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: sessionCookie },
