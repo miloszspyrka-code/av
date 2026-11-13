@@ -292,6 +292,17 @@ Wymagane wartości:
 
 `/api/events` wymaga sesji — 401 bez logowania jest oczekiwane. Nie loguj się na produkcji bez zgody użytkownika.
 
+### 6.7. Deploy MCP
+
+`mcp.alphavault.pl` wdraża workflow `Deploy AlphaVault MCP` (`.github/workflows/deploy-mcp.yml`), uruchamiany z `main` z inputem `ref`:
+
+```powershell
+gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<branch> -f dry_run=true
+gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<branch> -f dry_run=false
+```
+
+Workflow używa tych samych sekretów SSH/DB/Discord co `alphavault.pl`, uruchamia `scripts/deploy-mcp.sh` i nie dotyka innych domen. Deploy jest poprawny dopiero po zielonym runie i health checku `https://mcp.alphavault.pl/health`.
+
 ## 7. Testy i Definition of Done
 
 **Wszystkie testy uruchamia CI.** Nie uruchamiaj ich lokalnie i nie traktuj lokalnego wyniku jako dowodu. Zakres suites zależy od zmiany, ale bramką PR jest cały workflow `CI` (`PHP + API + UI`).

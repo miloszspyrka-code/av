@@ -1,0 +1,135 @@
+name: Deploy AlphaVault MCP
+
+# Wdraża serwer MCP na mcp.alphavault.pl z wybranego refu.
+# Uruchamiaj z main: workflow_dispatch + ref (np. fix/mcp-consent).
+# Nie dotyka alphavault.pl ani WordPressa.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref do wdrożenia MCP (branch/tag)"
+        required: true
+        default: "feat/mcp-phase1"
+        type: string
+      dry_run:
+        description: "Dry run - pokaż zmiany bez zapisu"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-mcp-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy MCP to mcp.alphavault.pl
+    runs-on: ubuntu-latest
+    environment: alphavault-production
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, curl, mbstring, json, openssl
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Validate required secrets
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PRIVATE_KEY: ${{ secrets.LH_SSH_PRIVATE_KEY }}
+          LH_SSH_KNOWN_HOSTS: ${{ secrets.LH_SSH_KNOWN_HOSTS }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DISCORD_REQUIRED_ROLE_ID: ${{ secrets.DISCORD_REQUIRED_ROLE_ID }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in LH_SSH_HOST LH_SSH_USER LH_SSH_PRIVATE_KEY LH_SSH_KNOWN_HOSTS SESSION_SECRET DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET DISCORD_GUILD_ID DISCORD_REQUIRED_ROLE_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing GitHub secret: ${name}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Uzupełnij sekrety w Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Secret validation passed."
+
+      - name: Prepare SSH material
+        env:
+          LH_SSH_PRIVATE_KEY: ${{ secrets.LH_SSH_PRIVATE_KEY }}
+          LH_SSH_KNOWN_HOSTS: ${{ secrets.LH_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$LH_SSH_PRIVATE_KEY" | sed 's/\r$//' > ~/.ssh/lh_mcp_deploy_key
+          chmod 600 ~/.ssh/lh_mcp_deploy_key
+          printf '%s\n' "$LH_SSH_KNOWN_HOSTS" | sed 's/\r$//' > ~/.ssh/lh_mcp_known_hosts
+          chmod 600 ~/.ssh/lh_mcp_known_hosts
+          ssh-keygen -y -P "" -f ~/.ssh/lh_mcp_deploy_key > /dev/null
+          echo "SSH material prepared."
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          find app mcp -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Deploy MCP
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT || '40022' }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PRIVATE_KEY_PATH: /home/runner/.ssh/lh_mcp_deploy_key
+          LH_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/lh_mcp_known_hosts
+          LH_MCP_DEPLOY_PATH: "~/public_html/mcp.alphavault.pl"
+          LH_MCP_APP_PATH: "~/public_html/mcp.alphavault.pl/.app"
+          MCP_APP_URL: "https://mcp.alphavault.pl"
+          MCP_WRITES_ENABLED: "false"
+          DRY_RUN: ${{ inputs.dry_run }}
+          APP_ENV: production
+          ALLOW_DEMO_LOGIN: "false"
+          MAX_STATE_BYTES: "12582912"
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DISCORD_REQUIRED_ROLE_ID: ${{ secrets.DISCORD_REQUIRED_ROLE_ID }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          ADMIN_DISCORD_IDS: ${{ vars.ADMIN_DISCORD_IDS }}
+          DISCORD_DEFAULT_PLAN: full
+          DISCORD_TRIAL_DAYS: "0"
+        run: bash scripts/deploy-mcp.sh
