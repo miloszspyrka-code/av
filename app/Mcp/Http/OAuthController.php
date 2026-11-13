@@ -303,9 +303,16 @@ final class OAuthController
             Http::html('<h1>500</h1><p>Nie udało się zakończyć autoryzacji.</p>', 500);
         }
 
+        $location = $response->getHeaderLine('Location');
         $this->consentLog('consent_complete_ok', [
             'client' => (string) $data['client_id'],
             'decision' => $decision,
+            'status' => $response->getStatusCode(),
+            'redirect_host' => (string) parse_url($location, PHP_URL_HOST),
+            'redirect_path' => (string) parse_url($location, PHP_URL_PATH),
+            'has_code' => str_contains($location, 'code='),
+            'has_state' => str_contains($location, 'state='),
+            'has_iss' => str_contains($location, 'iss='),
         ]);
 
         if ($consentId !== '') {
