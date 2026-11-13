@@ -874,7 +874,10 @@
       });
     });
     const errors = Object.values(errMap).sort((a, b) => a.cost - b.cost);
-    const avg = (arr, f) => arr.length ? arr.reduce((s, x) => s + f(x), 0) / arr.length : 0;
+    const avg = (arr, f) => {
+      const values = arr.map(f).filter((v) => v != null && Number.isFinite(Number(v)));
+      return values.length ? values.reduce((s, v) => s + Number(v), 0) / values.length : null;
+    };
     return {
       n, wins: wins.length, losses: losses.length, winRate: n ? wins.length / n * 100 : 0,
       net, gp, gl, pf: gl ? gp / gl : gp ? 99 : 0, expR, avgWin, avgLoss,
@@ -1295,10 +1298,10 @@
 
   /* ---------- plan dnia ---------- */
   AV.planTemplate = (dateKey) => ({
-    date: dateKey, market: 'BTC', bias: 'long', why: '',
+    date: dateKey, market: '', bias: '', why: '',
     levels: [{ type: 'Opór', price: '', note: '' }],
     ifMain: '', thenMain: '', ifAlt: '', thenAlt: '',
-    risk: '3%', maxTrades: '5', until: '21:00', notDo: '',
+    risk: '', maxTrades: '', until: '', notDo: '',
     approvedAt: null
   });
   AV.planAdherence = (state) => {

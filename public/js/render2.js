@@ -18,22 +18,23 @@
     const st = AV.computeStats(trades, s);
     $$('#statSeg button').forEach((b) => b.classList.toggle('on', Number(b.dataset.r) === AV.ui.statRange || b.dataset.r === 'all' && AV.ui.statRange === 'all'));
     const setVal = (id, txt, cls) => { const el = $('#' + id); if (!el) return; el.textContent = txt; if (cls) el.className = 'val ' + cls; };
+    const empty = st.n === 0;
     setVal('stResult', AV.dispMoney(st.net, 2), st.net >= 0 ? 'win' : 'loss');
-    AV.setText('#stResultHint', st.n + ' ' + AV.plural(st.n, 'transakcja', 'transakcje', 'transakcji'));
-    setVal('stWr', Math.round(st.winRate) + '%', '');
-    AV.setText('#stWrHint', st.wins + ' zyski · ' + st.losses + ' straty');
-    setVal('stPf', st.pf >= 99 ? '∞' : AV.fmt(st.pf, 2), '');
-    AV.setText('#stPfHint', AV.fmt(st.gp, 2) + ' ÷ ' + AV.fmt(st.gl, 2));
-    setVal('stExp', AV.signed(st.expR, 2, 'R'), 'al');
-    AV.setText('#stExpHint', '≈ ' + AV.dispMoney(st.n ? st.net / st.n : 0, 2) + ' na transakcję');
-    setVal('stDd', AV.fmt(st.maxDDpct, 1) + '%', 'loss');
-    AV.setText('#stDdHint', AV.dispMoney(st.maxDD, 2));
-    setVal('stSl', Math.round(st.withSL) + '%', st.withSL >= 80 ? 'win' : 'warnc');
-    AV.setText('#stSlHint', st.withSLCount + ' z ' + st.n + ' transakcji');
-    setVal('stPlan', Math.round(st.planRate) + '%', '');
-    AV.setText('#stPlanHint', 'cel: 85% · ' + st.planCount + ' z planem');
-    setVal('stFees', '−' + AV.fmt(st.fees, 2), 'warnc');
-    AV.setText('#stFeesHint', st.gp ? Math.round(st.fees / st.gp * 100) + '% zysków brutto' : 'brak zysków');
+    AV.setText('#stResultHint', empty ? 'brak transakcji w okresie' : st.n + ' ' + AV.plural(st.n, 'transakcja', 'transakcje', 'transakcji'));
+    setVal('stWr', empty ? '—' : Math.round(st.winRate) + '%', '');
+    AV.setText('#stWrHint', empty ? '—' : st.wins + ' zyski · ' + st.losses + ' straty');
+    setVal('stPf', empty ? '—' : st.pf >= 99 ? '∞' : AV.fmt(st.pf, 2), '');
+    AV.setText('#stPfHint', empty ? '—' : AV.fmt(st.gp, 2) + ' ÷ ' + AV.fmt(st.gl, 2));
+    setVal('stExp', empty ? '—' : AV.signed(st.expR, 2, 'R'), empty ? '' : 'al');
+    AV.setText('#stExpHint', empty ? '—' : '≈ ' + AV.dispMoney(st.net / st.n, 2) + ' na transakcję');
+    setVal('stDd', empty ? '—' : AV.fmt(st.maxDDpct, 1) + '%', empty ? '' : 'loss');
+    AV.setText('#stDdHint', empty ? '—' : AV.dispMoney(st.maxDD, 2));
+    setVal('stSl', empty ? '—' : Math.round(st.withSL) + '%', empty ? '' : st.withSL >= 80 ? 'win' : 'warnc');
+    AV.setText('#stSlHint', empty ? '—' : st.withSLCount + ' z ' + st.n + ' transakcji');
+    setVal('stPlan', empty ? '—' : Math.round(st.planRate) + '%', '');
+    AV.setText('#stPlanHint', empty ? '—' : 'cel: 85% · ' + st.planCount + ' z planem');
+    setVal('stFees', st.fees ? '−' + AV.fmt(st.fees, 2) : '0,00', st.fees ? 'warnc' : '');
+    AV.setText('#stFeesHint', empty ? '—' : st.gp ? Math.round(st.fees / st.gp * 100) + '% zysków brutto' : 'brak zysków');
     AV.renderEquity(st);
     AV.renderPnlCal(st);
     AV.renderGradeStats(st);
@@ -89,29 +90,39 @@
     }).join('');
     AV.setHTML('#gradeStats', rows || '<div class="dim">Brak danych w wybranym okresie.</div>');
     const a = st.byGrade.find((g) => g.grade === 'A'), b = st.byGrade.find((g) => g.grade === 'B'), c = st.byGrade.find((g) => g.grade === 'C');
-    AV.setHTML('#gradeInsight', c && c.net < 0
-      ? 'Gdybyś grała tylko transakcje A i B, wynik wynosiłby <b>' + AV.signed((a?.net || 0) + (b?.net || 0), 2, '') + '</b> zamiast ' + AV.signed(st.net, 2, '') + '.'
-      : 'Nie masz w tym okresie stratnych transakcji C. Tak trzymaj.');
+    AV.setHTML('#gradeInsight', st.n === 0
+      ? 'Brak danych w wybranym okresie.'
+      : c && c.net < 0
+        ? 'Gdybyś grała tylko transakcje A i B, wynik wynosiłby <b>' + AV.signed((a?.net || 0) + (b?.net || 0), 2, '') + '</b> zamiast ' + AV.signed(st.net, 2, '') + '.'
+        : 'W tym okresie nie ma stratnych transakcji C.');
   };
 
   AV.renderChecklistStats = (st) => {
-    const total = st.n || 1;
+    if (st.n === 0) {
+      AV.setHTML('#checklistStats', '<div class="dim">Brak danych w wybranym okresie.</div>');
+      return;
+    }
+    const total = (AV.state.settings.checklist || []).length || 7;
     const fullW = Math.abs(st.full.net) / Math.max(1, Math.abs(st.full.net), Math.abs(st.part.net)) * 50;
     AV.setHTML('#checklistStats',
-      '<div class="hbar"><span class="mut" style="font-size:13px">7/7 · ' + st.full.n + ' tr.</span><div class="tr"><i style="left:50%;width:' + (st.full.net >= 0 ? fullW : 0) + '%;background:var(--win)"></i></div><b class="win mono" style="text-align:right">' + AV.signed(st.full.net, 2, '') + '</b></div>' +
-      '<div class="hbar"><span class="mut" style="font-size:13px">≤6/7 · ' + st.part.n + ' tr.</span><div class="tr"><i style="left:50%;width:' + Math.abs(st.part.net) / Math.max(1, Math.abs(st.full.net), Math.abs(st.part.net)) * 50 + '%;background:' + (st.part.net >= 0 ? 'var(--warn)' : 'var(--loss)') + '"></i></div><b class="' + (st.part.net >= 0 ? 'warnc' : 'loss') + ' mono" style="text-align:right">' + AV.signed(st.part.net, 2, '') + '</b></div>' +
+      '<div class="hbar"><span class="mut" style="font-size:13px">' + total + '/' + total + ' · ' + st.full.n + ' tr.</span><div class="tr"><i style="left:50%;width:' + (st.full.net >= 0 ? fullW : 0) + '%;background:var(--win)"></i></div><b class="win mono" style="text-align:right">' + AV.signed(st.full.net, 2, '') + '</b></div>' +
+      '<div class="hbar"><span class="mut" style="font-size:13px">≤' + (total - 1) + '/' + total + ' · ' + st.part.n + ' tr.</span><div class="tr"><i style="left:50%;width:' + Math.abs(st.part.net) / Math.max(1, Math.abs(st.full.net), Math.abs(st.part.net)) * 50 + '%;background:' + (st.part.net >= 0 ? 'var(--warn)' : 'var(--loss)') + '"></i></div><b class="' + (st.part.net >= 0 ? 'warnc' : 'loss') + ' mono" style="text-align:right">' + AV.signed(st.part.net, 2, '') + '</b></div>' +
       '<div class="kv" style="margin-top:8px"><span>Skuteczność z pełną checklistą</span><b class="win">' + Math.round(st.full.wr) + '%</b></div>' +
       '<div class="kv"><span>Skuteczność bez niej</span><b class="loss">' + Math.round(st.part.wr) + '%</b></div>' +
-      '<div class="kv"><span>Transakcje bez SL</span><b class="' + (st.withSL >= 90 ? 'win' : 'loss') + '">' + (total - st.withSLCount) + '</b></div>');
+      '<div class="kv"><span>Transakcje bez SL</span><b class="' + (st.withSL >= 90 ? 'win' : 'loss') + '">' + (st.n - st.withSLCount) + '</b></div>');
   };
 
   AV.renderErrorCost = (st) => {
     const el = $('#errCost');
     if (!el) return;
+    if (st.n === 0) {
+      el.innerHTML = '<div class="dim">Brak danych w wybranym okresie.</div>';
+      return;
+    }
     const arr = st.errors.slice(0, 7);
     const mx = Math.max(1, ...arr.map((e) => Math.abs(e.cost)));
     const tot = arr.reduce((s, e) => s + e.cost, 0);
-    const rows = arr.length ? arr.map((e) => '<div class="hbar" style="grid-template-columns:170px 1fr 90px"><span style="font-size:13.5px">' + AV.esc(e.key) + ' <span class="dim mono" style="font-size:11.5px">' + e.n + '×</span></span><div class="tr" style="background:rgba(255,255,255,.04)"><i style="left:0;width:' + Math.min(100, Math.abs(e.cost) / mx * 100) + '%;background:linear-gradient(90deg,rgba(255,93,98,.5),var(--loss))"></i></div><b class="' + (e.cost >= 0 ? 'win' : 'loss') + ' mono" style="text-align:right">' + AV.signed(e.cost, 2, '') + '</b></div>').join('') : '<div class="dim">Brak błędów w tym okresie. Tak trzymaj.</div>';
+    const rows = arr.length ? arr.map((e) => '<div class="hbar" style="grid-template-columns:170px 1fr 90px"><span style="font-size:13.5px">' + AV.esc(e.key) + ' <span class="dim mono" style="font-size:11.5px">' + e.n + '×</span></span><div class="tr" style="background:rgba(255,255,255,.04)"><i style="left:0;width:' + Math.min(100, Math.abs(e.cost) / mx * 100) + '%;background:linear-gradient(90deg,rgba(255,93,98,.5),var(--loss))"></i></div><b class="' + (e.cost >= 0 ? 'win' : 'loss') + ' mono" style="text-align:right">' + AV.signed(e.cost, 2, '') + '</b></div>').join('') : '<div class="dim">Brak błędów w tym okresie.</div>';
     const worst = arr[0];
     el.innerHTML = '<div>' + rows + '</div><div><div class="lbl">Błędy razem</div><div class="val ' + (tot >= 0 ? 'win' : 'loss') + '" style="font-size:36px">' + AV.signed(tot, 2, '') + '</div><div class="hint">Suma kosztu błędów w wybranym okresie. To kwota, którą możesz odzyskać samą dyscypliną.</div>' + (worst ? '<div class="step"><b>Najdroższy błąd: ' + AV.esc(worst.key.toLowerCase()) + '.</b> ' + worst.n + ' ' + AV.plural(worst.n, 'raz', 'razy', 'razy') + ', łącznie ' + AV.signed(worst.cost, 2, '') + '. Twoje zasady celują dokładnie w niego.</div>' : '') + '</div>';
   };
@@ -119,7 +130,12 @@
   AV.renderMae = (st) => {
     const svg = $('#maeSvg');
     if (!svg) return;
-    const trades = AV.rangeTrades(AV.state, AV.ui.statRange).filter((t) => t.mae != null);
+    const trades = AV.rangeTrades(AV.state, AV.ui.statRange).filter((t) => t.mae != null && t.mfe != null);
+    if (!trades.length) {
+      svg.innerHTML = '';
+      AV.setHTML('#maeStats', '<div class="dim">Brak danych MAE/MFE. Wpisy ręczne nie mają tych wartości — pojawią się po imporcie z giełdy.</div>');
+      return;
+    }
     const X = (v) => 50 + Math.min(2.95, v) / 3 * 450;
     const Y = (v) => 260 - Math.min(3.9, v) / 4 * 240;
     let g = '';
@@ -132,20 +148,21 @@
     });
     g += '<text x="275" y="298" fill="#b7b0a6" font-size="11" text-anchor="middle" font-family="Archivo">MAE · ruch przeciw Tobie</text><text x="12" y="140" fill="#b7b0a6" font-size="11" text-anchor="middle" font-family="Archivo" transform="rotate(-90 12 140)">MFE · ruch na Twoją korzyść</text>';
     svg.innerHTML = g;
-    const left = st.avgMfeWin - st.avgExitR;
-    AV.setHTML('#maeStats', '<div class="kv"><span>Śr. MAE zyskownych</span><b class="mono">' + AV.fmt(st.avgMaeWin, 2) + 'R</b></div>' +
-      '<div class="kv"><span>Śr. MFE zyskownych</span><b class="mono win">' + AV.fmt(st.avgMfeWin, 2) + 'R</b></div>' +
-      '<div class="kv"><span>Śr. faktyczne wyjście</span><b class="mono">' + AV.fmt(st.avgExitR, 2) + 'R</b></div>' +
-      '<div class="step" style="margin-top:6px"><b>Wniosek:</b> zyskowne transakcje rzadko schodzą niżej niż ' + AV.fmt(st.avgMaeWin, 2) + 'R, więc SL na 1R jest bezpieczny. Zamykasz średnio przy ' + AV.fmt(st.avgExitR, 2) + 'R, a cena idzie do ' + AV.fmt(st.avgMfeWin, 2) + 'R. <b>Zostawiasz na stole około ' + AV.fmt(Math.max(0, left), 2) + 'R na transakcji.</b> Spróbuj zamykać połowę pozycji na 1,5R, a resztę prowadzić.</div>');
+    const hasAvg = st.avgMaeWin != null && st.avgMfeWin != null && st.avgExitR != null;
+    const left = hasAvg ? st.avgMfeWin - st.avgExitR : null;
+    AV.setHTML('#maeStats', '<div class="kv"><span>Śr. MAE zyskownych</span><b class="mono">' + (hasAvg ? AV.fmt(st.avgMaeWin, 2) + 'R' : '—') + '</b></div>' +
+      '<div class="kv"><span>Śr. MFE zyskownych</span><b class="mono win">' + (hasAvg ? AV.fmt(st.avgMfeWin, 2) + 'R' : '—') + '</b></div>' +
+      '<div class="kv"><span>Śr. faktyczne wyjście</span><b class="mono">' + (hasAvg ? AV.fmt(st.avgExitR, 2) + 'R' : '—') + '</b></div>' +
+      (hasAvg ? '<div class="step" style="margin-top:6px"><b>Wniosek:</b> zyskowne transakcje rzadko schodzą niżej niż ' + AV.fmt(st.avgMaeWin, 2) + 'R, więc SL na 1R jest bezpieczny. Zamykasz średnio przy ' + AV.fmt(st.avgExitR, 2) + 'R, a cena idzie do ' + AV.fmt(st.avgMfeWin, 2) + 'R. <b>Zostawiasz na stole około ' + AV.fmt(Math.max(0, left), 2) + 'R na transakcji.</b> Spróbuj zamykać połowę pozycji na 1,5R, a resztę prowadzić.</div>' : ''));
   };
 
   AV.renderGroups = (st) => {
-    const card = (title, rows, fmt) => '<h3 style="margin-bottom:12px">' + title + '</h3>' + rows.map((r) => '<div class="kv"><span>' + AV.esc(r.key) + '</span><b class="' + (r.net >= 0 ? 'win' : 'loss') + ' mono">' + (fmt ? fmt(r) : AV.signed(r.net, 2, '')) + '</b></div>').join('');
+    const card = (title, rows, fmt) => '<h3 style="margin-bottom:12px">' + title + '</h3>' + (rows.length ? rows.map((r) => '<div class="kv"><span>' + AV.esc(r.key) + '</span><b class="' + (r.net >= 0 ? 'win' : 'loss') + ' mono">' + (fmt ? fmt(r) : AV.signed(r.net, 2, '')) + '</b></div>').join('') : '<div class="dim">Brak danych w wybranym okresie.</div>');
     AV.setHTML('#sessionStats', card('Wynik wg sesji', st.bySession));
     AV.setHTML('#emotionStats', card('Wynik wg emocji', st.byEmotion));
     AV.setHTML('#holdingStats', '<h3 style="margin-bottom:12px">Czas trzymania</h3>' +
-      '<div class="kv"><span>Zyskowne</span><b class="mono">' + Math.round(st.avgDurWin) + ' min</b></div>' +
-      '<div class="kv"><span>Stratne</span><b class="mono loss">' + Math.round(st.avgDurLoss) + ' min</b></div>' +
+      '<div class="kv"><span>Zyskowne</span><b class="mono">' + (st.avgDurWin == null ? '—' : Math.round(st.avgDurWin) + ' min') + '</b></div>' +
+      '<div class="kv"><span>Stratne</span><b class="mono loss">' + (st.avgDurLoss == null ? '—' : Math.round(st.avgDurLoss) + ' min') + '</b></div>' +
       '<div class="kv"><span>Przesunięty SL</span><b class="mono loss">' + st.shiftedSL + '×</b></div>');
   };
 
@@ -852,7 +869,7 @@
     if (k === 'file') { AV.renderImport(); return; }
     const c = AV.connections()[k];
     const meta = {
-      weex: { n: 'WEEX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>weex.com</b> i kliknij ikonę profilu w prawym górnym rogu.', 'Wejdź w <b>Zarządzanie API</b> i kliknij <b>Utwórz klucz API</b>.', 'Nazwij klucz, np. <b>Alpha Vault</b>, i ustaw passphrase. Zapisz go.', 'W uprawnieniach zaznacz <b>odczyt</b>. Handel i wypłaty nie blokują połączenia — klucz przejdzie z każdym zestawem uprawnień.', 'Potwierdź kodem 2FA i skopiuj <b>API Key</b> oraz <b>Secret Key</b>. Secret pokazuje się tylko raz.', 'Wklej trzy wartości obok i kliknij <b>Połącz</b>. Pierwsza synchronizacja pobierze 90 dni historii.'] },
+      weex: { n: 'WEEX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>weex.com</b> i kliknij ikonę profilu w prawym górnym rogu.', 'Wejdź w <b>Zarządzanie API</b> i kliknij <b>Utwórz klucz API</b>.', 'Nazwij klucz, np. <b>Alpha Vault</b>, i ustaw passphrase. Zapisz go.', 'W uprawnieniach zaznacz <b>tylko odczyt</b>. Nie włączaj handlu ani wypłat.', 'Potwierdź kodem 2FA i skopiuj <b>API Key</b> oraz <b>Secret Key</b>. Secret pokazuje się tylko raz.', 'Wklej trzy wartości obok i kliknij <b>Połącz</b>. Pierwsza synchronizacja pobierze 90 dni historii.'] },
       okx: { n: 'OKX', f: ['API Key', 'Secret Key', 'Passphrase'], steps: ['Zaloguj się na <b>okx.com</b>, kliknij profil i wybierz <b>API</b>.', 'Kliknij <b>Utwórz klucz API v5</b>.', 'Wpisz nazwę, np. <b>Alpha Vault</b>, i ustaw passphrase.', 'Uprawnienia: <b>tylko Odczyt</b>. Handel i wypłaty wyłączone.', 'Potwierdź i skopiuj <b>API Key</b> oraz <b>Secret Key</b>.', 'Wklej obok razem z passphrase i kliknij <b>Połącz</b>.'] },
       bingx: { n: 'BingX', f: ['API Key', 'Secret Key'], steps: ['Zaloguj się na <b>bingx.com</b>, kliknij profil i wybierz <b>Zarządzanie API</b>.', 'Kliknij <b>Utwórz API</b> i nazwij klucz, np. <b>Alpha Vault</b>.', 'Zostaw <b>tylko Odczyt</b>. Nie włączaj handlu ani wypłat.', 'Potwierdź kodem z maila lub 2FA.', 'Skopiuj <b>API Key</b> i <b>Secret Key</b>, wklej obok i kliknij <b>Połącz</b>.'] }
     }[k];
@@ -861,10 +878,10 @@
       ? '<div class="note r" style="margin-top:12px">' + AV.ic('shield') + '<div><b>Ostatnia synchronizacja nie powiodła się.</b><br>' + AV.esc(c.error) + '</div></div>'
       : '';
     const permsNote = k === 'weex'
-      ? 'Klucz zapisujemy zaszyfrowany. Prawo do handlu ani wypłat nie blokuje połączenia WEEX — do importu wystarczy odczyt.'
-      : 'Jeśli klucz ma prawo do handlu albo wypłat, Alpha Vault go odrzuci. Tak chronimy Twoje środki.';
+      ? 'Klucz zapisujemy zaszyfrowany. WEEX wymaga klucza z działającym odczytem konta; handel i wypłaty nie są potrzebne.'
+      : 'OKX i BingX odrzucą klucz z prawem handlu lub wypłat. Tak chronimy Twoje środki.';
     AV.setHTML('#exBody', '<div class="sech"><h2>' + meta.n + (connected ? ' <span class="win" style="font-size:13px;font-weight:600;margin-left:6px">' + (c.pending ? '● konfiguracja' : '● połączona') + '</span>' : '') + '</h2>' + (connected && c.id ? '<button class="btn g sm" data-disconnect="' + c.id + '">Odłącz</button>' : '') + '</div>' +
-      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + (c.lastSync ? new Date(c.lastSync).toLocaleString('pl-PL') : 'oczekuje') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Automatyczny import</span><b>co 30 minut</b></div><div class="kv"><span>Uprawnienia klucza</span><b class="win">' + (c.perms === 'any' ? 'dowolne (odczyt wystarcza)' : c.perms === 'read-only' ? 'tylko odczyt ✓' : AV.esc(c.perms || '')) + '</b></div><div class="kv"><span>Klucz</span><b class="mono">' + AV.esc(c.masked || '') + '</b></div>' : '') +
+      (connected ? '<div class="kv"><span>Ostatnia synchronizacja</span><b>' + (c.lastSync ? new Date(c.lastSync).toLocaleString('pl-PL') : 'oczekuje') + '</b></div><div class="kv"><span>Zaimportowane transakcje</span><b>' + (c.imported || 0) + '</b></div><div class="kv"><span>Automatyczny import</span><b>do 25 minut</b></div><div class="kv"><span>Uprawnienia klucza</span><b class="' + (c.perms === 'read-only' ? 'win' : 'warnc') + '">' + (c.perms === 'any' ? 'sprawdź uprawnienia — zalecany tylko odczyt' : c.perms === 'read-only' ? 'tylko odczyt ✓' : AV.esc(c.perms || '')) + '</b></div><div class="kv"><span>Klucz</span><b class="mono">' + AV.esc(c.masked || '') + '</b></div>' : '') +
       statusNote +
       '<div class="grid g2" style="margin-top:' + (connected ? 20 : 4) + 'px;align-items:start"><div><h3>Jak zdobyć klucz</h3><ol class="howto" style="margin-top:6px">' + meta.steps.map((s) => '<li><span>' + s + '</span></li>').join('') + '</ol></div>' +
       '<div><div class="card flat"><h3>' + (connected ? 'Zmień klucz' : 'Wklej klucz') + '</h3>' + meta.f.map((f, i) => '<span class="label">' + f + '</span><input class="input mono" id="exF' + i + '" placeholder="' + f + '" autocomplete="off" type="' + (/Secret|Pass/.test(f) ? 'password' : 'text') + '">').join('') +
@@ -1107,8 +1124,6 @@
     AV.setVal('#rule3', s.settings.rules[2] || '');
     $$('#rulesChecklist .chip').forEach((c) => c.classList.toggle('on', s.settings.checklist.includes(c.dataset.c)));
     AV.setText('#totalCapital', AV.fmt(AV.totalCapital(s), 2) + ' USDT');
-    AV.setText('#sessions', s.meta.sessions.map((x) => x.device + ' · ' + x.when + (x.place ? ' · ' + x.place : '')).join('<br>'));
-    $('#sessions').innerHTML = s.meta.sessions.map((x) => AV.esc(x.device) + ' · ' + AV.esc(x.when) + (x.place ? ' · ' + AV.esc(x.place) : '')).join('<br>');
     AV.renderAccounts();
     AV.renderFlows();
     AV.renderBadges();

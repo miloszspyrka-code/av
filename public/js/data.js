@@ -371,7 +371,7 @@
       },
       subscription: { plan: 'full', until: '2026-12-03', expired: false, role: 'Alpha', renewedAt: null },
       settings: {
-        remember: true, apiCode: true, safetyEnabled: true, requireReason: true, pushLimit: true,
+        remember: true, safetyEnabled: true, requireReason: true, pushLimit: true,
         macroBefore: true, macroChecklist: true, macroTwo: false,
         remindDay: true, remindHour: true,
         maxLosses: 2, maxDailyLoss: 3, block: 'midnight',
@@ -379,7 +379,7 @@
         checklist: ['Trend wyższego TF', 'Poziom z planu', 'Potwierdzenie', 'SL przed wejściem', 'R:R ≥ 2', 'Brak makro 15 min', 'Spokojna głowa'],
         devices: { apple: false, oura: false },
         connections: {
-          weex: { connected: true, lastSync: new Date().toISOString(), imported: 41, masked: 'wx_live_••••7f2a', perms: 'any' },
+          weex: { connected: true, lastSync: new Date().toISOString(), imported: 41, masked: 'wx_live_••••7f2a', perms: 'read-only' },
           okx: { connected: false }, bingx: { connected: false },
           mt: { connected: false, server: '', login: '', masked: '', code: 'AV-7K3Q-92XD', codeAt: Date.now() }
         }

@@ -588,9 +588,11 @@ Routing jest po stronie przeglądarki: jeden `public/index.html`, widoki przeł�
 | `gieldy` | `#/gieldy` | Giełdy i API |
 | `ust` | `#/konto` | Konto i zasady |
 
-Widok `#/mentor-ai` to strona integracji MCP: adres `https://mcp.alphavault.pl/mcp` z kopiowaniem, przepływ „jak to działa”, zakładki ChatGPT/Claude/Grok z krokami konfiguracji, karty korzyści i bezpieczeństwa oraz nota o dostępności integracji. Nie zawiera czatu ani analiz.
+Widok `#/mentor-ai` to strona integracji MCP: adres `https://mcp.alphavault.pl/mcp` z kopiowaniem, przepływ „jak to działa”, zakładki ChatGPT/Claude/Grok z krokami konfiguracji, karty korzyści i bezpieczeństwa oraz nota o dostępności integracji. Claude korzysta z callbacku `https://claude.ai/api/mcp/auth_callback`, który musi być dopuszczony w allowliście OAuth. Widok nie zawiera czatu ani analiz.
 
-Plan dnia (`#/plan`) trzyma dane w `user_states.state.plans[YYYY-MM-DD]`. Kliknięcie rynku lub biasu, dodanie/usunięcie poziomu, zatwierdzenie i „Skopiuj z wczoraj” zapisują szkic i wysyłają `PUT /api/state`; zatwierdzenie czeka na odpowiedź serwera i pokazuje wynik („Zapisano w bazie” albo błąd). Tekst planu ma autosave z debounce 700 ms. `renderPlan()` nie nadpisuje formularza, gdy fokus jest wewnątrz edytora, więc render po notowaniach nie kasuje wpisywanej treści.
+Plan dnia (`#/plan`) trzyma dane w `user_states.state.plans[YYYY-MM-DD]`. Kliknięcie rynku lub biasu, dodanie/usunięcie poziomu, zatwierdzenie i "Skopiuj z wczoraj" zapisują szkic i wysyłają `PUT /api/state`; zatwierdzenie czeka na odpowiedź serwera i pokazuje wynik ("Zapisano w bazie" albo błąd). Zatwierdzenie wymaga rynku, kierunku, uzasadnienia i co najmniej jednego poziomu. Tekst planu ma autosave z debounce 700 ms. `renderPlan()` nie nadpisuje formularza, gdy fokus jest wewnątrz edytora, więc render po notowaniach nie kasuje wpisywanej treści.
+
+Dziennik (`#/nowa-transakcja`) startuje z pustymi polami i checklistą 0/N. Ryzyko pozycji jest liczone jako `abs(entry - SL) * size` i pokazywane obok limitu `maxRisk`; przekroczenie limitu wymaga świadomego potwierdzenia. Wpisy ręczne mają `mae = null`, `mfe = null` — statystyki MAE/MFE korzystają wyłącznie z importów. Przy zerze transakcji statystyki pokazują „—”, a etykiety checklisty wynikają z liczby punktów użytkownika.
 
 Zasady:
 

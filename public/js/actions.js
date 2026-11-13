@@ -380,7 +380,7 @@
     $('#planEditor')?.addEventListener('change', () => AV.savePlanDraft());
     $('#savePlan')?.addEventListener('click', async () => {
       const p = AV.readPlanForm({ pruneEmptyLevels: true });
-      if (!p.market || !p.why) { AV.toast('Uzupełnij rynek i uzasadnienie planu'); return; }
+      if (!p.market || !p.bias || !p.why || !p.levels.length) { AV.toast('Uzupełnij rynek, kierunek, uzasadnienie i co najmniej jeden poziom'); return; }
       p.approvedAt = Date.now();
       await AV.commitPlan(p, 'Plan zatwierdzony.');
       AV.renderPlan(); AV.renderDashboard(); AV.renderSettings();
@@ -504,7 +504,6 @@
       t.exit = AV.fmt(exit, AV.dec(exit));
       t.result = Math.round(result * 100) / 100;
       t.r = risk ? Math.round(t.result / risk * 100) / 100 : 0;
-      t.mfe = Math.max(Number(t.mfe) || 0, Math.abs(t.r || 0));
       t.durationMin = Math.max(1, Math.round((Date.now() - new Date(t.date)) / 60000));
       t.mentor = t.result >= 0 ? 'Pozycja zamknięta z zyskiem. Sprawdź, czy wyszedłeś zgodnie z planem, a nie z emocji.' : 'Pozycja zamknięta na minusie. Sprawdź, czy SL był ustawiony przed wejściem.';
       AV.saveNow(); AV.closeModal(); $('#tm').classList.remove('on'); AV.renderAll();
@@ -622,7 +621,7 @@
     if (sl && ((($('#ntDir .chip.on')?.dataset.d || 'l') === 'l') ? sl >= entry : sl <= entry)) { AV.toast('Stop loss jest po złej stronie wejścia'); return; }
     if (tp && ((($('#ntDir .chip.on')?.dataset.d || 'l') === 'l') ? tp <= entry : tp >= entry)) { AV.toast('Take profit jest po złej stronie wejścia'); return; }
     const checks = Object.values(AV.ui.ntChecks || {}).filter(Boolean).length;
-    const total = Object.keys(AV.ui.ntChecks || {}).length || 7;
+    const total = Object.keys(AV.ui.ntChecks || {}).length || (s.settings.checklist || []).length || 7;
     const grade = $('.gp.on')?.dataset.g || (checks === total ? 'A' : checks >= Math.ceil(total * 0.7) ? 'B' : 'C');
     const errors = $$('#errChips .chip.err.on').map((c) => c.textContent);
     const emotion = $('#ntEmotion .chip.on')?.textContent || 'Spokój';
@@ -630,30 +629,46 @@
     const note = $('#ntNote').value.trim();
     const plan = s.plans[AV.dateKey(new Date())];
     const risk = sl ? Math.abs(entry - sl) * size : 0;
+    const cap = AV.totalCapital(s);
+    const maxRiskPct = Number(s.settings.maxRisk) || 1;
+    const riskPct = risk && cap > 0 ? risk / cap * 100 : null;
     const payload = {
       pair, dir: $('#ntDir .chip.on')?.dataset.d || 'l',
       entry: AV.fmt(entry, AV.dec(entry)), sl: sl ? AV.fmt(sl, AV.dec(entry)) : 'brak',
       tp: tp ? AV.fmt(tp, AV.dec(entry)) : '—', size: AV.fmt(size, size < 1 ? 4 : 2),
       grade, checklist: checks, checkTotal: total, errors, emotion, setup, note,
+      risk: risk ? Math.round(risk * 100) / 100 : 0,
+      riskPct: riskPct == null ? null : Math.round(riskPct * 100) / 100,
       plan: !!(plan && plan.approvedAt && setup !== 'Bez setupu'),
       mentor: grade === 'A' ? 'Wzorowo: plan, pełna checklista, SL, spokojna głowa. Tak wyglądają Twoje najlepsze transakcje.' : grade === 'B' ? 'Setup z planu, drobne odstępstwa. Trzymaj się checklisty do końca.' : (errors.length ? 'Ocena C i ' + errors.length + ' ' + AV.plural(errors.length, 'błąd', 'błędy', 'błędów') + '. To nie pech, to decyzja. Wróć do planu.' : 'Ocena C: brak setupu albo pośpiech. Odczekaj i wróć z planem.')
     };
-    if (AV.ui.editId) {
-      const t = s.trades.find((x) => x.id === AV.ui.editId);
-      if (t) Object.assign(t, payload, { screens: AV.ui.ntScreens || t.screens || {} });
-      AV.toast('Zmiany zapisane');
-    } else {
-      const now = new Date();
-      const session = now.getHours() < 8 ? 'Azja' : now.getHours() < 13 ? 'Londyn' : now.getHours() < 22 ? 'Nowy Jork' : 'Po godzinach';
-      s.trades.push({
-        id: AV.uid('manual'), date: now.toISOString(), exit: 'otwarta', result: null, r: null,
-        mae: 0.3, mfe: 0.9, durationMin: 0, fee: 0, source: 'Ręcznie', account: s.accounts.find((a) => a.include)?.name || 'Konto główne',
-        session, screens: AV.ui.ntScreens || {}, ...payload
+    const persist = () => {
+      if (AV.ui.editId) {
+        const t = s.trades.find((x) => x.id === AV.ui.editId);
+        if (t) Object.assign(t, payload, { screens: AV.ui.ntScreens || t.screens || {} });
+        AV.toast('Zmiany zapisane');
+      } else {
+        const now = new Date();
+        const session = now.getHours() < 8 ? 'Azja' : now.getHours() < 13 ? 'Londyn' : now.getHours() < 22 ? 'Nowy Jork' : 'Po godzinach';
+        s.trades.push({
+          id: AV.uid('manual'), date: now.toISOString(), exit: 'otwarta', result: null, r: null,
+          mae: null, mfe: null, durationMin: 0, fee: 0, source: 'Ręcznie', account: s.accounts.find((a) => a.include)?.name || 'Konto główne',
+          session, screens: AV.ui.ntScreens || {}, ...payload
+        });
+        AV.toast('Transakcja zapisana');
+      }
+      AV.ui.editId = null; AV.ui.ntScreens = {}; AV.saveNow(); AV.safeDel(AV.draftKey());
+      AV.renderAll(); AV.showView('trans');
+    };
+    if (riskPct != null && riskPct > maxRiskPct + 1e-9) {
+      AV.confirm({
+        title: 'Ryzyko powyżej limitu',
+        text: 'Ta pozycja ryzykuje ' + AV.fmt(risk, 2) + ' ' + AV.curLabel() + ' (' + AV.fmt(riskPct, 2) + '% kapitału), a limit wynosi ' + AV.fmt(maxRiskPct, 2) + '%. Zapisać mimo to?',
+        confirmLabel: 'Zapisz mimo limitu', danger: true, onConfirm: persist
       });
-      AV.toast('Transakcja zapisana' + (AV.lockInfo(s).active ? ' — limit strat osiągnięty' : ''));
+      return;
     }
-    AV.ui.editId = null; AV.ui.ntScreens = {}; AV.saveNow(); AV.safeDel(AV.draftKey());
-    AV.renderAll(); AV.showView('trans');
+    persist();
   };
 
   AV.bindDrops = (root, onChange) => {
@@ -1245,7 +1260,6 @@
         currency: $('#accCurrency').value, start, date: $('#accDate').value.trim() || AV.dateLabel(new Date()),
         lev: $('#accLev').value.trim() || '1×', goal: $('#accGoal').value.trim(), balance: start, include: true, primary: false
       });
-      AV.state.meta.sessions = AV.state.meta.sessions;
       AV.saveNow(); $('#accForm').style.display = 'none';
       ['#accName', '#accStart', '#accDate', '#accLev', '#accGoal'].forEach((x) => $(x).value = '');
       AV.renderAccounts(); AV.renderSettings(); AV.renderDashboard(); AV.toast('Konto dodane');
@@ -1278,10 +1292,6 @@
         if (acc) acc.balance += f.type === 'Wpłata' ? -f.amount : f.amount;
         AV.saveNow(); AV.renderFlows(); AV.renderAccounts(); AV.renderTax(); AV.renderSettings(); AV.toast('Usunięto');
       } });
-    });
-    $('#outAll')?.addEventListener('click', () => {
-      AV.state.meta.sessions = [{ device: 'MacBook · Chrome', place: 'Warszawa', when: 'teraz' }];
-      AV.saveNow(); AV.renderSettings(); AV.toast('Wylogowano inne urządzenia');
     });
     $('#dlAll')?.addEventListener('click', () => AV.downloadAll());
     $('#downloadDataExpired')?.addEventListener('click', () => AV.downloadAll());
@@ -1318,7 +1328,7 @@
     if (k === 'remember') AV.toast(on ? 'Zostaniesz zalogowana na tym urządzeniu' : 'Sesja wygaśnie po zamknięciu karty');
     if (k === 'macroTwo') AV.renderCalendar();
     if (k === 'safetyEnabled') AV.renderLock();
-    if (k === 'requireReason' || k === 'apiCode') AV.toast('Ustawienie zapisane');
+    if (k === 'requireReason') AV.toast('Ustawienie zapisane');
   };
 
   /* ---------- wpłaty ---------- */
