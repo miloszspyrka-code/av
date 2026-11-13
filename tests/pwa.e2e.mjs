@@ -154,6 +154,35 @@ try {
   log('mobile: brak poziomego przewijania', layout.scroll <= layout.width + 1,
     layout.scroll + ' px / ' + layout.width + ' px · ' + layout.trades + ' transakcji · ' + layout.open + ' otwartych');
 
+  const navToggle = await page.evaluate(() => ({
+    visible: !!document.querySelector('#navToggle') && getComputedStyle(document.querySelector('#navToggle')).display !== 'none',
+    aside: document.querySelector('#sideNav') ? getComputedStyle(document.querySelector('#sideNav')).display : 'none'
+  }));
+  log('mobile: menu zamiast poziomej listy', navToggle.visible && navToggle.aside === 'none', JSON.stringify(navToggle));
+  await page.click('#navToggle');
+  const navOpen = await page.evaluate(() => ({
+    open: document.body.classList.contains('nav-open'),
+    aside: getComputedStyle(document.querySelector('#sideNav')).display,
+    width: document.querySelector('#sideNav').getBoundingClientRect().width
+  }));
+  log('mobile: menu otwiera nawigację', navOpen.open && navOpen.aside !== 'none' && navOpen.width <= 330, JSON.stringify(navOpen));
+  await page.click('.navg button[data-v="plan"]');
+  const navClosed = await page.evaluate(() => !document.body.classList.contains('nav-open'));
+  log('mobile: wybór widoku zamyka menu', navClosed);
+
+  const mobileOverflow = await page.evaluate(async () => {
+    const bad = [];
+    for (const view of ['ust', 'nowa', 'akad']) {
+      AV.showView(view);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const el = document.querySelector('#' + view);
+      const max = Math.max(el?.scrollWidth || 0, document.documentElement.scrollWidth);
+      if (max > window.innerWidth + 1) bad.push({ view, max, width: window.innerWidth });
+    }
+    return bad;
+  });
+  log('mobile: konto/nowa/akademia bez przepełnienia', mobileOverflow.length === 0, JSON.stringify(mobileOverflow));
+
   const installLabel = (await page.locator('[data-install]').first().innerText()).trim();
   const notifyLabel = (await page.locator('[data-pwa-notify]').first().innerText()).trim();
   log('przycisk instalacji', /Zainstaluj|Jak zainstalować/.test(installLabel), installLabel);

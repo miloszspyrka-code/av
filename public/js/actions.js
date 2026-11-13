@@ -34,6 +34,8 @@
     $$('.view').forEach((s) => s.classList.toggle('on', s.id === v));
     $$('.navg button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
     $('#mw')?.classList.remove('open');
+    document.body?.classList.remove('nav-open');
+    $('#navToggle')?.setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
     try { history.replaceState(null, '', '#/' + AV.viewSlug(v)); } catch {}
     if (v === 'trans') AV.renderJournal();
@@ -1558,6 +1560,18 @@
 
   /* ---------- wyceny / licznik ---------- */
   AV.bindMisc = () => {
+    const toggle = $('#navToggle');
+    toggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = document.body.classList.toggle('nav-open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', (e) => {
+      if (!document.body.classList.contains('nav-open')) return;
+      if (e.target.closest('#sideNav') || e.target.closest('#navToggle')) return;
+      document.body.classList.remove('nav-open');
+      toggle?.setAttribute('aria-expanded', 'false');
+    });
     $('#qaG') && $$('#qaG div').forEach((d) => d.onclick = () => $$('#qaG div').forEach((x) => x.classList.toggle('on', x === d)));
     $$('#qa .sel').forEach((g) => g.querySelectorAll('.chip').forEach((c) => c.onclick = () => {
       g.querySelectorAll('.chip').forEach((x) => x.classList.remove('on')); c.classList.add('on');
@@ -1567,6 +1581,8 @@
         $$('.modal').forEach((m) => m.classList.remove('on'));
         $('#mw')?.classList.remove('open');
         $('#pro')?.classList.remove('on');
+        document.body.classList.remove('nav-open');
+        $('#navToggle')?.setAttribute('aria-expanded', 'false');
       }
     });
     $('#mwAll')?.addEventListener('click', () => { AV.showView('kal'); $('#mw').classList.remove('open'); });

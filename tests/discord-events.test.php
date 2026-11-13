@@ -48,13 +48,13 @@ $fixture = [
     ],
     [
         'id' => '1002', 'guild_id' => $guild, 'name' => 'Konsultacja 1:1 - Marcin',
-        'description' => 'Konsultacja indywidualna', 'scheduled_start_time' => '2026-11-13T17:00:00+00:00',
+        'description' => 'Konsultacja indywidualna', 'scheduled_start_time' => gmdate('Y-m-d\TH:i:s\Z', time() + 86400),
         'status' => 1, 'entity_type' => 2, 'channel_id' => '112',
         'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true], 'user_count' => 3, 'entity_metadata' => null,
     ],
     [
         'id' => '1003', 'guild_id' => $guild, 'name' => 'Wydarzenie zewnętrzne - Hubert',
-        'description' => 'Spotkanie', 'scheduled_start_time' => '2026-11-16T18:00:00+00:00',
+        'description' => 'Spotkanie', 'scheduled_start_time' => gmdate('Y-m-d\TH:i:s\Z', time() + 3 * 86400),
         'status' => 1, 'entity_type' => 3, 'channel_id' => null,
         'creator' => ['id' => '9', 'username' => 'bot', 'bot' => true], 'user_count' => 3,
         'entity_metadata' => ['location' => 'Discord'],
