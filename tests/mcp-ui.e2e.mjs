@@ -67,6 +67,11 @@ try {
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated && Number(AV.currentUserId) > 0);
   const userId = await page.evaluate(() => Number(AV.currentUserId));
   assert.ok(userId > 0, 'brak userId');
+  await page.evaluate(async () => {
+    clearTimeout(AV._saveTimer);
+    if (AV.api.pushing) await AV.waitForPushIdle();
+    if (AV.api.dirty) await AV.pushStateImmediate();
+  });
   const seeded = seedProposals(userId);
 
   await page.click('.navg button[data-v="mentor"]');
@@ -82,6 +87,10 @@ try {
   log('panel: diff i akcje', true);
 
   await page.click('[data-mcp-decide="approve"][data-id="' + seeded.checkin + '"]');
+  await page.waitForTimeout(1500);
+  if (await page.locator('.mcp-proposal').count() !== 1) {
+    console.log('approve debug:', await page.locator('#mcpPendingError').innerText(), '|', await page.locator('#toast').innerText());
+  }
   await page.waitForFunction(() => document.querySelectorAll('.mcp-proposal').length === 1, null, { timeout: 15000 });
   assert.match(await page.locator('#toast').innerText(), /zatwierdzona/i);
   log('panel: zatwierdzenie check-inu', true);
