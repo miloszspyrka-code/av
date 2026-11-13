@@ -36,6 +36,36 @@ $users = [
     'mcp-e2e-a' => ['name' => 'MCP E2E A', 'state' => $demo],
     'mcp-e2e-b' => ['name' => 'MCP E2E B', 'state' => $demo],
 ];
+$users['mcp-e2e-a']['state']['trades'][] = [
+    'id' => 'ex1',
+    'date' => '2026-11-12T09:00:00.000Z',
+    'pair' => 'BTC/USDT',
+    'dir' => 'l',
+    'entry' => '100',
+    'exit' => '110',
+    'sl' => '90',
+    'tp' => '120',
+    'size' => '1',
+    'result' => 10,
+    'r' => 1,
+    'grade' => 'A',
+    'checklist' => 7,
+    'checkTotal' => 7,
+    'errors' => [],
+    'emotion' => 'Spokój',
+    'note' => 'Import giełdowy E2E',
+    'mentor' => 'Test',
+    'setup' => 'Pullback w trendzie',
+    'session' => 'Londyn',
+    'mae' => 0.1,
+    'mfe' => 1.2,
+    'durationMin' => 60,
+    'fee' => 1,
+    'plan' => true,
+    'source' => 'OKX',
+    'account' => 'WEEX',
+    'screens' => [],
+];
 $users['mcp-e2e-b']['state']['trades'] = [[
     'id' => 'trade-b-only',
     'date' => '2026-11-12T09:00:00.000Z',
@@ -94,6 +124,13 @@ foreach ($users as $discordId => $data) {
         [hash('sha256', $token), $userId, 'mcp-e2e', '127.0.0.1']
     );
     $result[$discordId] = ['userId' => $userId, 'session' => $token];
+    if ($discordId === 'mcp-e2e-a') {
+        $db->execute(
+            'INSERT INTO exchange_imports (user_id, provider, external_id, trade_id) VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE trade_id = VALUES(trade_id)',
+            [$userId, 'okx', 'mcp-e2e-ext-ex1', 'ex1']
+        );
+    }
 }
 
 $target = $root . '/tests/mcp-test-sessions.json';
