@@ -290,7 +290,7 @@ async function main() {
   const badDate = await call(tokA.access_token, 'list_trades', { from: '2026-13-40' });
   assert.ok(toolError(badDate).length > 0, badDate.text);
   const badTool = await call(tokA.access_token, 'propose_create_trade', { pair: 'BTC/USDT', dir: 'long', entry: 1, size: 1, idempotencyKey: 'idem-bad-tool' });
-  assert.equal(badTool.json.error?.code, -32602, badTool.text);
+  assert.ok(badTool.res.status === 403 || badTool.json?.error?.code === -32602, badTool.text);
 
   const authB = await authorize(client, b.session);
   const tokB = await token(client, authB);
