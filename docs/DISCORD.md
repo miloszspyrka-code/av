@@ -23,13 +23,18 @@ Szczegóły przepływu: [DOCUMENTATION.md §4](../DOCUMENTATION.md#4-uwierzyteln
 1. <https://discord.com/developers/applications> → New Application.
 2. OAuth2 → Client ID → `DISCORD_CLIENT_ID`.
 3. OAuth2 → Client Secret → `DISCORD_CLIENT_SECRET`.
-4. OAuth2 → Redirects → dodaj dokładnie:
+4. OAuth2 → Redirects → dodaj dokładnie oba adresy:
 
    ```text
    https://alphavault.pl/auth/discord/callback
+   https://mcp.alphavault.pl/oauth/discord/callback
    ```
 
+   Drugi adres jest wymagany przez logowanie MCP. Bez niego Discord kończy logowanie błędem `invalid redirect_uri`, a `mcp.alphavault.pl` nie może utworzyć sesji.
+
 5. Zapisz.
+
+Stan redirect URI i sekretu klienta sprawdza workflow `Discord OAuth preflight` (`.github/workflows/discord-oauth-preflight.yml`): codziennie o 05:17 UTC i ręcznie przez `workflow_dispatch`. Workflow czyta `GET /applications/@me` i nie wypisuje sekretów. Czerwony run oznacza brak wpisu w Discord Developer Portal albo zły `DISCORD_CLIENT_SECRET`.
 
 Nie dodawaj scope'ów `email`, `guilds`, `messages` ani uprawnień do wysyłania wiadomości.
 
