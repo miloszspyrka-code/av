@@ -129,6 +129,7 @@ try {
 
   // plan: dodaj i usuń poziom, zatwierdź
   await page.click('.navg button[data-v="plan"]');
+  await page.fill('#planWhy', 'E2E: plan dnia na potrzeby testu');
   const beforeLevels = await page.locator('#lvls .lvl').count();
   await page.click('#addLvl');
   const afterAdd = await page.locator('#lvls .lvl').count();
