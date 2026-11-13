@@ -349,6 +349,6 @@ Plik `integrations/mt5/AlphaVault.mq5` kompiluje się w MetaEditorze. Wymaga:
 - Zatwierdzanie w rozmowie wymaga kodu z panelu (`POST /api/mcp/proposals/{id}/approval-code`); po włączeniu zapisu klient musi ponownie przejść OAuth, żeby uzyskać nowy scope.
 - Pilot: `MCP_PILOT_DISCORD_IDS` (CSV) ogranicza zapis do wybranych kont Discord; puste = wszyscy z scope `alphavault.write`. Allowlista jest egzekwowana przy każdym wywołaniu zapisu, nie tylko na ekranie zgody.
 - Workflow sprawdza sekrety, uruchamia `php -l` i `scripts/deploy-mcp.sh`: backup, rsync, migracja, klucze OAuth, health check.
-- `MCP_WRITES_ENABLED=false` jest wymuszone przez skrypt.
+- Domyślnie `MCP_WRITES_ENABLED=false`. Pilot: `-f writes_enabled=true -f pilot_discord_ids=<ID>`; skrypt odrzuca włączenie zapisu bez allowlisty. Po zmianie flagi klient musi ponownie przejść OAuth.
 - Workflow nie dotyka `alphavault.pl` ani WordPressa; environment `alphavault-production`.
 - Diagnostyka: workflow `MCP logs` (`mcp-logs.yml`) wypisuje ostatnie linie `.app/logs/mcp.log` i `php-error.log`; uruchamiaj z `main`.

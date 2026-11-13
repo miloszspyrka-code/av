@@ -303,7 +303,7 @@ gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<br
 
 Workflow używa tych samych sekretów SSH/DB/Discord co `alphavault.pl`, uruchamia `composer install` i `scripts/deploy-mcp.sh`, wykonuje migrację, klucze OAuth, health check i nie dotyka innych domen. Deploy jest poprawny dopiero po zielonym runie, health checku `https://mcp.alphavault.pl/health` i discovery `/.well-known/oauth-protected-resource`.
 
-MCP 2.1: 17 narzędzi odczytu zawsze; 11 narzędzi zapisu (`propose_*`, `approve_proposal`, `reject_proposal`) tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write`. Produkcja pozostaje na `MCP_WRITES_ENABLED=false` do czasu pilotażu. Zatwierdzanie w panelu `https://alphavault.pl` albo w rozmowie jednorazowym kodem z panelu (`POST /api/mcp/proposals/{id}/approval-code`, TTL 10 min, limit 5 prób). Agent nie może zatwierdzić własnej propozycji; `userConfirmed` nie jest dowodem zgody. Po włączeniu zapisu klient musi ponownie przejść OAuth, żeby uzyskać nowy scope.
+MCP 2.1: 17 narzędzi odczytu zawsze; 11 narzędzi zapisu (`propose_*`, `approve_proposal`, `reject_proposal`) tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write`. Produkcja pozostaje na `MCP_WRITES_ENABLED=false` domyślnie; pilot wymaga `writes_enabled=true` i niepustego `pilot_discord_ids` w `deploy-mcp.yml`. Zatwierdzanie w panelu `https://alphavault.pl` albo w rozmowie jednorazowym kodem z panelu (`POST /api/mcp/proposals/{id}/approval-code`, TTL 10 min, limit 5 prób). Agent nie może zatwierdzić własnej propozycji; `userConfirmed` nie jest dowodem zgody. Po włączeniu zapisu klient musi ponownie przejść OAuth, żeby uzyskać nowy scope.
 
 ## 7. Testy i Definition of Done
 

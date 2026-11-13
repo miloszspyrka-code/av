@@ -17,6 +17,16 @@ on:
         required: false
         default: true
         type: boolean
+      writes_enabled:
+        description: "Włącz narzędzia zapisu MCP (wymaga pilot_discord_ids)"
+        required: false
+        default: false
+        type: boolean
+      pilot_discord_ids:
+        description: "Allowlista Discord ID dla zapisu (CSV); wymagana przy writes_enabled=true"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -103,6 +113,18 @@ jobs:
           set -euo pipefail
           find app mcp -name '*.php' -print0 | xargs -0 -n1 php -l
 
+      - name: Validate MCP write pilot settings
+        env:
+          WRITES_ENABLED: ${{ inputs.writes_enabled }}
+          PILOT_IDS: ${{ inputs.pilot_discord_ids }}
+        run: |
+          set -euo pipefail
+          if [ "$WRITES_ENABLED" = "true" ] && [ -z "$PILOT_IDS" ]; then
+            echo "::error::writes_enabled=true wymaga pilot_discord_ids."
+            exit 1
+          fi
+          echo "MCP write settings validated."
+
       - name: Verify deploy script guards
         run: |
           set -euo pipefail
@@ -127,7 +149,8 @@ jobs:
           LH_MCP_DEPLOY_PATH: "~/public_html/mcp.alphavault.pl"
           LH_MCP_APP_PATH: "~/public_html/mcp.alphavault.pl/.app"
           MCP_APP_URL: "https://mcp.alphavault.pl"
-          MCP_WRITES_ENABLED: "false"
+          MCP_WRITES_ENABLED: ${{ inputs.writes_enabled }}
+          MCP_PILOT_DISCORD_IDS: ${{ inputs.pilot_discord_ids }}
           DRY_RUN: ${{ inputs.dry_run }}
           APP_ENV: production
           ALLOW_DEMO_LOGIN: "false"

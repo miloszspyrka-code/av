@@ -374,7 +374,8 @@ CI: `.github/workflows/ci.yml` — krok `MCP security tests`, `MCP prop parity`,
 - `alphavault.pl`: `deploy-alphavault.yml` (public + app + db, bez `vendor/`).
 - `mcp.alphavault.pl`: `Deploy AlphaVault MCP` → `scripts/deploy-mcp.sh`, ref `main`.
 - Deploy MCP nie dotyka `alphavault.pl` ani WordPressa.
-- `MCP_WRITES_ENABLED=false` jest wymuszane przez skrypt deployu w fazie 1.
+- Domyślnie `MCP_WRITES_ENABLED=false`. Pilot wymaga jednocześnie `writes_enabled=true` i niepustego
+  `pilot_discord_ids`; skrypt deployu odrzuca włączenie zapisu bez allowlisty.
 - Migracja `db/migrations/20261115_mcp_approval.sql` dodaje `diff_hash`, kolumny kodu i decyzji.
 - Rollback: `MCP_ENABLED=false`, unieważnienie tokenów, restore `.app` z backupu.
 - Włączenie zapisu dla pilota: `MCP_WRITES_ENABLED=true` + ponowne połączenie klienta MCP, żeby

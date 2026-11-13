@@ -30,12 +30,15 @@ done
 LH_SSH_PORT="${LH_SSH_PORT:-40022}"
 DRY_RUN="${DRY_RUN:-false}"
 MCP_WRITES_ENABLED="${MCP_WRITES_ENABLED:-false}"
+MCP_PILOT_DISCORD_IDS="${MCP_PILOT_DISCORD_IDS:-}"
 APP_ENV="${APP_ENV:-production}"
 ALLOW_DEMO_LOGIN="${ALLOW_DEMO_LOGIN:-false}"
 MAX_STATE_BYTES="${MAX_STATE_BYTES:-12582912}"
 
 [ "$MCP_APP_URL" = "https://mcp.alphavault.pl" ] || fail "MCP_APP_URL must be exactly https://mcp.alphavault.pl."
-[ "$DRY_RUN" = "true" ] || [ "$MCP_WRITES_ENABLED" = "false" ] || fail "MCP_WRITES_ENABLED must stay false for phase 1 deployment."
+if [ "$DRY_RUN" != "true" ] && [ "$MCP_WRITES_ENABLED" != "false" ] && [ -z "$MCP_PILOT_DISCORD_IDS" ]; then
+  fail "MCP_WRITES_ENABLED=true wymaga MCP_PILOT_DISCORD_IDS (pilot)."
+fi
 
 if [ ! -f vendor/autoload.php ]; then
   command -v composer >/dev/null 2>&1 || fail "Brak vendor/ i Composer. Uruchom composer install przed deployem."
