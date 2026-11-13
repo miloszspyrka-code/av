@@ -251,8 +251,21 @@ async function runUiChecks() {
       assert.equal((await page.locator('#metricSleep').innerText()).trim(), '5 h 12 min');
       assert.equal((await page.locator('#metricHrv').innerText()).trim(), '38 ms');
       assert.equal((await page.locator('#metricHr').innerText()).trim(), '61');
-      assert.equal(await page.locator('#sleepCard').isVisible(), true);
-      log('UI: połączenie i metryki · ' + provider, true, 'gotowość=' + expected);
+      const chartBuckets = await page.evaluate(() => {
+        const series = window.AV.api.wearables?.series || [];
+        const sleepByDate = {};
+        series.forEach((d) => { if (d.sleepMinutes != null) sleepByDate[d.date] = Number(d.sleepMinutes); });
+        const buckets = new Set();
+        window.AV.closedTrades(window.AV.state).forEach((t) => {
+          const key = window.AV.dateKey(new Date(t.date));
+          const sleep = sleepByDate[key];
+          if (sleep == null) return;
+          buckets.add(sleep < 360 ? 'a' : sleep < 420 ? 'b' : sleep < 480 ? 'c' : 'd');
+        });
+        return buckets.size;
+      });
+      assert.equal(await page.locator('#sleepCard').isVisible(), chartBuckets >= 2);
+      log('UI: połączenie i metryki · ' + provider, true, 'gotowość=' + expected + ' koszyki=' + chartBuckets);
     };
 
     const uiDisconnect = async (provider) => {

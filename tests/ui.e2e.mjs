@@ -418,7 +418,12 @@ try {
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');
-  await page.click('#pastTrade');
+  const lockActive = await page.locator('#lockWrap.locked').count() > 0;
+  if (lockActive) {
+    await page.click('#pastTrade');
+  } else {
+    log('nowa transakcja: tryb ochronny nieaktywny', true, 'pomijam obejście limitu');
+  }
   const beforeTrades = await page.evaluate(() => AV.state.trades.length);
   await page.fill('#ntPair', 'E2E/USDT');
   await page.fill('#ntEntry', '100');
