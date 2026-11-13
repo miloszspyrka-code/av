@@ -40,7 +40,6 @@ final class ProposalService
         if (!in_array($kind, self::KINDS, true)) {
             throw new ProposalException('bad_request', 'Nieznany typ propozycji.', 400);
         }
-        error_log('[mcp-idem-create] kind=' . $kind . ' target=' . $targetRef . ' fp=' . var_export($fingerprint, true) . ' hash=' . $payloadHash);
         $payloadHash = hash('sha256', $this->canonicalJson([
             'kind' => $kind,
             'target' => $targetRef,
@@ -48,7 +47,7 @@ final class ProposalService
         ]));
 
         $existing = $this->db->queryOne(
-            'SELECT id, status, expires_at, payload_hash, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
+            'SELECT id, kind, target_ref, status, expires_at, payload_hash, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
             [$userId, $key]
         );
         if ($existing !== null) {
@@ -83,7 +82,7 @@ final class ProposalService
         } catch (\PDOException $err) {
             if ((string) $err->getCode() === '23000') {
                 $row = $this->db->queryOne(
-                    'SELECT id, status, expires_at, payload_hash, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
+                    'SELECT id, kind, target_ref, status, expires_at, payload_hash, after_json FROM mcp_proposals WHERE user_id = ? AND idempotency_key = ?',
                     [$userId, $key]
                 );
                 if ($row !== null) {
@@ -516,7 +515,6 @@ final class ProposalService
     private function duplicateOrConflict(array $row, array $after, ?string $fingerprint = null): array
     {
         $storedHash = $row['payload_hash'] !== null ? (string) $row['payload_hash'] : '';
-        error_log('[mcp-idem-row] kind=' . (string) ($row['kind'] ?? '') . ' target=' . (string) ($row['target_ref'] ?? '') . ' stored=' . $storedHash);
         if ($storedHash !== '') {
             $incomingHash = hash('sha256', $this->canonicalJson([
                 'kind' => (string) ($row['kind'] ?? ''),
@@ -531,7 +529,6 @@ final class ProposalService
                 === $this->canonicalJson($this->payloadForHash($after));
         }
         if (!$matches) {
-            error_log('[mcp-idem-debug] stored=' . $storedHash . ' incoming=' . ($incomingHash ?? 'legacy') . ' fp=' . var_export($fingerprint, true));
             throw new ProposalException(
                 'idempotency_conflict',
                 'Ten sam idempotencyKey użyto z inną treścią. Użyj nowego klucza.',
