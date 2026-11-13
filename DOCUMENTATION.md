@@ -637,6 +637,7 @@ Zasady:
 ### 11.7. PWA i powiadomienia
 
 - `manifest.webmanifest` + ikony + meta iOS czynią panel instalowalnym bez App Store.
+- Na ekranach do 900 px boczna nawigacja jest schowana za przyciskiem „☰ Menu”; wybór widoku zamyka panel. Inline `grid-template-columns` są zastępowane jedną kolumną, a `min-width:0` zapobiega przepełnieniu konta, nowej transakcji i Akademii.
 - `pwa.js` rejestruje `/sw.js`, obsługuje `beforeinstallprompt`, `appinstalled` i przyciski `[data-install]`, `[data-pwa-notify]`.
 - `sw.js` cache'uje powłokę (HTML/JS/ikony), ale **nie** cache'uje `/api/` ani `/auth/`; nawigacja jest network-first z fallbackiem offline.
 - `AV.pwa.notify()` używa `registration.showNotification()` (iOS/Android) albo `Notification` w przeglądarce; `notifyTradeClosed()` wysyła deep link `/?qa=<tradeId>`.
