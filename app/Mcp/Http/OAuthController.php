@@ -153,6 +153,7 @@ final class OAuthController
             }
 
             [$consentId, $csrf, $scopes] = $this->createConsent($authRequest, $resource, $session);
+            $consentToken = $this->consentToken($authRequest, $resource, $session);
             $this->renderConsent(
                 $consentId,
                 $csrf,
