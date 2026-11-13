@@ -165,6 +165,7 @@ Publiczny. Zawsze `200`, także bez sesji.
     "avatarUrl": "https://cdn.discordapp.com/avatars/...",
     "email": null,
     "isDemo": false,
+    "joinedAt": "2026-03-01 08:12:00",
     "subscription": {
       "plan": "full",
       "accessUntil": "2026-12-03",

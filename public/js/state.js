@@ -129,7 +129,8 @@
   };
   AV.normalizeServer = (raw, opts = {}) => {
     const legacyTax = Number(raw?.tax?.version || 0) < AV.TAX_VERSION;
-    return AV.normalize(raw, AV.buildEmpty(), { migrateDemoSeed: !opts.isDemo && legacyTax });
+    const state = AV.normalize(raw, AV.buildEmpty(), { migrateDemoSeed: !opts.isDemo && legacyTax });
+    return opts.isDemo ? state : AV.cleanLegacyDemoSeed(state);
   };
 
   AV.load = () => {
@@ -167,11 +168,48 @@
     }];
     s.setups = [];
     s.prop = { challenges: [], selectedId: null };
-    s.meta.consultation = null;
-    s.meta.consultationUsed = 0;
+    s.health = null;
     s.user.name = 'Trader';
     s.user.email = '';
-    s.subscription.expired = false;
+    s.user.joined = null;
+    s.user.goal = '';
+    s.user.markets = [];
+    s.user.avatar = null;
+    s.subscription = { plan: 'solo', until: null, expired: false, role: '', renewedAt: null };
+    s.meta = {
+      streakBase: 0,
+      notified: {},
+      liveReminder: false,
+      consultation: null,
+      consultationUsed: 0,
+      courseProgress: 0,
+      sessions: [],
+      createdAt: Date.now()
+    };
+    s.settings.connections = {
+      weex: { connected: false },
+      okx: { connected: false },
+      bingx: { connected: false },
+      mt: { connected: false, server: '', login: '', masked: '', code: '', codeAt: null }
+    };
+    return s;
+  };
+
+  AV.cleanLegacyDemoSeed = (s) => {
+    if (!s || !s.meta) return s;
+    const demoIdentity = !!(s.user && (s.user.joined === '2026-03-01' || s.user.email === 'kasia@example.com'));
+    if (s.user && s.user.joined === '2026-03-01') s.user.joined = null;
+    if (s.user && s.user.email === 'kasia@example.com') s.user.email = '';
+    if (demoIdentity && s.user.name === 'Kasia') s.user.name = 'Trader';
+    if (demoIdentity && s.user.goal === '+6% bez łamania zasad') s.user.goal = '';
+    if (s.meta.courseProgress === 64) s.meta.courseProgress = 0;
+    if (s.meta.streakBase === 12) s.meta.streakBase = 0;
+    if (Array.isArray(s.meta.sessions) && s.meta.sessions.some((x) => x && x.device === 'MacBook · Chrome')) s.meta.sessions = [];
+    const c = s.settings && s.settings.connections;
+    if (c && c.weex && c.weex.masked === 'wx_live_••••7f2a') {
+      c.weex = { connected: false };
+    }
+    if (s.subscription && s.subscription.until === '2026-12-03') s.subscription.until = null;
     return s;
   };
 
@@ -253,6 +291,7 @@
       u.name = name === 'Kasia (demo)' ? 'Kasia' : (name || u.name);
     }
     if (!u.email) u.email = user.email || '';
+    if (user.joinedAt) u.joined = user.joinedAt;
     u.discordId = user.id || null;
     u.discordAvatar = user.avatarUrl || null;
     u.isDemo = !!user.isDemo;
@@ -859,7 +898,7 @@
     const full = trades.filter((t) => t.checklist >= (t.checkTotal || 7));
     const part = trades.filter((t) => t.checklist < (t.checkTotal || 7));
     const slTrades = trades.filter((t) => t.sl && t.sl !== 'brak');
-    const planTrades = trades.filter((t) => t.plan);
+    const planTrades = trades.filter((t) => AV.tradePlanMatch(state, t));
     const errMap = {};
     trades.forEach((t) => {
       (t.errors || []).forEach((e) => {
@@ -1056,7 +1095,7 @@
     const todayKey = AV.dateKey(new Date());
     const todayPlan = (state.plans || {})[todayKey];
     const todayPlanTrades = today.arr;
-    const planOK = todayPlan ? todayPlanTrades.filter((t) => t.plan).length : 0;
+    const planOK = todayPlan ? todayPlanTrades.filter((t) => AV.tradePlanMatch(state, t)).length : 0;
     const afterLoss = [];
     closed.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((t, i, arr) => {
       if (i === 0) return;
@@ -1216,7 +1255,7 @@
       if (!planDays.includes(k)) return false;
       return closed
         .filter((t) => badgeDay(t) === k)
-        .every((t) => t.grade !== 'C' && t.plan !== false && !(t.errors || []).some((e) => breakErrors.includes(e)));
+        .every((t) => t.grade !== 'C' && AV.tradePlanMatch(s, t) && !(t.errors || []).some((e) => breakErrors.includes(e)));
     };
     const bestCleanWeek = badgeBestFlagged(activeDays, planDayClean);
     const firstCleanWeek = badgeFirstFlagged(activeDays, planDayClean, 5);
@@ -1304,6 +1343,20 @@
     risk: '', maxTrades: '', until: '', notDo: '',
     approvedAt: null
   });
+  AV.planMatchesTrade = (plan, pair, dir) => {
+    if (!plan || !plan.approvedAt) return false;
+    const market = String(plan.market || '').toUpperCase();
+    const base = String(pair || '').toUpperCase().split('/')[0];
+    if (!market || !base || market !== base) return false;
+    if (plan.bias === 'long') return dir === 'l';
+    if (plan.bias === 'short') return dir === 's';
+    return false;
+  };
+  AV.tradePlanMatch = (state, trade) => {
+    if (!trade) return false;
+    const plan = (state.plans || {})[AV.dateKey(new Date(trade.date))];
+    return AV.planMatchesTrade(plan, trade.pair, trade.dir);
+  };
   AV.planAdherence = (state) => {
     const days = [];
     let approved = 0;

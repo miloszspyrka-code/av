@@ -59,11 +59,15 @@ const QUOTE_STUB = {
   updatedAt: '2026-11-12T12:00:00Z',
   stale: false
 };
-await context.route('**/api/quotes**', (route) => route.fulfill({
-  status: 200,
-  contentType: 'application/json; charset=utf-8',
-  body: JSON.stringify(QUOTE_STUB)
-}));
+let quoteRequests = 0;
+await context.route('**/api/quotes**', (route) => {
+  quoteRequests++;
+  return route.fulfill({
+    status: 200,
+    contentType: 'application/json; charset=utf-8',
+    body: JSON.stringify(QUOTE_STUB)
+  });
+});
 
 try {
   await page.goto('/', { waitUntil: 'load' });
@@ -78,6 +82,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#auth')?.classList.contains('hide'), null, { timeout: 15000 });
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated);
   log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + sesja');
+  log('start: jedno zapytanie o notowania', quoteRequests <= 1, quoteRequests + ' requestów');
 
   // linki prawne w modalu Akademii oraz na ekranach wygaśnięcia i braku roli
   await page.evaluate(() => document.querySelector('[data-doc="ak"]').click());
@@ -135,6 +140,17 @@ try {
   }
   log('nawigacja wszystkich widoków', true, views.length + ' widoków');
 
+  const aliases = await page.evaluate(() => {
+    const out = {};
+    ['plan3', 'dziennik3', 'playbook3', 'akad3', 'stat3'].forEach((slug) => {
+      location.hash = '#/' + slug;
+      out[slug] = AV.viewFromHash();
+    });
+    location.hash = '#/pulpit';
+    return out;
+  });
+  log('stare trasy *3 działają', aliases.plan3 === 'plan' && aliases.dziennik3 === 'trans' && aliases.playbook3 === 'play' && aliases.akad3 === 'akad' && aliases.stat3 === 'stat', JSON.stringify(aliases));
+
   // zaufanie: brak deklaracji 2FA/sesji/kodu API, uczciwe copy integracji
   await page.click('.navg button[data-v="ust"]');
   const trust = await page.evaluate(() => {
@@ -156,8 +172,9 @@ try {
   const journalCopy = await page.evaluate(() => document.querySelector('#trans')?.innerText || '');
   log('dziennik: import do 25 minut', journalCopy.includes('do 25 minut') && !journalCopy.includes('co 30 minut'), 'ok');
   await page.click('.navg button[data-v="mentor"]');
+  await page.waitForTimeout(300);
   const mentorCopy = await page.evaluate(() => document.querySelector('#mentor')?.innerText || '');
-  log('MCP: tylko odczyt bez fałszywego statusu', mentorCopy.includes('MCP · TYLKO ODCZYT') && !mentorCopy.includes('SERWER MCP GOTOWY'), 'ok');
+  log('MCP: status z API bez fałszywego live', /MCP · (TYLKO ODCZYT|ZAPIS|WYŁĄCZONY|STATUS NIEDOSTĘPNY)/.test(mentorCopy) && !mentorCopy.includes('SERWER MCP GOTOWY'), 'ok');
 
   // statystyki: zero transakcji nie może pokazywać fikcyjnych liczb
   const emptyStats = await page.evaluate(() => {
@@ -177,6 +194,24 @@ try {
     return out;
   });
   log('statystyki: puste dane bez fikcji', emptyStats.pf === '—' && emptyStats.wr === '—' && emptyStats.plan === '—' && emptyStats.fees === '0,00' && emptyStats.checklist.includes('Brak danych') && !emptyStats.checklist.includes('7/7') && !emptyStats.insight.includes('Tak trzymaj'), JSON.stringify(emptyStats));
+
+  const fresh = await page.evaluate(() => {
+    const s = AV.buildEmpty();
+    const p = { approvedAt: 1, market: 'ETH', bias: 'short' };
+    return {
+      match: AV.planMatchesTrade(p, 'ETH/USDT', 's'),
+      wrongPair: AV.planMatchesTrade(p, 'BTC/USDT', 's'),
+      wrongDir: AV.planMatchesTrade(p, 'ETH/USDT', 'l'),
+      draft: AV.planMatchesTrade({ ...p, approvedAt: null }, 'ETH/USDT', 's'),
+      joined: s.user.joined,
+      progress: s.meta.courseProgress,
+      sessions: s.meta.sessions.length,
+      weex: s.settings.connections.weex.connected,
+      plan: s.subscription.plan
+    };
+  });
+  log('plan: zgodność po parze i kierunku', fresh.match && !fresh.wrongPair && !fresh.wrongDir && !fresh.draft, JSON.stringify(fresh));
+  log('świeże konto: bez demo-seedu', fresh.joined === null && fresh.progress === 0 && fresh.sessions === 0 && fresh.weex === false, JSON.stringify(fresh));
 
   // Mentor AI: integracje MCP
   await page.click('.navg button[data-v="mentor"]');
@@ -229,6 +264,14 @@ try {
   });
   log('plan dnia: chipy rynku i biasu', chips.market === 'ETH' && chips.bias === 'short', JSON.stringify(chips));
   log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved.ok && approved.levels >= 1, JSON.stringify(approved));
+  const navBadges = await page.evaluate(() => {
+    const p = document.querySelector('.navg button[data-v="plan"] .badge');
+    const a = document.querySelector('.navg button[data-v="akad"] .badge');
+    const live = AV.liveInfo ? AV.liveInfo().liveNow : false;
+    return { plan: p?.textContent.trim(), planVisible: p ? getComputedStyle(p).display !== 'none' : false, acad: a?.textContent.trim(), acadVisible: a ? getComputedStyle(a).display !== 'none' : false, live };
+  });
+  log('badge planu zależy od zatwierdzenia', navBadges.plan === '✓' && navBadges.planVisible, JSON.stringify(navBadges));
+  log('badge LIVE tylko podczas live', navBadges.acadVisible === navBadges.live && (navBadges.live ? navBadges.acad === 'LIVE' : navBadges.acad === ''), JSON.stringify(navBadges));
 
   // trwałość: przeładowanie czyta plan z MySQL
   await page.reload({ waitUntil: 'load' });
@@ -473,6 +516,26 @@ try {
   assert.match(liveHrefAgain || '', /^https:\/\/discord\.com\/events\/\d{17,20}\/\d{17,20}$/);
   log('akademia: link wydarzenia Discord', true, liveHrefAgain);
 
+  const recording = await page.evaluate(() => {
+    AV.openRecording('Test nagrania');
+    const modal = document.querySelector('.modal.on');
+    const out = { text: modal?.innerText || '', discord: !!modal?.querySelector('a[href^="https://discord.com"]') };
+    AV.closeModal();
+    return out;
+  });
+  log('nagrania: link do Discorda bez fałszywego playera', recording.discord && !recording.text.includes('Odtwarzanie w wersji produkcyjnej'), JSON.stringify(recording).slice(0, 160));
+
+  const emptyJournal = await page.evaluate(() => {
+    const backup = AV.state.trades;
+    AV.state.trades = [];
+    AV.renderJournal();
+    const text = document.querySelector('#jEmpty')?.textContent || '';
+    AV.state.trades = backup;
+    AV.renderJournal();
+    return text;
+  });
+  log('dziennik: pusty stan bez filtrów', emptyJournal.includes('Brak transakcji') && !emptyJournal.includes('spełniających filtry'), emptyJournal);
+
   // kalendarz
   await page.click('.navg button[data-v="kal"]');
   const ev0 = await page.locator('#evFull .ev').count();
@@ -592,10 +655,10 @@ try {
     const base = () => ({ accounts: [{ name: 'A', include: true }], trades: [], plans: {}, checkins: [] });
     const iso = (offset) => new Date(AV.addDays(new Date(), offset)).toISOString();
     const key = (offset) => AV.dateKey(AV.addDays(new Date(), offset));
-    const trade = (offset, extra = {}) => ({ date: iso(offset), result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
+    const trade = (offset, extra = {}) => ({ date: iso(offset), pair: 'BTC/USDT', dir: 'l', result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
     const plan = (state, offset, approved = true) => {
       const k = key(offset);
-      state.plans[k] = { date: k, approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
+      state.plans[k] = { date: k, market: 'BTC', bias: 'long', approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
     };
     const badge = (state, index) => AV.badges(state)[index];
     const out = {};

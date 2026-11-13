@@ -29,7 +29,8 @@
     AV.setText('#sideName', u.name);
     AV.setText('#profileName', u.name);
     AV.setText('#profileEmail', u.email || '—');
-    AV.setText('#profileMeta', 'Trader Alpha od ' + (u.joined ? new Date(u.joined).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }) : '—') + ' · ' + AV.streak(s) + ' dni');
+    const joined = u.joined ? new Date(String(u.joined).replace(' ', 'T')) : null;
+    AV.setText('#profileMeta', (joined && !Number.isNaN(joined.getTime()) ? 'Trader Alpha od ' + joined.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }) + ' · ' : '') + AV.streak(s) + ' dni');
     AV.setText('#goalTxt', u.goal || '—');
     AV.setText('#streakBadge', AV.streak(s) + ' dni');
     const market = (u.markets && u.markets[0]) || '';
@@ -41,7 +42,7 @@
     AV.setText('#planName', (s.subscription.plan === 'full' ? 'Akademia Alpha + Vault · 168 $ / mies.' : 'Alpha Vault · 49 $ / mies.'));
     AV.setText('#planValidUntil', planUntil);
     AV.show('#planUntilRow', Boolean(planUntil));
-    AV.setText('#planRole', (u.email || 'kasia.trades') + ' · rola ' + (s.subscription.role || 'Alpha') + ' ✓');
+    AV.setText('#planRole', (u.email || AV.api.me?.username || AV.api.me?.globalName || '—') + ' · rola ' + (s.subscription.role || '—') + (s.subscription.role ? ' ✓' : ''));
     AV.setText('#roleCheck', 'dziś, ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
 
     const big = AV.$('#pulpit .head h1 .serif');
@@ -63,6 +64,25 @@
     AV.setText('#courseTxt', (s.meta.courseProgress || 0) + '% ukończone');
     AV.$('#courseBar').style.width = (s.meta.courseProgress || 0) + '%';
     AV.setText('#consultTop', AV.shortConsult(s));
+  };
+
+  AV.renderNavBadges = () => {
+    const s = AV.state;
+    const plan = (s.plans || {})[AV.dateKey(new Date())];
+    const planBadge = $('.navg button[data-v="plan"] .badge');
+    if (planBadge) {
+      const approved = !!(plan && plan.approvedAt);
+      planBadge.textContent = approved ? '✓' : '';
+      planBadge.className = 'badge g';
+      planBadge.style.display = approved ? '' : 'none';
+    }
+    const acadBadge = $('.navg button[data-v="akad"] .badge');
+    if (acadBadge) {
+      const live = AV.liveInfo ? AV.liveInfo().liveNow : false;
+      acadBadge.textContent = live ? 'LIVE' : '';
+      acadBadge.className = 'badge';
+      acadBadge.style.display = live ? '' : 'none';
+    }
   };
 
   AV.shortConsult = (s) => {
@@ -137,7 +157,8 @@
       '<div style="font-weight:800;font-size:18px;margin-top:2px">' + AV.esc(plan.market || '—') + ' · <span class="' + (plan.bias === 'short' ? 'loss' : plan.bias === 'none' ? 'dim' : 'win') + '">' + AV.esc(plan.bias || 'brak') + '</span></div>' +
       '<div class="mono dim" style="font-size:12px;margin-top:8px">' + (res ? AV.esc(res.price) + ' opór' : '—') + ' · ' + (sup ? AV.esc(sup.price) + ' wsparcie' : '—') + '</div>');
     AV.setText('#dashPlanTag', plan.approvedAt ? new Date(plan.approvedAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : 'szkic');
-    AV.setText('#dashAdherence', today.arr.filter((t) => t.plan).length + ' z ' + today.arr.length);
+    const todayPlan = (s.plans || {})[AV.dateKey(new Date())];
+    AV.setText('#dashAdherence', todayPlan && todayPlan.approvedAt && today.arr.length ? today.arr.filter((t) => AV.tradePlanMatch(s, t)).length + ' z ' + today.arr.length : '—');
 
     AV.setText('#dash30', (stats.net >= 0 ? '+' : '−') + AV.fmt(Math.abs(stats.net / (AV.startCapital(s) || 2000) * 100), 1) + '%');
     AV.setText('#dashResult', AV.dispMoney(stats.net, 2));
@@ -208,6 +229,7 @@
     AV.renderPlanSide();
     AV.renderPlanHistory();
     AV.renderAdherence();
+    if (AV.renderNavBadges) AV.renderNavBadges();
   };
 
   AV.levelRow = (l = {}) => '<div class="lvl"><select class="input"><option' + (l.type === 'Opór' ? ' selected' : '') + '>Opór</option><option' + (l.type === 'Wsparcie' ? ' selected' : '') + '>Wsparcie</option></select><input class="input mono" value="' + AV.attr(l.price || '') + '" placeholder="cena"><input class="input" value="' + AV.attr(l.note || '') + '" placeholder="opis"><span class="x">✕</span></div>';
@@ -306,6 +328,10 @@
         '<td class="mono ' + (t.result > 0 ? 'win' : t.result < 0 ? 'loss' : '') + '" style="text-align:right;font-weight:800">' + (open ? '–' : AV.signed(t.result, 2, '')) + '</td></tr>';
     }).join(''));
     AV.show('#jEmpty', !arr.length);
+    if (!arr.length) {
+      const empty = $('#jEmpty');
+      if (empty) empty.textContent = AV.includedTrades(AV.state).length ? 'Brak transakcji spełniających filtry.' : 'Brak transakcji. Dodaj pierwszą w „Nowa transakcja” albo zaimportuj CSV.';
+    }
     AV.$$('#fRes button').forEach((b) => b.classList.toggle('on', b.dataset.f === AV.ui.jFilter));
     AV.$$('#fGrade button').forEach((b) => b.classList.toggle('on', b.dataset.f === AV.ui.jGrade));
     const count = $('.navg button[data-v="trans"] .badge');
@@ -443,7 +469,7 @@
       '<span class="label">Ocena jakości</span><div class="chips sel" id="suGrade"><span class="chip ' + (!x || x.grade === 'A' ? 'on' : '') + '" data-g="A">A</span><span class="chip ' + (x?.grade === 'B' ? 'on' : '') + '" data-g="B">B</span><span class="chip ' + (x?.grade === 'C' ? 'on' : '') + '" data-g="C">C</span></div>' +
       '<span class="label">3 zasady wejścia</span>' +
       [0, 1, 2].map((i) => '<input class="input" id="suRule' + i + '" value="' + AV.attr(x?.rules?.[i] || '') + '" placeholder="Zasada ' + (i + 1) + '" style="margin-bottom:8px">').join('') +
-      '<label class="check" style="margin-top:10px"><span class="box" id="suBadBox"></span><span>Oznacz jako setup, którego nie powinnaś grać</span></label>' +
+      '<label class="check" style="margin-top:10px"><span class="box" id="suBadBox"></span><span>Oznacz jako setup, którego nie grasz</span></label>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn g" data-gclose>Anuluj</button><button class="btn p" id="suSave">Zapisz setup</button></div>', { maxWidth: '620px' });
     let bad = !!x?.bad;
     const box = $('#suBadBox', body);
@@ -612,8 +638,7 @@
     AV.show('#akUp', solo);
     AV.show('#akFull', !solo);
     $$('.strip').forEach((e) => e.style.display = solo ? 'none' : 'flex');
-    const nb = $('.navg button[data-v="akad"] .badge');
-    if (nb) { nb.innerHTML = solo ? AV.ic('lock') : 'LIVE'; nb.className = solo ? 'badge g lk' : 'badge'; }
+    if (AV.renderNavBadges) AV.renderNavBadges();
     AV.renderUser();
     if (!silent) AV.toast(solo ? 'Podgląd: plan Alpha Vault bez Akademii' : 'Plan Akademia Alpha + Vault');
   };

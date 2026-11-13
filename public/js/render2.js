@@ -549,10 +549,9 @@
     AV.show('#akUp', s.subscription.plan === 'solo');
     AV.show('#akFull', s.subscription.plan !== 'solo');
     $$('.strip').forEach((e) => e.style.display = s.subscription.plan === 'solo' ? 'none' : 'flex');
-    const nb = $('.navg button[data-v="akad"] .badge');
-    if (nb) { nb.innerHTML = s.subscription.plan === 'solo' ? AV.ic('lock') : 'LIVE'; nb.className = s.subscription.plan === 'solo' ? 'badge g lk' : 'badge'; }
     const mb = $('.navg button[data-v="mentor"] .badge');
     if (mb) { mb.textContent = '3'; }
+    if (AV.renderNavBadges) AV.renderNavBadges();
   };
 
   /* ---------- podatki ---------- */
@@ -706,6 +705,7 @@
     }
 
     const r = AV.readiness(s);
+    AV.show('#bodyReadyCard', r.score != null);
     AV.setText('#bodyReady', r.score == null ? '' : String(r.score));
     AV.setText('#bodyReadyTitle', r.title || '');
     AV.setText('#bodyReadyDesc', r.desc || '');
@@ -1164,6 +1164,7 @@
   AV.renderAll = () => {
     if (!AV.state) return;
     AV.renderUser();
+    if (AV.renderNavBadges) AV.renderNavBadges();
     AV.renderLock();
     AV.renderDashboard();
     if (AV.renderProp) AV.renderProp();

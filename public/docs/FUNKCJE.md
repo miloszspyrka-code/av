@@ -57,7 +57,8 @@ Legenda:
 | Scenariusze główny/awaryjny | ✅ | |
 | Limity (ryzyko, max transakcji, godzina) | ✅ | wpływają na pulpit |
 | „Czego dziś nie robię” | ✅ | |
-| Zatwierdzenie planu | ✅ | timestamp, widoczny na pulpicie; potwierdzenie zapisu w MySQL |
+| Zatwierdzenie planu | ✅ | wymaga rynku, kierunku, uzasadnienia i co najmniej jednego poziomu; timestamp i potwierdzenie zapisu w MySQL |
+| Zgodność transakcji z planem | ✅ | liczona po dacie, parze i kierunku (`planMatchesTrade`); sam setup nie wystarcza |
 | Kopiuj z wczoraj | ✅ | natychmiastowy zapis w MySQL |
 | Autosave szkicu | ✅ | debounce 700 ms; błąd zapisu pokazany toastem |
 | Trwały zapis w MySQL | ✅ | `user_states.state.plans[YYYY-MM-DD]`; przeładowanie odtwarza plan z bazy |
@@ -77,6 +78,7 @@ Legenda:
 | Szczegóły transakcji | ✅ | wykres, MAE/MFE, checklist, notatka, mentor |
 | Screeny przed/po | ✅ | upload, drag&drop, Ctrl+V; JPEG w stanie |
 | Dodanie transakcji | ✅ | formularz startuje pusty; walidacja kierunku SL/TP; ryzyko = \|entry − SL\| × size; ostrzeżenie przy przekroczeniu limitu |
+| Pusty dziennik | ✅ | komunikat „Brak transakcji” bez filtrów; „Brak transakcji spełniających filtry” tylko przy aktywnym filtrze |
 | Edycja transakcji | ✅ | formularz wypełniony danymi |
 | Usunięcie transakcji | ✅ | potwierdzenie |
 | Zamknięcie otwartej pozycji | ✅ | cena wyjścia lub wynik ręczny, R, czas trwania; MAE/MFE tylko z importu |
@@ -145,7 +147,7 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Jak to działa | ✅ | przepływ Alpha Vault → Serwer MCP → Asystent AI |
 | Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji; Claude przez `https://claude.ai/api/mcp/auth_callback` |
 | Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
-| Status serwera MCP | ✅ | pill „MCP · TYLKO ODCZYT” w produkcji (`MCP_WRITES_ENABLED=false`) |
+| Status serwera MCP | ✅ | pill z `/api/mcp`: `MCP · TYLKO ODCZYT`, `MCP · ZAPIS` albo `MCP · WYŁĄCZONY` |
 | Oczekujące propozycje | ✅ | lista zmian od agenta z diffem, przyciskami Zatwierdź/Odrzuć i statusem po decyzji |
 | Zakres MCP 2.0 | ✅/— | 15 narzędzi odczytu zawsze; 7 narzędzi `propose_*` tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write` |
 | Zakres danych MCP | ✅ | tylko odczyt: profil, plan, transakcje, statystyki, check-iny, playbook, wydarzenia, makro; bez kluczy API, haseł inwestora i danych zdrowotnych |
@@ -190,7 +192,7 @@ Limity liczone są z **zamkniętych** transakcji. Silnik nie zna ruchów śródd
 | Błąd synchronizacji | ✅ | ostatni dobry zestaw pozostaje; UI pokazuje stan „błąd synchronizacji” |
 | Rezerwacja konsultacji | ✅ | niezależna od synchronizacji, zapis w stanie |
 | Dołącz / przypomnienie | ✅ | link do `https://discord.com/events/{guild}/{event}`; przypomnienie przeglądarki bez zmian |
-| Nagrania | 🟡 | karta i modal demo; brak playera |
+| Nagrania | ✅ | karta i modal z linkiem do Discorda; bez fałszywego playera |
 | Materiały / postęp kursu | ✅ | postęp w stanie |
 | Plan solo vs pełny | ✅ | podgląd, nadpisywany przez subskrypcję |
 
@@ -241,7 +243,7 @@ To zestawienie pomocnicze, nie porada podatkowa.
 | Oura Ring | ✅ | OAuth2 + PKCE, `daily_readiness` + `sleep` (scope `daily`), rotacja refresh tokenów |
 | Garmin Connect | ⏸️ | wyłączony na razie — kod i konfiguracja zachowane, brak wpisu w UI/API |
 | Whoop | ⏸️ | wyłączony na razie — kod i konfiguracja zachowane, brak wpisu w UI/API |
-| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu |
+| Gotowość | ✅ | sen 40%, HRV 25%, tętno 10%, regeneracja 15%, Body Battery 10%; check-in 30% po połączeniu; karta ukryta bez danych |
 | Wykres sen → wynik dnia | ✅ | liczone z realnych metryk i transakcji; brak danych = ukryty wykres |
 | Odłączenie urządzenia | ✅ | wycofuje dostęp u dostawcy (jeśli API to wspiera), usuwa tokeny i metryki z bazy |
 
@@ -279,6 +281,8 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
 | Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i dane | ✅ | prawdziwa sesja serwerowa, wylogowanie, eksport, usunięcie konta; bez deklaracji 2FA i listy sesji |
+| Świeże konto | ✅ | `buildEmpty()` zeruje datę dołączenia, postęp kursu, sesje, streak i demo-połączenia; migracja czyści stare demo-wartości |
+| Tożsamość | ✅ | nazwa i e-mail z `/api/me`; `joinedAt` z bazy; brak zastępczego `kasia.trades` |
 | Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
@@ -318,6 +322,7 @@ To celowy fallback, nie drugi równoległy backend.
 | Service worker | ✅ | `/sw.js`: cache powłoki, offline fallback, `notificationclick` → `/?qa=<id>` |
 | Powiadomienie lokalne po zamknięciu w panelu | ✅ | po zamknięciu pozycji w panelu i zapisie stanu; treść: para, kierunek, wynik; klik otwiera szybkie dodanie |
 | Szybkie dodanie | ✅ | emocja + ocena + zdjęcie wykresu (`capture="environment"`), zapis do stanu i MySQL; E2E 0,6–0,7 s |
+| Mobile 390 px | ✅ | menu „☰” zamiast poziomej listy; inline gridy kolapsują do 1 kolumny; konto, nowa transakcja i Akademia bez przepełnienia |
 | Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
 
 Powiadomienie o zamknięciu powstaje po stronie klienta, więc działa, gdy panel jest otwarty albo gdy transakcję zamyka się w panelu. Powiadomienie „po zamknięciu na giełdzie” przy zamkniętej aplikacji wymaga workera giełdowego i Web Push z VAPID — to osobny zakres.
@@ -330,4 +335,4 @@ Każdy widok ma własny, czytelny adres w hashu, więc link można wysłać lub 
 
 `#/pulpit` · `#/plan` · `#/dziennik` · `#/playbook` · `#/nowa-transakcja` · `#/kalkulator` · `#/prop-challenge` · `#/akademia` · `#/statystyki` · `#/podatki` · `#/mentor-ai` · `#/kalendarz` · `#/cialo-i-glowa` · `#/gieldy` · `#/konto`
 
-Stare krótkie adresy (`#/trans`, `#/akad`, `#/ust`, `#/stat`, `#/kal`, `#/cialo`, …) nadal otwierają właściwy widok i są automatycznie przepisywane na czytelny slug. Pełna tabela i zasady: `DOCUMENTATION.md §11.1a`.
+Stare krótkie adresy (`#/trans`, `#/akad`, `#/ust`, `#/stat`, `#/kal`, `#/cialo`, …) oraz warianty `*3` (`#/plan3`, `#/dziennik3`, `#/playbook3`, `#/akad3`) nadal otwierają właściwy widok i są automatycznie przepisywane na czytelny slug. Pełna tabela i zasady: `DOCUMENTATION.md §11.1a`.
