@@ -76,10 +76,10 @@ Legenda:
 | Szukanie po parze/emocji/setupie | ✅ | |
 | Szczegóły transakcji | ✅ | wykres, MAE/MFE, checklist, notatka, mentor |
 | Screeny przed/po | ✅ | upload, drag&drop, Ctrl+V; JPEG w stanie |
-| Dodanie transakcji | ✅ | ręcznie, walidacja kierunku SL/TP, screenshoty |
+| Dodanie transakcji | ✅ | formularz startuje pusty; walidacja kierunku SL/TP; ryzyko = \|entry − SL\| × size; ostrzeżenie przy przekroczeniu limitu |
 | Edycja transakcji | ✅ | formularz wypełniony danymi |
 | Usunięcie transakcji | ✅ | potwierdzenie |
-| Zamknięcie otwartej pozycji | ✅ | cena wyjścia lub wynik ręczny, R, czas trwania |
+| Zamknięcie otwartej pozycji | ✅ | cena wyjścia lub wynik ręczny, R, czas trwania; MAE/MFE tylko z importu |
 | Eksport CSV | ✅ | średnik + BOM (Excel PL) |
 | Import CSV z giełdy | ✅ | parser WEEX/OKX/BingX/Bybit/MT, podgląd, deduplikacja |
 | Tryb ochronny (limit strat) | ✅ | blokada, countdown, obejście z powodem |
@@ -124,16 +124,16 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Zakres 7/30/90 dni/wszystko | ✅ | |
-| Wynik, skuteczność, PF, expectancy | ✅ | z transakcji |
+| Wynik, skuteczność, PF, expectancy | ✅ | z transakcji; przy 0 transakcji „—”, bez dzielenia przez zero |
 | Max obsunięcie | ✅ | z krzywej kapitału |
-| % ze SL, zgodność z planem, opłaty | ✅ | |
+| % ze SL, zgodność z planem, opłaty | ✅ | przy 0 transakcji „—”; opłaty 0,00 bez ujemnego zera |
 | Krzywa kapitału | ✅ | SVG z realnych danych |
 | Kalendarz PnL | ✅ | 35 dni |
-| Wynik wg oceny | ✅ | |
-| Checklista a wynik | ✅ | |
-| Koszt błędów | ✅ | |
-| MAE/MFE | ✅ | punkty z transakcji |
-| Sesje/emocje/czas trzymania | ✅ | |
+| Wynik wg oceny | ✅ | bez pochwał przy braku danych |
+| Checklista a wynik | ✅ | etykiety z długości checklisty użytkownika, nie stałe 7/7 |
+| Koszt błędów | ✅ | pusty stan bez „Tak trzymaj” |
+| MAE/MFE | ✅ | tylko transakcje z importu; wpisy ręczne mają null |
+| Sesje/emocje/czas trwania | ✅ | średnie pomijają null |
 
 ---
 
