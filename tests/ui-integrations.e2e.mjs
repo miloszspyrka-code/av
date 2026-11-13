@@ -143,14 +143,14 @@ try {
   // WEEX — klucz z prawem handlu przechodzi
   await page.click('.exl button[data-ex="weex"]');
   const weexNote = await page.locator('#exBody .note').innerText();
-  assert.match(weexNote, /nie blokuje połączenia/i);
+  assert.match(weexNote, /handel i wypłaty nie są potrzebne/i);
   await page.fill('#exF0', 'weex-trade');
   await page.fill('#exF1', 'weex-secret');
   await page.fill('#exF2', 'passphrase');
   await page.click('[data-conn="weex"]');
   await waitConnected('weex');
   await page.waitForFunction(() => (document.querySelector('#exBody')?.textContent || '').includes('Zaimportowane transakcje'), null, { timeout: 25000 });
-  assert.match(await page.locator('#exBody').innerText(), /dowolne \(odczyt wystarcza\)/);
+  assert.match(await page.locator('#exBody').innerText(), /sprawdź uprawnienia — zalecany tylko odczyt/i);
   log('WEEX: klucz z handlem przez UI + sync', true);
 
   // BingX
