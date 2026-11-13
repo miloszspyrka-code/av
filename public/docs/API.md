@@ -195,7 +195,7 @@ Historyczny mojibake (UTF-8 odczytany jako Windows-1250) jest naprawiany przy od
 
 ### 3.4. `PUT /api/state`
 
-Wymaga sesji i poprawnego `Origin`. Przed zapisem serwer naprawia historyczny mojibake w stringach stanu, więc do MySQL nie trafia podwójnie zakodowany tekst.
+Wymaga sesji i poprawnego `Origin`. Akceptowany jest origin z `APP_URL` oraz jego bliźniaczy host `www` (np. `https://www.alphavault.pl`); `www` i tak przekierowuje 301 na kanoniczny host przez `.htaccess`. Przed zapisem serwer naprawia historyczny mojibake w stringach stanu, więc do MySQL nie trafia podwójnie zakodowany tekst.
 
 ```json
 {

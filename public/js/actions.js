@@ -304,11 +304,42 @@
   };
 
   /* ---------- plan ---------- */
+  AV.PLAN_AUTOSAVE_MS = 700;
+  AV.planStore = () => {
+    if (!AV.state.plans || typeof AV.state.plans !== 'object') AV.state.plans = {};
+    return AV.state.plans;
+  };
   AV.savePlanDraft = () => {
+    if (!AV.state) return null;
     const p = AV.readPlanForm();
-    AV.state.plans[AV.planDate] = p;
+    AV.planStore()[AV.planDate] = p;
     AV.save();
     AV.renderPlanSide();
+    return p;
+  };
+  AV.selectPlanChip = (selector, chip) => {
+    const group = $(selector);
+    if (!group || !chip) return null;
+    $$(selector + ' .chip').forEach((c) => c.classList.toggle('on', c === chip));
+    return AV.savePlanDraft();
+  };
+  AV.commitPlan = async (p, message) => {
+    if (!AV.state) return false;
+    AV.planStore()[AV.planDate] = p;
+    AV.saveNow();
+    AV.renderPlanSide();
+    if (AV.api.pushing) await AV.waitForPushIdle();
+    let saved = await AV.pushStateImmediate();
+    if (!saved && AV.api.pushing) {
+      await AV.waitForPushIdle();
+      saved = await AV.pushStateImmediate();
+    }
+    if (saved) {
+      AV.toast(message + ' Zapisano w bazie.');
+      return true;
+    }
+    AV.toast('Nie zapisano planu w bazie: ' + (AV.api.saveError || 'brak potwierdzenia serwera') + '.', 7000);
+    return false;
   };
 
   AV.bindPlan = () => {
@@ -324,32 +355,43 @@
         AV.renderPlan();
       }
     });
+    $('#planMarkets')?.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      AV.selectPlanChip('#planMarkets', chip);
+      AV.renderPlanSide();
+    });
+    $('#planBias')?.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      AV.selectPlanChip('#planBias', chip);
+      AV.renderPlanSide();
+    });
     $('#addLvl')?.addEventListener('click', () => {
       $('#lvls').insertAdjacentHTML('beforeend', AV.levelRow({ type: 'Wsparcie' }));
+      const rows = $$('#lvls .lvl');
+      rows[rows.length - 1]?.querySelector('input')?.focus();
       AV.savePlanDraft();
     });
     $('#lvls')?.addEventListener('click', (e) => {
       if (e.target.classList.contains('x')) { e.target.parentNode.remove(); AV.savePlanDraft(); }
     });
-    $('#planEditor')?.addEventListener('input', AV.debounce(() => { AV.savePlanDraft(); }, 200));
+    $('#planEditor')?.addEventListener('input', AV.debounce(() => { AV.savePlanDraft(); }, AV.PLAN_AUTOSAVE_MS));
     $('#planEditor')?.addEventListener('change', () => AV.savePlanDraft());
-    $('#savePlan')?.addEventListener('click', () => {
-      const p = AV.readPlanForm();
+    $('#savePlan')?.addEventListener('click', async () => {
+      const p = AV.readPlanForm({ pruneEmptyLevels: true });
       if (!p.market || !p.why) { AV.toast('Uzupełnij rynek i uzasadnienie planu'); return; }
       p.approvedAt = Date.now();
-      AV.state.plans[AV.planDate] = p;
-      AV.saveNow();
+      await AV.commitPlan(p, 'Plan zatwierdzony.');
       AV.renderPlan(); AV.renderDashboard(); AV.renderSettings();
-      AV.toast('Plan zatwierdzony. Mentor sprawdzi, czy go trzymasz.');
     });
-    $('#copyPlan')?.addEventListener('click', () => {
-      const y = AV.state.plans[AV.dateKey(AV.addDays(new Date(AV.planDate + 'T12:00:00'), -1))];
+    $('#copyPlan')?.addEventListener('click', async () => {
+      const y = AV.planStore()[AV.dateKey(AV.addDays(new Date(AV.planDate + 'T12:00:00'), -1))];
       if (!y) { AV.toast('Brak planu z poprzedniego dnia'); return; }
       const copy = AV.clone(y);
       copy.date = AV.planDate; copy.approvedAt = null;
-      AV.state.plans[AV.planDate] = copy;
-      AV.saveNow(); AV.renderPlan();
-      AV.toast('Skopiowano plan z poprzedniego dnia');
+      await AV.commitPlan(copy, 'Skopiowano plan z poprzedniego dnia.');
+      AV.renderPlan();
     });
     document.addEventListener('click', (e) => {
       const el = e.target.closest('[data-plan-open]');

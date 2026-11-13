@@ -192,7 +192,7 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 
 Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `db/schema.sql` oraz `db/migrations/*.sql` (w tym `mcp_*`). Runner jest idempotentny.
 
-## UI - 58 scenariuszy
+## UI - 60 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -202,7 +202,8 @@ Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `d
 - live i konsultacja z `/api/events`,
 - harmonogram tygodnia i strip,
 - nawigacja 15 widoków (w tym prop),
-- plan dnia, filtry dziennika, szczegóły transakcji,
+- plan dnia: chipy rynku/biasu, poziomy, zatwierdzenie, zapis w MySQL i odtworzenie po reloadzie,
+- filtry dziennika, szczegóły transakcji,
 - nagłówek: brak technicznego statusu bazy, ukryty chip giełd bez połączeń, ticker z `/api/quotes`,
 - tryb ochronny: deterministyczne 2 straty dnia i obejście limitu,
 - kalkulator, statystyki, integracje MCP Mentora (adres, zakładki ChatGPT/Claude/Grok, kopiowanie, dostępność), akademia,

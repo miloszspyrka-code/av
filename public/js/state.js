@@ -483,8 +483,19 @@
     AV._pushTimer = setTimeout(() => AV.pushStateImmediate(), 300);
   };
 
+  AV.waitForPushIdle = (timeoutMs = 5000) => new Promise((resolve) => {
+    const started = Date.now();
+    const tick = () => {
+      if (!AV.api.pushing) return resolve(true);
+      if (Date.now() - started > timeoutMs) return resolve(false);
+      setTimeout(tick, 100);
+    };
+    tick();
+  });
+
   AV.pushStateImmediate = async () => {
     if (!AV.api.online || !AV.api.authenticated || !AV.api.ready || !AV.state) return false;
+    clearTimeout(AV._pushTimer);
     if (AV.api.pushing) { AV.api.dirty = true; return false; }
     AV.api.pushing = true;
     try {
@@ -538,6 +549,10 @@
       AV.api.saveError = err.message;
       console.warn('Nie udało się zapisać stanu na serwerze:', err.message);
       AV.updateEnvBadge();
+      if (AV.toast && (!AV._saveErrorToastAt || Date.now() - AV._saveErrorToastAt > 15000)) {
+        AV._saveErrorToastAt = Date.now();
+        AV.toast('Nie zapisano w bazie: ' + err.message + '. Kolejna zmiana ponowi próbę.', 6000);
+      }
       return false;
     } finally {
       AV.api.pushing = false;
@@ -1033,7 +1048,7 @@
     const today = AV.todayStats(state);
     const lock = AV.lockInfo(state);
     const todayKey = AV.dateKey(new Date());
-    const todayPlan = state.plans[todayKey];
+    const todayPlan = (state.plans || {})[todayKey];
     const todayPlanTrades = today.arr;
     const planOK = todayPlan ? todayPlanTrades.filter((t) => t.plan).length : 0;
     const afterLoss = [];
@@ -1288,7 +1303,7 @@
     let approved = 0;
     for (let i = 1; i <= 5; i++) {
       const d = AV.addDays(new Date(), -i);
-      const p = state.plans[AV.dateKey(d)];
+      const p = (state.plans || {})[AV.dateKey(d)];
       const ok = !!(p && p.approvedAt);
       if (ok) approved++;
       days.push({ d, ok });
