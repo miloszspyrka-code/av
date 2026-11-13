@@ -735,24 +735,24 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
         <div class="card hl tipcard"><div class="tic"><svg class="i"><use href="#i-bulb"/></svg></div><div style="flex:1"><div class="sech" style="margin:0"><div class="lbl">Zanim klikniesz „otwórz” · <span id="tipCat" class="al">MM</span></div><span class="link" id="tipNext" style="font-size:12.5px">Następna <svg class="i" style="width:13px;height:13px"><use href="#i-arrow"/></svg></span></div><div id="tipTxt"></div></div></div>
         <div class="card"><h2>Pozycja</h2>
           <div class="grid g4" style="margin-top:4px">
-            <div style="grid-column:span 2"><span class="label">Para</span><input class="input" id="ntPair" value="BTC/USDT"></div>
+            <div style="grid-column:span 2"><span class="label">Para</span><input class="input" id="ntPair" placeholder="np. BTC/USDT"></div>
             <div style="grid-column:span 2"><span class="label">Kierunek</span><div class="chips sel" id="ntDir"><span class="chip on" data-d="l" style="flex:1;text-align:center">LONG</span><span class="chip" data-d="s" style="flex:1;text-align:center">SHORT</span></div></div>
-            <div><span class="label">Wejście</span><input class="input mono" id="ntEntry" value="69 120"></div>
-            <div><span class="label">Wielkość</span><input class="input mono" id="ntSize" value="0,01"></div>
-            <div><span class="label">Stop loss</span><input class="input mono" id="ntSl" value="68 500"></div>
-            <div><span class="label">Take profit</span><input class="input mono" id="ntTp" value="70 800"></div>
+            <div><span class="label">Wejście</span><input class="input mono" id="ntEntry" placeholder="cena wejścia"></div>
+            <div><span class="label">Wielkość</span><input class="input mono" id="ntSize" placeholder="wielkość pozycji"></div>
+            <div><span class="label">Stop loss</span><input class="input mono" id="ntSl" placeholder="cena SL"></div>
+            <div><span class="label">Take profit</span><input class="input mono" id="ntTp" placeholder="cena TP"></div>
           </div>
-          <span class="label">Setup z playbooka</span><div class="chips sel" id="ntSetup"><span class="chip on" data-s="Retest wybicia">Retest wybicia</span><span class="chip" data-s="Odrzucenie oporu">Odrzucenie oporu</span><span class="chip" data-s="Range">Range</span><span class="chip" data-s="Pullback w trendzie">Pullback w trendzie</span><span class="chip" data-s="Wybicie bez retestu">Wybicie bez retestu</span><span class="chip" data-s="Bez setupu">Bez setupu</span></div>
-          <div class="step" id="ntRisk">Ryzyko: <b>6,20 USDT (0,31%)</b> · R:R <b>1 : 2,7</b> · <span class="link" data-go="kalk" style="font-size:13.5px">Kalkulator Alpha</span></div>
+          <span class="label">Setup z playbooka</span><div class="chips sel" id="ntSetup"><span class="chip" data-s="Retest wybicia">Retest wybicia</span><span class="chip" data-s="Odrzucenie oporu">Odrzucenie oporu</span><span class="chip" data-s="Range">Range</span><span class="chip" data-s="Pullback w trendzie">Pullback w trendzie</span><span class="chip" data-s="Wybicie bez retestu">Wybicie bez retestu</span><span class="chip on" data-s="Bez setupu">Bez setupu</span></div>
+          <div class="step" id="ntRisk">Limit: <b>—</b> · Ryzyko: <b>—</b> · R:R <b>—</b> · <span class="link" data-go="kalk" style="font-size:13.5px">Kalkulator Alpha</span></div>
         </div>
-        <div class="card"><div class="sech" style="margin:0"><div><h2>Checklista wejścia</h2><p class="mut" style="font-size:13.5px;margin-top:4px">Odhacz, zanim klikniesz „otwórz”.</p></div><div class="ring" id="clRing" style="--p:71;--c:var(--warn);width:64px;height:64px"><div style="width:50px;height:50px"><b id="clN" style="font-size:16px">5/7</b></div></div></div>
+        <div class="card"><div class="sech" style="margin:0"><div><h2>Checklista wejścia</h2><p class="mut" style="font-size:13.5px;margin-top:4px">Odhacz, zanim klikniesz „otwórz”.</p></div><div class="ring" id="clRing" style="--p:0;--c:var(--loss);width:64px;height:64px"><div style="width:50px;height:50px"><b id="clN" style="font-size:16px">0/7</b></div></div></div>
           <div id="clList" style="margin-top:10px"></div>
-          <div class="warnbox y" id="clWarn" style="display:block">Brakuje 2 punktów. Transakcje z pełną checklistą mają u Ciebie <b>68%</b> skuteczności, bez niej <b>39%</b>.</div>
+          <div class="warnbox y" id="clWarn" style="display:block">Brakuje 7 punktów.</div>
         </div>
-        <div class="card"><h2>Ocena jakości <span class="sugg" id="sugg">SUGEROWANA: B</span></h2><p class="mut" style="font-size:13.5px;margin-top:4px">Oceniasz decyzję, nie wynik. Dobra transakcja ze stratą to wciąż A.</p>
+        <div class="card"><h2>Ocena jakości <span class="sugg" id="sugg">SUGEROWANA: —</span></h2><p class="mut" style="font-size:13.5px;margin-top:4px">Oceniasz decyzję, nie wynik. Dobra transakcja ze stratą to wciąż A.</p>
           <div class="gradepick" id="gp">
             <div class="gp A" data-g="A"><b>A</b><span>Plan, pełna checklista, spokojna głowa.</span></div>
-            <div class="gp B on" data-g="B"><b>B</b><span>Setup z planu, drobne odstępstwa.</span></div>
+            <div class="gp B" data-g="B"><b>B</b><span>Setup z planu, drobne odstępstwa.</span></div>
             <div class="gp C" data-g="C"><b>C</b><span>Impuls, FOMO, bez setupu.</span></div>
           </div>
         </div>
@@ -760,7 +760,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
           <div class="chips" id="errChips" style="margin-top:12px"><span class="chip err">Wejście za wcześnie</span><span class="chip err">Gonienie ceny</span><span class="chip err">Przesunięty SL</span><span class="chip err">Bez SL</span><span class="chip err">Za duża pozycja</span><span class="chip err">Za wczesne wyjście</span><span class="chip err">Wejście po stracie</span><span class="chip err">Handel przy danych</span><span class="chip err">Brak setupu</span><span class="chip">+ własny</span></div></div>
         <div class="card"><h2>Głowa <span class="al">przed</span> wejściem</h2>
           <div class="chips sel" style="margin-top:14px" id="ntEmotion"><span class="chip on">Spokój</span><span class="chip">Pewność</span><span class="chip">Skupienie</span><span class="chip">Nuda</span><span class="chip">Zmęczenie</span><span class="chip">Strach</span><span class="chip">FOMO</span><span class="chip">Chciwość</span><span class="chip">Złość</span></div>
-          <span class="label">Dlaczego wchodzisz? (1–2 zdania)</span><textarea class="input" rows="2" id="ntNote">Retest 68 500 z planu, SL pod knotem, cel na oporze 71 200.</textarea>
+          <span class="label">Dlaczego wchodzisz? (1–2 zdania)</span><textarea class="input" rows="2" id="ntNote" placeholder="np. retest poziomu z planu, SL pod knotem"></textarea>
         </div>
       </div>
       <div class="card" style="position:sticky;top:80px"><h2>Screeny wykresu</h2><p class="mut" style="font-size:13.5px;margin-top:4px">Przed pokazuje stan przed decyzją. Po pokazuje, co się stało. Po 20 transakcjach widać wzór.</p>

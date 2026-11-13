@@ -220,8 +220,8 @@
     }));
     return {
       date: AV.planDate,
-      market: $('#planMarkets .chip.on')?.dataset.m || 'BTC',
-      bias: $('#planBias .chip.on')?.dataset.b || 'long',
+      market: $('#planMarkets .chip.on')?.dataset.m || '',
+      bias: $('#planBias .chip.on')?.dataset.b || '',
       why: $('#planWhy').value.trim(),
       levels: opts.pruneEmptyLevels ? levels.filter((l) => l.price || l.note) : levels,
       ifMain: $('#planIfMain').value.trim(), thenMain: $('#planThenMain').value.trim(),
@@ -473,8 +473,8 @@
     const s = AV.state;
     const points = (s.settings.checklist && s.settings.checklist.length ? s.settings.checklist : ['Trend wyższego TF', 'Poziom z planu', 'Potwierdzenie', 'SL przed wejściem', 'R:R ≥ 2', 'Brak makro 15 min', 'Spokojna głowa']).slice(0, 8);
     AV.ui.ntChecks = AV.ui.ntChecks || {};
-    points.forEach((p, i) => {
-      if (AV.ui.ntChecks[p] == null) AV.ui.ntChecks[p] = i < 5;
+    points.forEach((p) => {
+      if (AV.ui.ntChecks[p] == null) AV.ui.ntChecks[p] = false;
     });
     AV.autoChecklist(points);
     const n = points.filter((p) => AV.ui.ntChecks[p]).length;
@@ -489,7 +489,7 @@
       const missing = total - n;
       w.style.display = n === total ? 'none' : 'block';
       w.className = 'warnbox ' + (n >= Math.ceil(total * 0.7) ? 'y' : '');
-      w.innerHTML = 'Brakuje ' + missing + ' ' + AV.plural(missing, 'punktu', 'punktów', 'punktów') + '. Z pełną checklistą masz <b>68%</b> skuteczności, bez niej <b>39%</b>.';
+      w.innerHTML = 'Brakuje ' + missing + ' ' + AV.plural(missing, 'punktu', 'punktów', 'punktów') + '.';
     }
     AV.setHTML('#clList', points.map((p, i) => {
       const auto = ['Poziom z planu', 'SL przed wejściem', 'R:R ≥ 2'].includes(p);
@@ -498,8 +498,11 @@
     }).join(''));
     const g = n === total ? 'A' : n >= Math.ceil(total * 0.7) ? 'B' : 'C';
     const sug = $('#sugg');
-    if (sug) sug.textContent = 'SUGEROWANA: ' + g;
-    if (!AV.ui.ntGradeManual) $$('.gp').forEach((x) => x.classList.toggle('on', x.dataset.g === g));
+    if (sug) sug.textContent = n === 0 && !AV.ui.ntGradeManual ? 'SUGEROWANA: —' : 'SUGEROWANA: ' + g;
+    if (!AV.ui.ntGradeManual) {
+      if (n === 0) $$('.gp').forEach((x) => x.classList.remove('on'));
+      else $$('.gp').forEach((x) => x.classList.toggle('on', x.dataset.g === g));
+    }
   };
 
   AV.checklistHint = (p) => {
@@ -525,37 +528,42 @@
         const x = AV.pnum(l.price);
         return x && en && Math.abs(x - en) / en < 0.003;
       });
-      AV.ui.ntChecks['Poziom z planu'] = near || AV.ui.ntChecks['Poziom z planu'] === true && en === AV.pnum($('#ntEntry')?.defaultValue);
+      AV.ui.ntChecks['Poziom z planu'] = near;
     }
   };
 
   AV.renderNTMeta = () => {
     const en = AV.pnum($('#ntEntry')?.value), sl = AV.pnum($('#ntSl')?.value), tp = AV.pnum($('#ntTp')?.value);
-    const dir = $('#ntDir .chip.on')?.dataset.d || 'l';
-    const cap = AV.totalCapital(AV.state) || 1;
-    const riskPct = Number(AV.state.settings.maxRisk) || 1;
-    const riskAmt = cap * riskPct / 100;
-    const slPct = en ? Math.abs(en - sl) / en : 0;
+    const size = AV.pnum($('#ntSize')?.value);
+    const cap = AV.totalCapital(AV.state);
+    const limitPct = Number(AV.state.settings.maxRisk) || 1;
+    const limitAmt = cap > 0 ? cap * limitPct / 100 : null;
+    const riskAmt = en && sl && size ? Math.abs(en - sl) * size : null;
+    const riskPct = riskAmt != null && cap > 0 ? riskAmt / cap * 100 : null;
+    const slPct = en && sl ? Math.abs(en - sl) / en : 0;
     const rr = slPct && tp ? Math.abs(tp - en) / Math.abs(en - sl) : 0;
+    const over = riskPct != null && riskPct > limitPct + 1e-9;
     const el = $('#ntRisk');
-    if (el) el.innerHTML = 'Ryzyko: <b>' + AV.fmt(riskAmt, 2) + ' ' + AV.curLabel() + ' (' + AV.fmt(riskPct, 2) + '%)</b> · R:R <b>' + (rr ? '1 : ' + AV.fmt(rr, 1) : '—') + '</b> · <span class="link" data-go="kalk" style="font-size:13.5px">Kalkulator Alpha</span>';
+    if (el) el.innerHTML = 'Limit: <b>' + (limitAmt == null ? '—' : AV.fmt(limitAmt, 2) + ' ' + AV.curLabel() + ' (' + AV.fmt(limitPct, 2) + '%)') + '</b>' +
+      ' · Ryzyko: <b class="' + (over ? 'loss' : 'win') + '">' + (riskAmt == null ? '—' : AV.fmt(riskAmt, 2) + ' ' + AV.curLabel() + ' (' + (riskPct == null ? '—' : AV.fmt(riskPct, 2) + '%') + ')') + '</b>' +
+      ' · R:R <b>' + (rr ? '1 : ' + AV.fmt(rr, 1) : '—') + '</b> · <span class="link" data-go="kalk" style="font-size:13.5px">Kalkulator Alpha</span>';
   };
 
   AV.renderNewTradeForm = () => {
     const d = AV.getDraft();
-    AV.setVal('#ntPair', d.pair || 'BTC/USDT');
-    AV.setVal('#ntEntry', d.entry || '69 120');
-    AV.setVal('#ntSize', d.size || '0,01');
-    AV.setVal('#ntSl', d.sl || '68 500');
-    AV.setVal('#ntTp', d.tp || '70 800');
-    AV.setVal('#ntNote', d.note || 'Retest 68 500 z planu, SL pod knotem, cel na oporze 71 200.');
+    AV.setVal('#ntPair', d.pair || '');
+    AV.setVal('#ntEntry', d.entry || '');
+    AV.setVal('#ntSize', d.size || '');
+    AV.setVal('#ntSl', d.sl || '');
+    AV.setVal('#ntTp', d.tp || '');
+    AV.setVal('#ntNote', d.note || '');
     $$('#ntDir .chip').forEach((c) => c.classList.toggle('on', c.dataset.d === (d.dir || 'l')));
-    $$('#ntSetup .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === (d.setup || 'Retest wybicia')));
+    $$('#ntSetup .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === (d.setup || 'Bez setupu')));
     $$('#ntEmotion .chip').forEach((c) => c.classList.toggle('on', c.textContent === (d.emotion || 'Spokój')));
     $$('#errChips .chip.err').forEach((c) => c.classList.toggle('on', (d.errors || []).includes(c.textContent)));
     AV.ui.ntChecks = d.checks || {};
     AV.ui.ntGradeManual = !!d.gradeManual;
-    $$('.gp').forEach((g) => g.classList.toggle('on', g.dataset.g === (d.grade || 'B')));
+    $$('.gp').forEach((g) => g.classList.toggle('on', d.grade ? g.dataset.g === d.grade : false));
     AV.renderChecklist();
     AV.renderNTMeta();
     AV.renderDrops(d.screens || {});
@@ -564,7 +572,13 @@
   };
 
   AV.getDraft = () => {
-    try { return JSON.parse(AV.safeGet(AV.draftKey()) || '{}'); } catch { return {}; }
+    try {
+      const d = JSON.parse(AV.safeGet(AV.draftKey()) || '{}');
+      const demoDraft = d && d.pair === 'BTC/USDT' && d.entry === '69 120' && d.size === '0,01' &&
+        d.sl === '68 500' && d.tp === '70 800' && String(d.note || '').startsWith('Retest 68 500 z planu');
+      if (demoDraft) { AV.safeDel(AV.draftKey()); return {}; }
+      return d;
+    } catch { return {}; }
   };
   AV.saveDraft = () => {
     const d = {
@@ -573,7 +587,7 @@
       dir: $('#ntDir .chip.on')?.dataset.d || 'l', setup: $('#ntSetup .chip.on')?.dataset.s || 'Bez setupu',
       emotion: $('#ntEmotion .chip.on')?.textContent || 'Spokój',
       errors: $$('#errChips .chip.err.on').map((c) => c.textContent),
-      checks: AV.ui.ntChecks || {}, grade: $('.gp.on')?.dataset.g || 'B',
+      checks: AV.ui.ntChecks || {}, grade: $('.gp.on')?.dataset.g || '',
       gradeManual: AV.ui.ntGradeManual, screens: AV.ui.ntScreens || {}
     };
     AV.safeSet(AV.draftKey(), JSON.stringify(d));
