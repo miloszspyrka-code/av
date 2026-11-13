@@ -1,6 +1,6 @@
 {
   "name": "alpha-vault",
-  "version": "3.9.3",
+  "version": "3.9.4",
   "private": true,
   "description": "Alpha Vault — PHP 8.3 backend, MySQL, Discord OAuth2",
   "scripts": {
@@ -13,6 +13,7 @@
     "test:events": "php tests/discord-events.test.php",
     "test:macro": "php tests/macro-events.test.php",
     "test:quotes": "php tests/quotes.test.php",
+    "test:demo-state": "php tests/demo-state.test.php",
     "test:quotes:e2e": "node tests/quotes.e2e.mjs",
     "test:roles": "php tests/role-guard.test.php && node tests/role-recheck.e2e.mjs",
     "test:wearables": "node tests/wearables.e2e.mjs",

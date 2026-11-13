@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.9.4 — 2026-11-13
+
+### Dodane
+- `app/DemoState.php` + `bin/sync-demo-state.php`: daty stanu demo (`db/demo-state.json`) są przesuwane na dziś (`Europe/Warsaw`) z zachowaniem odstępów; seed `GET /api/state` i `tests/reset-demo.php` używają tego samego mechanizmu.
+- Wrapper LH Cron `*/5` uruchamia `bin/sync-demo-state.php` co 60 min (throttle `.runtime/demo.stamp`); operacja jest idempotentna i dotyczy wyłącznie kont `is_demo = 1`.
+
+### Zmienione
+- Demo po zmianie dnia pokazuje dzisiejsze transakcje, plan dnia i tryb ochronny bez ręcznego resetu stanu.
+
+### Testy
+- `tests/demo-state.test.php` (15/15): delta 0, przesunięcie dat, idempotencja, plany jako punkt zaczepienia, przesunięcie wstecz, błędne dane, `Europe/Warsaw`.
+
 ## 3.9.3 — 2026-11-13
 
 ### Zmienione

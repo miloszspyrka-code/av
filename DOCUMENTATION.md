@@ -171,6 +171,7 @@ Dane w `rate_limits` (bucket, IP, window_start, count). Przekroczenie → 429.
 
 - `POST /auth/demo` tylko gdy `ALLOW_DEMO_LOGIN=true`.
 - Każda przeglądarka dostaje osobne konto `demo-<24 hex>`; identyfikatorem jest cookie `av_demo` (HttpOnly, 30 dni). Stan z `db/demo-state.json`.
+- Daty stanu są zakotwiczone w fixture; przy pierwszym odczycie i cyklicznie (wrapper Cron, co 60 min) `DemoState` przesuwa je na dziś (`Europe/Warsaw`), więc demo pokazuje dzisiejsze transakcje, plan dnia i tryb ochronny.
 - Na produkcji `ALLOW_DEMO_LOGIN=false`; health check wymaga `demoAllowed=false`.
 - Demo nie jest produkcyjną metodą logowania.
 
@@ -402,7 +403,7 @@ Panel LH.pl → Serwery → `serwer445119` → Cron / Harmonogram zadań:
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-To jedyny wpis w LH Cron. Wrapper uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min), `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu: `.app/.runtime/*.stamp`.
+To jedyny wpis w LH Cron. Wrapper uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min), `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min), `bin/sync-wearables.php` (co 30 min) i `bin/sync-demo-state.php` (co 60 min). Znaczniki czasu: `.app/.runtime/*.stamp`.
 
 Ręcznie (bez panelu):
 
@@ -410,11 +411,12 @@ Ręcznie (bez panelu):
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/check-discord-roles.php
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-macro-events.php
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-demo-state.php
 ```
 
 Wymagania: PHP 8.3 CLI (na LH `/usr/bin/php`), `config.json` w `~/public_html/alphavault.pl/.app`, katalog `logs/` z prawami 700.
 
-**Stan 2026-11-12:** jedyny wpis Cron jest aktywny; `/api/health` potwierdza świeże (<10 min) `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` oraz `stale=false`. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`, który od wersji 3.9.1 uruchamia też makro (co 15 min) i urządzenia (co 30 min).
+**Stan 2026-11-12:** jedyny wpis Cron jest aktywny; `/api/health` potwierdza świeże (<10 min) `sync.lastSuccessAt` i `roleRecheck.lastSuccessAt` oraz `stale=false`. Na serwerze znajduje się wrapper `~/public_html/alphavault.pl/.app/cron/sync-discord-events.sh`, który od wersji 3.9.1 uruchamia też makro (co 15 min) i urządzenia (co 30 min), a od 3.9.4 synchronizację dat demo (co 60 min).
 
 ### 9.2. Blokada
 
@@ -759,6 +761,7 @@ Workflow `deploy-alphavault.yml` z `rollback=true` przywraca ostatni backup `pub
 | Prop challenge | `tests/prop.unit.mjs` | szablony, limity, static/trailing, daty, statystyki | 27/27 PASS |
 | Routing | `tests/router.unit.mjs` | slugi widoków, aliasy starych adresów, `viewFromHash`, `showView` | 18/18 PASS |
 | Notowania | `tests/quotes.test.php` | cache, TTL, fallback, cząstkowe pobranie, uszkodzony cache | 14/14 PASS |
+| Daty demo | `tests/demo-state.test.php` | przesunięcie fixture na dziś, idempotencja, plany jako punkt zaczepienia, błędne dane | 15/15 PASS |
 | API | `tests/api.e2e.mjs` | health, sesja, CSRF, stan, events, macro, admin, eksport, prop | 23/23 PASS |
 | UI | `tests/ui.e2e.mjs` | 15 widoków, live, prop, makro, pusty stan, zapisy, 8 odznak, nagłówek | 58/58 PASS |
 | UI empty | `tests/ui-empty.e2e.mjs` | puste pola po sukcesie z `[]` | 12/12 PASS |

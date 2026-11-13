@@ -117,13 +117,14 @@ Panel LH.pl → Serwery → serwer445119 → Cron / Harmonogram zadań → zadan
 */5 * * * * /bin/bash /public_html/alphavault.pl/.app/cron/sync-discord-events.sh
 ```
 
-To **jedyny** wpis LH Cron. Skrypt uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min), `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min) i `bin/sync-wearables.php` (co 30 min). Znaczniki czasu: `.app/.runtime/*.stamp`.
+To **jedyny** wpis LH Cron. Skrypt uruchamia kolejno `bin/sync-discord-events.php` (Discord events + worker integracji `syncDue`, realny import max co 25 min), `bin/check-discord-roles.php` (recheck roli co 5 min) oraz z throttle `bin/sync-macro-events.php` (co 15 min), `bin/sync-wearables.php` (co 30 min) i `bin/sync-demo-state.php` (co 60 min). Znaczniki czasu: `.app/.runtime/*.stamp`.
 
 Ręcznie (bez panelu):
 
 ```bash
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-discord-events.php
 /usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/check-discord-roles.php
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-demo-state.php
 ```
 
 `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje), więc harmonogram zmieniaj tylko w panelu LH.
@@ -141,6 +142,20 @@ Brak osobnego wpisu w LH Cron. 5-minutowy wrapper wywołuje `bin/sync-macro-even
 - zapis tylko ★★/★★★, UPSERT + soft delete,
 - log: `~/public_html/alphavault.pl/.app/logs/macro-sync.log`,
 - deploy po migracji uruchamia jednorazowy sync; błąd nie blokuje wdrożenia.
+
+## 5b. Synchronizacja dat demo (wrapper)
+
+Brak osobnego wpisu w LH Cron. 5-minutowy wrapper wywołuje `bin/sync-demo-state.php` co 60 min (throttle `.runtime/demo.stamp`). Ręcznie (bez panelu):
+
+```bash
+/usr/bin/php /home/platne/serwer445119/public_html/alphavault.pl/.app/bin/sync-demo-state.php
+```
+
+- dotyczy wyłącznie kont `users.is_demo = 1`,
+- `DemoState` przesuwa wszystkie daty ISO w stanie na dziś (`Europe/Warsaw`), zachowując odstępy; punkt zaczepienia to najnowsza transakcja (albo plan),
+- operacja jest idempotentna: przy dacie już aktualnej nic nie zapisuje (`shifted=0`),
+- seeder `GET /api/state` i `tests/reset-demo.php` używają tego samego przesunięcia, więc nowe konto demo jest świeże od pierwszego odczytu,
+- log: stdout zadania Cron (LH) oraz `revision` w `user_states`.
 
 Wymagania:
 
