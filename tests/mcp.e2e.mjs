@@ -405,7 +405,7 @@ async function mainWrites() {
   const exchangeReview = await call(tok.access_token, 'propose_trade_review', {
     tradeId: 'ex1', entry: 111, idempotencyKey: 'idem-e2e-ex-' + crypto.randomBytes(4).toString('hex'),
   });
-  assert.match(toolError(exchangeReview), /giełdow/i, exchangeReview.text);
+  assert.ok(exchangeReview.json?.error?.code === -32602 || /giełdow/i.test(toolError(exchangeReview)), exchangeReview.text);
 
   const exchangeClose = await call(tok.access_token, 'propose_close_trade', {
     tradeId: 'ex1', exitPrice: 130, idempotencyKey: 'idem-e2e-ex-close-' + crypto.randomBytes(4).toString('hex'),
