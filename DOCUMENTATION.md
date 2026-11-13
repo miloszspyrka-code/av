@@ -575,6 +575,8 @@ Plan dnia (`#/plan`) trzyma dane w `user_states.state.plans[YYYY-MM-DD]`. Klikni
 
 Dziennik (`#/nowa-transakcja`) startuje z pustymi polami i checklistą 0/N. Ryzyko pozycji jest liczone jako `abs(entry - SL) * size` i pokazywane obok limitu `maxRisk`; przekroczenie limitu wymaga świadomego potwierdzenia. Wpisy ręczne mają `mae = null`, `mfe = null` — statystyki MAE/MFE korzystają wyłącznie z importów. Przy zerze transakcji statystyki pokazują „—”, a etykiety checklisty wynikają z liczby punktów użytkownika.
 
+Zgodność z planem jest liczona po dacie transakcji, parze i kierunku (`AV.planMatchesTrade`), a nie po samym setupie. Badge „Plan dnia ✓” pojawia się tylko dla zatwierdzonego planu, a badge „LIVE” tylko wtedy, gdy live trwa. `buildEmpty()` nie dziedziczy demo-seedu (data dołączenia, postęp kursu, sesje, streak, połączenia); `cleanLegacyDemoSeed()` czyści te wartości w istniejących stanach. Tożsamość w panelu pochodzi z `/api/me` (`username`, `globalName`, `joinedAt`), bez zastępczego handle.
+
 Zasady:
 
 - Slugi są ASCII, małymi literami, bez diakrytyków; myślnik zamiast spacji.

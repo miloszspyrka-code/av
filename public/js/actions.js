@@ -639,7 +639,7 @@
       grade, checklist: checks, checkTotal: total, errors, emotion, setup, note,
       risk: risk ? Math.round(risk * 100) / 100 : 0,
       riskPct: riskPct == null ? null : Math.round(riskPct * 100) / 100,
-      plan: !!(plan && plan.approvedAt && setup !== 'Bez setupu'),
+      plan: AV.planMatchesTrade(plan, pair, $('#ntDir .chip.on')?.dataset.d || 'l'),
       mentor: grade === 'A' ? 'Wzorowo: plan, pełna checklista, SL, spokojna głowa. Tak wyglądają Twoje najlepsze transakcje.' : grade === 'B' ? 'Setup z planu, drobne odstępstwa. Trzymaj się checklisty do końca.' : (errors.length ? 'Ocena C i ' + errors.length + ' ' + AV.plural(errors.length, 'błąd', 'błędy', 'błędów') + '. To nie pech, to decyzja. Wróć do planu.' : 'Ocena C: brak setupu albo pośpiech. Odczekaj i wróć z planem.')
     };
     const persist = () => {
