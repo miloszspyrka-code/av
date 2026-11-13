@@ -178,6 +178,24 @@ try {
   });
   log('statystyki: puste dane bez fikcji', emptyStats.pf === '—' && emptyStats.wr === '—' && emptyStats.plan === '—' && emptyStats.fees === '0,00' && emptyStats.checklist.includes('Brak danych') && !emptyStats.checklist.includes('7/7') && !emptyStats.insight.includes('Tak trzymaj'), JSON.stringify(emptyStats));
 
+  const fresh = await page.evaluate(() => {
+    const s = AV.buildEmpty();
+    const p = { approvedAt: 1, market: 'ETH', bias: 'short' };
+    return {
+      match: AV.planMatchesTrade(p, 'ETH/USDT', 's'),
+      wrongPair: AV.planMatchesTrade(p, 'BTC/USDT', 's'),
+      wrongDir: AV.planMatchesTrade(p, 'ETH/USDT', 'l'),
+      draft: AV.planMatchesTrade({ ...p, approvedAt: null }, 'ETH/USDT', 's'),
+      joined: s.user.joined,
+      progress: s.meta.courseProgress,
+      sessions: s.meta.sessions.length,
+      weex: s.settings.connections.weex.connected,
+      plan: s.subscription.plan
+    };
+  });
+  log('plan: zgodność po parze i kierunku', fresh.match && !fresh.wrongPair && !fresh.wrongDir && !fresh.draft, JSON.stringify(fresh));
+  log('świeże konto: bez demo-seedu', fresh.joined === null && fresh.progress === 0 && fresh.sessions === 0 && fresh.weex === false, JSON.stringify(fresh));
+
   // Mentor AI: integracje MCP
   await page.click('.navg button[data-v="mentor"]');
   await page.waitForSelector('.mcp-endpoint-card');
@@ -229,6 +247,14 @@ try {
   });
   log('plan dnia: chipy rynku i biasu', chips.market === 'ETH' && chips.bias === 'short', JSON.stringify(chips));
   log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved.ok && approved.levels >= 1, JSON.stringify(approved));
+  const navBadges = await page.evaluate(() => {
+    const p = document.querySelector('.navg button[data-v="plan"] .badge');
+    const a = document.querySelector('.navg button[data-v="akad"] .badge');
+    const live = AV.liveInfo ? AV.liveInfo().liveNow : false;
+    return { plan: p?.textContent.trim(), planVisible: p ? getComputedStyle(p).display !== 'none' : false, acad: a?.textContent.trim(), acadVisible: a ? getComputedStyle(a).display !== 'none' : false, live };
+  });
+  log('badge planu zależy od zatwierdzenia', navBadges.plan === '✓' && navBadges.planVisible, JSON.stringify(navBadges));
+  log('badge LIVE tylko podczas live', navBadges.acadVisible === navBadges.live && (navBadges.live ? navBadges.acad === 'LIVE' : navBadges.acad === ''), JSON.stringify(navBadges));
 
   // trwałość: przeładowanie czyta plan z MySQL
   await page.reload({ waitUntil: 'load' });
@@ -592,10 +618,10 @@ try {
     const base = () => ({ accounts: [{ name: 'A', include: true }], trades: [], plans: {}, checkins: [] });
     const iso = (offset) => new Date(AV.addDays(new Date(), offset)).toISOString();
     const key = (offset) => AV.dateKey(AV.addDays(new Date(), offset));
-    const trade = (offset, extra = {}) => ({ date: iso(offset), result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
+    const trade = (offset, extra = {}) => ({ date: iso(offset), pair: 'BTC/USDT', dir: 'l', result: 10, sl: '100', grade: 'A', emotion: 'Spokój', plan: true, errors: [], ...extra });
     const plan = (state, offset, approved = true) => {
       const k = key(offset);
-      state.plans[k] = { date: k, approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
+      state.plans[k] = { date: k, market: 'BTC', bias: 'long', approvedAt: approved ? new Date(AV.addDays(new Date(), offset)).setHours(8, 0, 0, 0) : null };
     };
     const badge = (state, index) => AV.badges(state)[index];
     const out = {};

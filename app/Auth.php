@@ -244,6 +244,7 @@ final class Auth
             'avatarUrl' => $user['avatarUrl'] ?? null,
             'email' => $user['email'] ?? null,
             'isDemo' => (bool) ($user['isDemo'] ?? false),
+            'joinedAt' => $user['createdAt'] ?? null,
             'subscription' => $this->subscription($user),
         ];
     }

@@ -57,7 +57,8 @@ Legenda:
 | Scenariusze główny/awaryjny | ✅ | |
 | Limity (ryzyko, max transakcji, godzina) | ✅ | wpływają na pulpit |
 | „Czego dziś nie robię” | ✅ | |
-| Zatwierdzenie planu | ✅ | timestamp, widoczny na pulpicie; potwierdzenie zapisu w MySQL |
+| Zatwierdzenie planu | ✅ | wymaga rynku, kierunku, uzasadnienia i co najmniej jednego poziomu; timestamp i potwierdzenie zapisu w MySQL |
+| Zgodność transakcji z planem | ✅ | liczona po dacie, parze i kierunku (`planMatchesTrade`); sam setup nie wystarcza |
 | Kopiuj z wczoraj | ✅ | natychmiastowy zapis w MySQL |
 | Autosave szkicu | ✅ | debounce 700 ms; błąd zapisu pokazany toastem |
 | Trwały zapis w MySQL | ✅ | `user_states.state.plans[YYYY-MM-DD]`; przeładowanie odtwarza plan z bazy |
@@ -277,6 +278,8 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
 | Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i dane | ✅ | prawdziwa sesja serwerowa, wylogowanie, eksport, usunięcie konta; bez deklaracji 2FA i listy sesji |
+| Świeże konto | ✅ | `buildEmpty()` zeruje datę dołączenia, postęp kursu, sesje, streak i demo-połączenia; migracja czyści stare demo-wartości |
+| Tożsamość | ✅ | nazwa i e-mail z `/api/me`; `joinedAt` z bazy; brak zastępczego `kasia.trades` |
 | Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
