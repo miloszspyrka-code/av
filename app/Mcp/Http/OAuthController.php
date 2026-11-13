@@ -156,6 +156,7 @@ final class OAuthController
             $this->renderConsent(
                 $consentId,
                 $csrf,
+                $consentToken,
                 $authRequest->getClient()->getName(),
                 $scopes,
                 $session['user'],
@@ -172,14 +173,20 @@ final class OAuthController
             Http::html('<h1>401</h1><p>Sesja wygasła. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 401);
         }
 
-        $consentId = (string) ($_POST['consent_id'] ?? '');
-        $csrf = (string) ($_POST['csrf'] ?? '');
+        $consentId = trim((string) ($_POST['consent_id'] ?? ''));
+        $csrf = trim((string) ($_POST['csrf'] ?? ''));
+        $consentToken = (string) ($_POST['consent_token'] ?? '');
         $decision = (string) ($_POST['decision'] ?? 'deny');
-        $row = $this->db->queryOne(
-            'SELECT * FROM mcp_consents WHERE id = ? AND user_id = ? AND expires_at > UTC_TIMESTAMP() LIMIT 1',
-            [$consentId, (int) $session['user']['id']]
-        );
-        if ($row === null || !hash_equals((string) $row['csrf'], $csrf)) {
+        $row = null;
+        if ($consentId !== '') {
+            $row = $this->db->queryOne(
+                'SELECT * FROM mcp_consents WHERE id = ? AND user_id = ? AND expires_at > UTC_TIMESTAMP() LIMIT 1',
+                [$consentId, (int) $session['user']['id']]
+            );
+        }
+        $csrfOk = $row !== null && hash_equals(trim((string) $row['csrf']), $csrf);
+        $tokenData = $this->parseConsentToken($consentToken, $session);
+        if (!$csrfOk && $tokenData === null) {
             $this->auth->audit((int) $session['user']['id'], 'mcp.oauth.consent_retry', [
                 'reason' => $row === null ? 'missing_or_expired' : 'csrf_mismatch',
             ]);
@@ -197,9 +204,11 @@ final class OAuthController
                 Http::html('<h1>400</h1><p>Wymagane jest PKCE S256. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 400);
             }
             [$consentId, $csrf, $scopes] = $this->createConsent($authRequest, $resource, $session);
+            $consentToken = $this->consentToken($authRequest, $resource, $session);
             $this->renderConsent(
                 $consentId,
                 $csrf,
+                $consentToken,
                 $authRequest->getClient()->getName(),
                 $scopes,
                 $session['user'],
@@ -208,17 +217,36 @@ final class OAuthController
             );
         }
 
+        if ($csrfOk) {
+            $data = [
+                'client_id' => (string) $row['client_id'],
+                'redirect_uri' => (string) $row['redirect_uri'],
+                'scope' => (string) $row['scopes'],
+                'state' => (string) ($row['state'] ?? ''),
+                'code_challenge' => (string) $row['code_challenge'],
+                'code_challenge_method' => (string) $row['code_challenge_method'],
+                'resource' => (string) $row['resource'],
+            ];
+        } else {
+            $data = $tokenData;
+            $this->auth->audit((int) $session['user']['id'], 'mcp.oauth.consent_token', [
+                'reason' => $row === null ? 'row_missing' : 'db_csrf_mismatch',
+            ]);
+        }
+        if (!$this->isAllowedResource((string) $data['resource'])) {
+            Http::html('<h1>400</h1><p>Nieprawidłowy resource. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 400);
+        }
         $query = [
             'response_type' => 'code',
-            'client_id' => (string) $row['client_id'],
-            'redirect_uri' => (string) $row['redirect_uri'],
-            'scope' => (string) $row['scopes'],
-            'code_challenge' => (string) $row['code_challenge'],
-            'code_challenge_method' => (string) $row['code_challenge_method'],
-            'resource' => (string) $row['resource'],
+            'client_id' => (string) $data['client_id'],
+            'redirect_uri' => (string) $data['redirect_uri'],
+            'scope' => (string) $data['scope'],
+            'code_challenge' => (string) $data['code_challenge'],
+            'code_challenge_method' => (string) $data['code_challenge_method'],
+            'resource' => (string) $data['resource'],
         ];
-        if ($row['state'] !== null && $row['state'] !== '') {
-            $query['state'] = (string) $row['state'];
+        if (($data['state'] ?? '') !== '') {
+            $query['state'] = (string) $data['state'];
         }
 
         $request = $this->request()->withQueryParams($query);
@@ -233,12 +261,14 @@ final class OAuthController
             Http::html('<h1>500</h1><p>Nie udało się zakończyć autoryzacji.</p>', 500);
         }
 
-        $this->db->execute('DELETE FROM mcp_consents WHERE id = ?', [$consentId]);
+        if ($consentId !== '') {
+            $this->db->execute('DELETE FROM mcp_consents WHERE id = ?', [$consentId]);
+        }
 
         $this->auth->audit((int) $session['user']['id'], 'mcp.oauth.authorize', [
-            'clientId' => (string) $row['client_id'],
+            'clientId' => (string) $data['client_id'],
             'decision' => $decision === 'allow' ? 'allow' : 'deny',
-            'scopes' => (string) $row['scopes'],
+            'scopes' => (string) $data['scope'],
         ]);
         $this->emit($this->withIssuer($response));
     }
@@ -606,32 +636,100 @@ final class OAuthController
     private function createConsent(object $authRequest, string $resource, array $session): array
     {
         $scopes = array_map(static fn ($scope): string => $scope->getIdentifier(), $authRequest->getScopes());
-        $consentId = $this->auth->randomToken(24);
-        $csrf = $this->auth->randomToken(24);
-        $this->db->execute('DELETE FROM mcp_consents WHERE expires_at < UTC_TIMESTAMP()');
-        $this->db->execute(
-            'INSERT INTO mcp_consents (id, user_id, client_id, redirect_uri, scopes, state, code_challenge, code_challenge_method, resource, csrf, expires_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP() + INTERVAL 30 MINUTE)',
-            [
-                $consentId,
-                (int) $session['user']['id'],
-                $authRequest->getClient()->getIdentifier(),
-                (string) $authRequest->getRedirectUri(),
-                implode(' ', $scopes),
-                $authRequest->getState(),
-                (string) $authRequest->getCodeChallenge(),
-                'S256',
-                $resource,
-                $csrf,
-            ]
-        );
+        $consentId = '';
+        $csrf = '';
+        try {
+            $consentId = $this->auth->randomToken(24);
+            $csrf = $this->auth->randomToken(24);
+            $this->db->execute('DELETE FROM mcp_consents WHERE expires_at < UTC_TIMESTAMP()');
+            $this->db->execute(
+                'INSERT INTO mcp_consents (id, user_id, client_id, redirect_uri, scopes, state, code_challenge, code_challenge_method, resource, csrf, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP() + INTERVAL 30 MINUTE)',
+                [
+                    $consentId,
+                    (int) $session['user']['id'],
+                    $authRequest->getClient()->getIdentifier(),
+                    (string) $authRequest->getRedirectUri(),
+                    implode(' ', $scopes),
+                    $authRequest->getState(),
+                    (string) $authRequest->getCodeChallenge(),
+                    'S256',
+                    $resource,
+                    $csrf,
+                ]
+            );
+        } catch (\Throwable $err) {
+            error_log('[mcp-consent] ' . $err->getMessage());
+            $consentId = '';
+            $csrf = '';
+        }
 
         return [$consentId, $csrf, $scopes];
+    }
+
+    /**
+     * Podpisany token zgody: pozwala dokończyć autoryzację nawet gdy wiersz
+     * mcp_consents nie istnieje lub CSRF w CHAR(64) wraca z paddingiem.
+     */
+    private function consentToken(object $authRequest, string $resource, array $session): string
+    {
+        $scopes = array_map(static fn ($scope): string => $scope->getIdentifier(), $authRequest->getScopes());
+        $payload = [
+            'v' => 1,
+            'uid' => (int) $session['user']['id'],
+            'sid' => (string) ($session['sessionId'] ?? ''),
+            'exp' => time() + 1800,
+            'client_id' => (string) $authRequest->getClient()->getIdentifier(),
+            'redirect_uri' => (string) $authRequest->getRedirectUri(),
+            'scope' => implode(' ', $scopes),
+            'state' => $authRequest->getState(),
+            'code_challenge' => (string) $authRequest->getCodeChallenge(),
+            'code_challenge_method' => 'S256',
+            'resource' => $resource,
+        ];
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $body = rtrim(strtr(base64_encode((string) $json), '+/', '-_'), '=');
+        $sig = hash_hmac('sha256', $body, $this->config->sessionSecret);
+
+        return $body . '.' . $sig;
+    }
+
+    private function parseConsentToken(string $token, array $session): ?array
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 2) {
+            return null;
+        }
+        [$body, $sig] = $parts;
+        $expected = hash_hmac('sha256', $body, $this->config->sessionSecret);
+        if (!hash_equals($expected, $sig)) {
+            return null;
+        }
+        $json = base64_decode(strtr($body, '-_', '+/'), true);
+        if (!is_string($json)) {
+            return null;
+        }
+        $data = json_decode($json, true);
+        if (!is_array($data)) {
+            return null;
+        }
+        if ((int) ($data['exp'] ?? 0) < time()) {
+            return null;
+        }
+        if ((int) ($data['uid'] ?? 0) !== (int) $session['user']['id']) {
+            return null;
+        }
+        if ((string) ($data['sid'] ?? '') !== (string) ($session['sessionId'] ?? '')) {
+            return null;
+        }
+
+        return $data;
     }
 
     private function renderConsent(
         string $consentId,
         string $csrf,
+        string $consentToken,
         string $clientName,
         array $scopes,
         array $user,
@@ -662,7 +760,7 @@ final class OAuthController
             ? '<p style="border-left:3px solid #d9b25f;padding-left:12px"><strong>Uwaga:</strong> ' . htmlspecialchars($notice, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
             : '';
 
-        Http::html('<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zgoda MCP — AlphaVault</title><style>body{background:#080707;color:#f5f1eb;font-family:system-ui,Arial,sans-serif;max-width:680px;margin:0 auto;padding:40px 22px;line-height:1.65}h1{font-size:32px;letter-spacing:-1px}h2{font-size:18px;margin-top:28px}code{background:rgba(217,178,95,.12);padding:2px 6px;border-radius:5px;color:#f1d48e}ul{padding-left:20px}li{margin:8px 0}.card{background:#121110;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-top:20px}button{border:0;border-radius:99px;padding:11px 18px;font-weight:700;cursor:pointer}.allow{background:#f5f1eb;color:#080707}.deny{background:transparent;color:#f5f1eb;border:1px solid rgba(255,255,255,.25);margin-left:8px}small{color:#9f978c}</style></head><body><h1>Połącz AlphaVault z klientem AI</h1><p>Zalogowano jako <strong>' . $userName . '</strong>.</p>' . $noticeHtml . '<div class="card"><p><strong>' . $name . '</strong> prosi o dostęp do Twojego konta AlphaVault.</p><h2>Zakres dostępu</h2><ul>' . $scopeHtml . '</ul><h2>Co to oznacza</h2><p>Klient otrzyma dostęp do danych tradingowych zapisanych na Twoim koncie. Nie otrzyma hasła, tokenu Discord ani dostępu do bazy. Możesz w każdej chwili unieważnić dostęp na stronie <a style="color:#f1d48e" href="/oauth/connected">Połączone aplikacje</a>.</p>' . $writeNotice . '<form method="post" action="' . $actionAttr . '"><input type="hidden" name="consent_id" value="' . htmlspecialchars($consentId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><input type="hidden" name="csrf" value="' . htmlspecialchars($csrf, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><button class="allow" type="submit" name="decision" value="allow">Zatwierdzam dostęp</button><button class="deny" type="submit" name="decision" value="deny">Odrzucam</button></form></div><p><small>AlphaVault nie przekazuje Twojego tokenu Discord klientowi AI. Token MCP jest osobny, ograniczony czasem i scope.</small></p></body></html>');
+        Http::html('<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zgoda MCP — AlphaVault</title><style>body{background:#080707;color:#f5f1eb;font-family:system-ui,Arial,sans-serif;max-width:680px;margin:0 auto;padding:40px 22px;line-height:1.65}h1{font-size:32px;letter-spacing:-1px}h2{font-size:18px;margin-top:28px}code{background:rgba(217,178,95,.12);padding:2px 6px;border-radius:5px;color:#f1d48e}ul{padding-left:20px}li{margin:8px 0}.card{background:#121110;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-top:20px}button{border:0;border-radius:99px;padding:11px 18px;font-weight:700;cursor:pointer}.allow{background:#f5f1eb;color:#080707}.deny{background:transparent;color:#f5f1eb;border:1px solid rgba(255,255,255,.25);margin-left:8px}small{color:#9f978c}</style></head><body><h1>Połącz AlphaVault z klientem AI</h1><p>Zalogowano jako <strong>' . $userName . '</strong>.</p>' . $noticeHtml . '<div class="card"><p><strong>' . $name . '</strong> prosi o dostęp do Twojego konta AlphaVault.</p><h2>Zakres dostępu</h2><ul>' . $scopeHtml . '</ul><h2>Co to oznacza</h2><p>Klient otrzyma dostęp do danych tradingowych zapisanych na Twoim koncie. Nie otrzyma hasła, tokenu Discord ani dostępu do bazy. Możesz w każdej chwili unieważnić dostęp na stronie <a style="color:#f1d48e" href="/oauth/connected">Połączone aplikacje</a>.</p>' . $writeNotice . '<form method="post" action="' . $actionAttr . '"><input type="hidden" name="consent_id" value="' . htmlspecialchars($consentId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><input type="hidden" name="csrf" value="' . htmlspecialchars($csrf, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><input type="hidden" name="consent_token" value="' . htmlspecialchars($consentToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><button class="allow" type="submit" name="decision" value="allow">Zatwierdzam dostęp</button><button class="deny" type="submit" name="decision" value="deny">Odrzucam</button></form></div><p><small>AlphaVault nie przekazuje Twojego tokenu Discord klientowi AI. Token MCP jest osobny, ograniczony czasem i scope.</small></p></body></html>');
     }
 
     private function revokeRawToken(string $token, string $hint): void
