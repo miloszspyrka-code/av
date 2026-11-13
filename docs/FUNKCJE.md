@@ -55,7 +55,8 @@ Legenda:
 | Scenariusze główny/awaryjny | ✅ | |
 | Limity (ryzyko, max transakcji, godzina) | ✅ | wpływają na pulpit |
 | „Czego dziś nie robię” | ✅ | |
-| Zatwierdzenie planu | ✅ | timestamp, widoczny na pulpicie; potwierdzenie zapisu w MySQL |
+| Zatwierdzenie planu | ✅ | wymaga rynku, kierunku, uzasadnienia i co najmniej jednego poziomu; timestamp i potwierdzenie zapisu w MySQL |
+| Zgodność transakcji z planem | ✅ | liczona po dacie, parze i kierunku (`planMatchesTrade`); sam setup nie wystarcza |
 | Kopiuj z wczoraj | ✅ | natychmiastowy zapis w MySQL |
 | Autosave szkicu | ✅ | debounce 700 ms; błąd zapisu pokazany toastem |
 | Trwały zapis w MySQL | ✅ | `user_states.state.plans[YYYY-MM-DD]`; przeładowanie odtwarza plan z bazy |
@@ -144,9 +145,11 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 | Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji; Claude przez `https://claude.ai/api/mcp/auth_callback` |
 | Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
 | Status serwera MCP | ✅ | statyczny pill „MCP · TYLKO ODCZYT” |
+| Zakres danych MCP | ✅ | tylko odczyt: profil, plan, transakcje, statystyki, check-iny, playbook, wydarzenia, makro; bez kluczy API, haseł inwestora i danych zdrowotnych |
+| Zgoda i wycofanie | ✅ | ekran zgody z zakresem, link do polityki §13.2, unieważnienie tokenu w `/oauth/connected` |
 | Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do integracji MCP |
 
-Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko stronę integracji zewnętrznego asystenta z MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne.
+Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko stronę integracji zewnętrznego asystenta z MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne. Dane opuszczają aplikację dopiero po świadomym połączeniu asystenta i zatwierdzeniu zgody.
 
 ---
 
@@ -273,6 +276,8 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
 | Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
 | Bezpieczeństwo i dane | ✅ | prawdziwa sesja serwerowa, wylogowanie, eksport, usunięcie konta; bez deklaracji 2FA i listy sesji |
+| Świeże konto | ✅ | `buildEmpty()` zeruje datę dołączenia, postęp kursu, sesje, streak i demo-połączenia; migracja czyści stare demo-wartości |
+| Tożsamość | ✅ | nazwa i e-mail z `/api/me`; `joinedAt` z bazy; brak zastępczego `kasia.trades` |
 | Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
@@ -281,7 +286,7 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; linki w stopce, logowaniu, zakupie, modalu Akademii oraz ekranach wygaśnięcia i braku roli |
+| Polityka prywatności | ✅ | osobna strona `/polityka-prywatnosci`; §13.2 opisuje MCP, odbiorców, zakres, retencję i wycofanie zgody; linki w stopce, logowaniu, zakupie, modalu Akademii, Mentorze AI oraz ekranach wygaśnięcia i braku roli |
 | Regulamin | ✅ | osobna strona `/regulamin`; linki w stopce, logowaniu, zakupie, modalu Akademii oraz ekranach wygaśnięcia i braku roli |
 | „Czym jest Akademia?” | ✅ | modal |
 | Zakup + zgody | 🟡 | modal, checkboxy, aktywacja planu demo; brak Stripe |
