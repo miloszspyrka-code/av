@@ -225,7 +225,7 @@ final class PropChallengeService
         $drawdownFloor = ($c['drawdownType'] === 'trailing' ? $peak : $startBalance) - $maxLossAmount;
 
         $hasDeadline = $end instanceof \DateTimeImmutable;
-        $daysLeft = $hasDeadline ? max(0, (int) $today->diff($end)->days + 1) : null;
+        $daysLeft = $hasDeadline ? ($today > $end ? 0 : (int) $today->diff($end)->days + 1) : null;
         $daysTotal = $hasDeadline ? max(1, (int) $start->diff($end)->days + 1) : null;
         $expired = $hasDeadline && $today > $end;
 
