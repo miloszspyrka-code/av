@@ -149,23 +149,18 @@ async function main() {
   assert.ok(Array.isArray(connB.json.connections));
   log('integracje mają osobne listy połączeń', true, `A=${connA.json.connections.length} B=${connB.json.connections.length}`);
 
-  const token = await call(jarA, '/api/mcp/tokens', {
-    method: 'POST',
-    body: JSON.stringify({ name: 'isolation-' + Date.now(), scopes: ['panel:read'] })
-  });
-  assert.equal(token.res.status, 201, token.text);
-  assert.ok(token.json.id && token.json.token);
   const mcpA = await call(jarA, '/api/mcp');
   const mcpB = await call(jarB, '/api/mcp');
-  assert.ok(mcpA.json.tokens.some((row) => row.id === token.json.id));
-  assert.ok(!mcpB.json.tokens.some((row) => row.id === token.json.id), 'token A widoczny dla B');
-  log('tokeny MCP są rozdzielone', true);
-
-  const revoke = await call(jarA, '/api/mcp/tokens/revoke', {
-    method: 'POST',
-    body: JSON.stringify({ id: token.json.id })
-  });
-  assert.equal(revoke.res.status, 200, revoke.text);
+  assert.equal(mcpA.res.status, 200, mcpA.text);
+  assert.equal(mcpB.res.status, 200, mcpB.text);
+  assert.ok(Array.isArray(mcpA.json.proposals));
+  assert.ok(Array.isArray(mcpB.json.proposals));
+  assert.equal('tokens' in mcpA.json, false, 'stary endpoint tokenów nie może wracać');
+  assert.equal(mcpA.json.proposals.length, 0);
+  assert.equal(mcpB.json.proposals.length, 0);
+  const mcpAnon = await call(new Jar(), '/api/mcp');
+  assert.equal(mcpAnon.res.status, 401);
+  log('panel MCP ma osobne propozycje i wymaga sesji', true);
 
   await call(jarA, '/auth/logout', { method: 'POST' });
   const afterLogout = await call(new Jar(), '/api/state');
