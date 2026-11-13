@@ -180,7 +180,7 @@ try {
   await page.reload({ waitUntil: 'load' });
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated, null, { timeout: 15000 });
   await page.click('.navg button[data-v="plan"]');
-  const persisted = await page.evaluate(() => {
+  const planReload = await page.evaluate(() => {
     const p = AV.state.plans[AV.dateKey(new Date())];
     return {
       market: document.querySelector('#planMarkets .chip.on')?.dataset.m,
@@ -190,7 +190,7 @@ try {
       approved: !!p?.approvedAt
     };
   });
-  log('plan dnia: zapis w bazie po reloadzie', persisted.market === 'ETH' && persisted.bias === 'short' && persisted.why === why && persisted.levels >= 1 && persisted.approved, JSON.stringify(persisted));
+  log('plan dnia: zapis w bazie po reloadzie', planReload.market === 'ETH' && planReload.bias === 'short' && planReload.why === why && planReload.levels >= 1 && planReload.approved, JSON.stringify(planReload));
 
   // dziennik: filtry
   await page.click('.navg button[data-v="trans"]');
