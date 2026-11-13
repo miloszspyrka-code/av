@@ -142,7 +142,7 @@ DISCORD_REDIRECT_URI="$MCP_APP_URL/oauth/discord/callback" \
 node scripts/render-mcp-config.mjs | ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "umask 077; cat > '$APP_PATH/config.json'; chmod 600 '$APP_PATH/config.json'"
 
 log "Applying schema..."
-ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "php '$APP_PATH/db/migrate.php'"
+ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "php '$APP_PATH/app/db/migrate.php'"
 log "Ensuring OAuth keys..."
 ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "php '$APP_PATH/bin/mcp-init.php'"
 log "Running maintenance..."
