@@ -361,13 +361,12 @@ try {
   assert.ok(deleted, 'challenge nie usunięty');
   log('prop: usuwanie challenge', deleted);
 
-  // mentor
+  // mentor: karta MCP nadal dostępna po zapisach
   await page.click('.navg button[data-v="mentor"]');
-  const beforeChat = await page.locator('#msgs .msg').count();
-  await page.locator('#mChips .chip').first().click();
-  await page.waitForFunction((n) => document.querySelectorAll('#msgs .msg').length >= n + 2, beforeChat, { timeout: 5000 });
-  const afterChat = await page.locator('#msgs .msg').count();
-  log('mentor: odpowiedź', afterChat >= beforeChat + 2, beforeChat + ' → ' + afterChat);
+  await page.waitForSelector('.mcp-card');
+  assert.equal((await page.locator('#mcpUrl').innerText()).trim(), 'https://mcp.alphavault.pl/mcp');
+  assert.equal(await page.locator('#msgs').count(), 0);
+  log('mentor: karta MCP po zapisach', true);
 
   // krok mentora prowadzi do planu dnia
   await page.evaluate(() => { AV.renderDashMentor({ closed: [] }); AV.showView('pulpit'); });
