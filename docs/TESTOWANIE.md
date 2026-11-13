@@ -203,7 +203,7 @@ Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `d
 - plan dnia, filtry dziennika, szczegóły transakcji,
 - nagłówek: brak technicznego statusu bazy, ukryty chip giełd bez połączeń, ticker z `/api/quotes`,
 - tryb ochronny: deterministyczne 2 straty dnia i obejście limitu,
-- kalkulator, statystyki, karta MCP Mentora (zakładki Claude/ChatGPT/Grok + kopiowanie adresu), akademia,
+- kalkulator, statystyki, integracje MCP Mentora (adres, zakładki ChatGPT/Claude/Grok, kopiowanie, dostępność), akademia,
 - prop: 9 szablonów, nowy challenge + 4 KPI,
 - prop: walidacja formularza i XSS w nazwie,
 - prop: alarm limitu + banner na pulpicie,

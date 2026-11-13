@@ -133,16 +133,18 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 
 ---
 
-## 8. Mentor AI — podłączenie MCP
+## 8. Mentor AI — integracje MCP
 
 | Funkcja | Stan | Opis |
 |---|---|---|
 | Adres serwera MCP | ✅ | `https://mcp.alphavault.pl/mcp` z przyciskiem „Kopiuj adres” |
-| Zakładki klientów | ✅ | Claude, ChatGPT, Grok — osobne kroki i oficjalna instrukcja |
-| Bezpieczeństwo | ✅ | HTTPS, OAuth 2.1 + Discord, dostęp zgodny z uprawnieniami konta |
-| Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do karty podłączenia |
+| Jak to działa | ✅ | przepływ Alpha Vault → Serwer MCP → Asystent AI |
+| Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji |
+| Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
+| Status serwera MCP | ✅ | statyczny pill „SERWER MCP GOTOWY” |
+| Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do integracji MCP |
 
-Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko instrukcję podłączenia zewnętrznego asystenta do MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne.
+Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko stronę integracji zewnętrznego asystenta z MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne.
 
 ---
 
