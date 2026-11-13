@@ -1,6 +1,6 @@
 # AlphaVault MCP — mapa funkcji, walidacje i plan wdrożenia
 
-> **Status: PLAN.** Ten dokument nie oznacza wdrożenia. Nie zmieniono kodu aplikacji, nie dodano domeny, nie uruchomiono migracji i nie opublikowano żadnego endpointu MCP.
+> **Status: CZĘŚCIOWO WDROŻONY (2026-11-13).** Produkcyjny endpoint `https://mcp.alphavault.pl/mcp` działa: OAuth 2.1, 8 narzędzi read-only, `MCP_WRITES_ENABLED=false`, `GET /health` = 200. Kod produkcyjny MCP nie jest jeszcze scalony z `main`; ten dokument opisuje model docelowy i wymagania. Logowanie MCP przez Discord wymaga wpisu `https://mcp.alphavault.pl/oauth/discord/callback` w OAuth2 → Redirects aplikacji Discord — bez niego Discord odrzuca powrót po logowaniu.
 >
 > Wersja planu: 1.0 · 2026-11-12
 > Repozytorium: `miloszspyrka-code/av`

@@ -15,7 +15,7 @@
 | [TESTOWANIE.md](TESTOWANIE.md) | testy prop, API i UI, checklisty | tak |
 | [DISCORD.md](DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
 | [DEPLOY.md](DEPLOY.md) | produkcja, reverse proxy, backup | nie |
-| [MCP.md](MCP.md) | mapa narzędzi MCP, walidacje, OAuth, plan wdrożenia | nie |
+| [MCP.md](MCP.md) | MCP: OAuth 2.1, 8 narzędzi read-only, walidacje, wdrożenie | nie |
 | [CHANGELOG.md](../CHANGELOG.md) | historia zmian | nie |
 
 Dokumentacja publiczna jest serwowana pod `/docs/`. Katalog `public/docs/` jest generowany z `docs/` oraz dokumentów głównych:
