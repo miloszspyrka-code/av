@@ -147,39 +147,29 @@ final class OAuthController
                 $this->denyAuthorization($authRequest->getRedirectUri(), $authRequest->getState(), 'invalid_request', 'Wymagane jest PKCE S256.');
             }
 
-            $scopes = array_map(static fn ($scope): string => $scope->getIdentifier(), $authRequest->getScopes());
             $session = $this->auth->readSession();
             if ($session === null) {
                 $this->beginLogin('/oauth/authorize?' . http_build_query($request->getQueryParams()));
             }
 
-            $consentId = $this->auth->randomToken(24);
-            $csrf = $this->auth->randomToken(24);
-            $this->db->execute('DELETE FROM mcp_consents WHERE expires_at < UTC_TIMESTAMP()');
-            $this->db->execute(
-                'INSERT INTO mcp_consents (id, user_id, client_id, redirect_uri, scopes, state, code_challenge, code_challenge_method, resource, csrf, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP() + INTERVAL 10 MINUTE)',
-                [
-                    $consentId,
-                    (int) $session['user']['id'],
-                    $authRequest->getClient()->getIdentifier(),
-                    (string) $authRequest->getRedirectUri(),
-                    implode(' ', $scopes),
-                    $authRequest->getState(),
-                    (string) $authRequest->getCodeChallenge(),
-                    'S256',
-                    $resource,
-                    $csrf,
-                ]
+            [$consentId, $csrf, $scopes] = $this->createConsent($authRequest, $resource, $session);
+            $this->renderConsent(
+                $consentId,
+                $csrf,
+                $authRequest->getClient()->getName(),
+                $scopes,
+                $session['user'],
+                http_build_query($request->getQueryParams())
             );
-
-            $this->renderConsent($consentId, $csrf, $authRequest->getClient()->getName(), $scopes, $session['user']);
         }
 
         $this->auth->requireSameOrigin();
         $session = $this->auth->readSession();
         if ($session === null) {
-            Http::html('<h1>401</h1><p>Sesja wygasła. <a href="/oauth/authorize">Spróbuj ponownie</a>.</p>', 401);
+            if ($_GET !== []) {
+                Http::redirect('/oauth/login?return=' . rawurlencode('/oauth/authorize?' . http_build_query($_GET)));
+            }
+            Http::html('<h1>401</h1><p>Sesja wygasła. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 401);
         }
 
         $consentId = (string) ($_POST['consent_id'] ?? '');
@@ -190,10 +180,33 @@ final class OAuthController
             [$consentId, (int) $session['user']['id']]
         );
         if ($row === null || !hash_equals((string) $row['csrf'], $csrf)) {
-            Http::html('<h1>400</h1><p>Nieprawidłowa lub wygasła zgoda. <a href="/oauth/authorize">Spróbuj ponownie</a>.</p>', 400);
+            $this->auth->audit((int) $session['user']['id'], 'mcp.oauth.consent_retry', [
+                'reason' => $row === null ? 'missing_or_expired' : 'csrf_mismatch',
+            ]);
+            $retry = $this->request();
+            try {
+                $authRequest = $this->oauth->server->validateAuthorizationRequest($retry);
+            } catch (OAuthServerException $err) {
+                Http::html('<h1>400</h1><p>Nieprawidłowa lub wygasła zgoda. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 400);
+            }
+            $resource = (string) ($retry->getQueryParams()['resource'] ?? $this->config->mcp['resource']);
+            if (!$this->isAllowedResource($resource)) {
+                Http::html('<h1>400</h1><p>Nieprawidłowy resource. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 400);
+            }
+            if (($authRequest->getCodeChallengeMethod() ?? '') !== 'S256' || $authRequest->getCodeChallenge() === null) {
+                Http::html('<h1>400</h1><p>Wymagane jest PKCE S256. <a href="https://alphavault.pl">Wróć do AlphaVault</a>.</p>', 400);
+            }
+            [$consentId, $csrf, $scopes] = $this->createConsent($authRequest, $resource, $session);
+            $this->renderConsent(
+                $consentId,
+                $csrf,
+                $authRequest->getClient()->getName(),
+                $scopes,
+                $session['user'],
+                http_build_query($retry->getQueryParams()),
+                'Sesja zgody została odświeżona. Zatwierdź dostęp ponownie.'
+            );
         }
-
-        $this->db->execute('DELETE FROM mcp_consents WHERE id = ?', [$consentId]);
 
         $query = [
             'response_type' => 'code',
@@ -219,6 +232,8 @@ final class OAuthController
         } catch (\Throwable $err) {
             Http::html('<h1>500</h1><p>Nie udało się zakończyć autoryzacji.</p>', 500);
         }
+
+        $this->db->execute('DELETE FROM mcp_consents WHERE id = ?', [$consentId]);
 
         $this->auth->audit((int) $session['user']['id'], 'mcp.oauth.authorize', [
             'clientId' => (string) $row['client_id'],
@@ -583,7 +598,46 @@ final class OAuthController
         Http::redirect($returnTo);
     }
 
-    private function renderConsent(string $consentId, string $csrf, string $clientName, array $scopes, array $user): never
+    /**
+     * Tworzy wiersz zgody i zwraca [consentId, csrf, scopes].
+     *
+     * @return array{0:string,1:string,2:array<int,string>}
+     */
+    private function createConsent(object $authRequest, string $resource, array $session): array
+    {
+        $scopes = array_map(static fn ($scope): string => $scope->getIdentifier(), $authRequest->getScopes());
+        $consentId = $this->auth->randomToken(24);
+        $csrf = $this->auth->randomToken(24);
+        $this->db->execute('DELETE FROM mcp_consents WHERE expires_at < UTC_TIMESTAMP()');
+        $this->db->execute(
+            'INSERT INTO mcp_consents (id, user_id, client_id, redirect_uri, scopes, state, code_challenge, code_challenge_method, resource, csrf, expires_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP() + INTERVAL 30 MINUTE)',
+            [
+                $consentId,
+                (int) $session['user']['id'],
+                $authRequest->getClient()->getIdentifier(),
+                (string) $authRequest->getRedirectUri(),
+                implode(' ', $scopes),
+                $authRequest->getState(),
+                (string) $authRequest->getCodeChallenge(),
+                'S256',
+                $resource,
+                $csrf,
+            ]
+        );
+
+        return [$consentId, $csrf, $scopes];
+    }
+
+    private function renderConsent(
+        string $consentId,
+        string $csrf,
+        string $clientName,
+        array $scopes,
+        array $user,
+        string $authorizeQuery = '',
+        string $notice = ''
+    ): never
     {
         $name = htmlspecialchars($clientName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $userName = htmlspecialchars((string) ($user['globalName'] ?? $user['username'] ?? 'Użytkownik'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -599,8 +653,16 @@ final class OAuthController
         $writeNotice = in_array('alphavault.write', $scopes, true)
             ? '<p style="border-left:3px solid #d9b25f;padding-left:12px"><strong>Uwaga:</strong> ten klient może wykonywać operacje zapisujące. Każdą operację zatwierdzasz w rozmowie z klientem AI.</p>'
             : '';
+        $actionAttr = htmlspecialchars(
+            '/oauth/authorize' . ($authorizeQuery !== '' ? '?' . $authorizeQuery : ''),
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+        $noticeHtml = $notice !== ''
+            ? '<p style="border-left:3px solid #d9b25f;padding-left:12px"><strong>Uwaga:</strong> ' . htmlspecialchars($notice, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+            : '';
 
-        Http::html('<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zgoda MCP — AlphaVault</title><style>body{background:#080707;color:#f5f1eb;font-family:system-ui,Arial,sans-serif;max-width:680px;margin:0 auto;padding:40px 22px;line-height:1.65}h1{font-size:32px;letter-spacing:-1px}h2{font-size:18px;margin-top:28px}code{background:rgba(217,178,95,.12);padding:2px 6px;border-radius:5px;color:#f1d48e}ul{padding-left:20px}li{margin:8px 0}.card{background:#121110;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-top:20px}button{border:0;border-radius:99px;padding:11px 18px;font-weight:700;cursor:pointer}.allow{background:#f5f1eb;color:#080707}.deny{background:transparent;color:#f5f1eb;border:1px solid rgba(255,255,255,.25);margin-left:8px}small{color:#9f978c}</style></head><body><h1>Połącz AlphaVault z klientem AI</h1><p>Zalogowano jako <strong>' . $userName . '</strong>.</p><div class="card"><p><strong>' . $name . '</strong> prosi o dostęp do Twojego konta AlphaVault.</p><h2>Zakres dostępu</h2><ul>' . $scopeHtml . '</ul><h2>Co to oznacza</h2><p>Klient otrzyma dostęp do danych tradingowych zapisanych na Twoim koncie. Nie otrzyma hasła, tokenu Discord ani dostępu do bazy. Możesz w każdej chwili unieważnić dostęp na stronie <a style="color:#f1d48e" href="/oauth/connected">Połączone aplikacje</a>.</p>' . $writeNotice . '<form method="post" action="/oauth/authorize"><input type="hidden" name="consent_id" value="' . htmlspecialchars($consentId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><input type="hidden" name="csrf" value="' . htmlspecialchars($csrf, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><button class="allow" type="submit" name="decision" value="allow">Zatwierdzam dostęp</button><button class="deny" type="submit" name="decision" value="deny">Odrzucam</button></form></div><p><small>AlphaVault nie przekazuje Twojego tokenu Discord klientowi AI. Token MCP jest osobny, ograniczony czasem i scope.</small></p></body></html>');
+        Http::html('<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zgoda MCP — AlphaVault</title><style>body{background:#080707;color:#f5f1eb;font-family:system-ui,Arial,sans-serif;max-width:680px;margin:0 auto;padding:40px 22px;line-height:1.65}h1{font-size:32px;letter-spacing:-1px}h2{font-size:18px;margin-top:28px}code{background:rgba(217,178,95,.12);padding:2px 6px;border-radius:5px;color:#f1d48e}ul{padding-left:20px}li{margin:8px 0}.card{background:#121110;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-top:20px}button{border:0;border-radius:99px;padding:11px 18px;font-weight:700;cursor:pointer}.allow{background:#f5f1eb;color:#080707}.deny{background:transparent;color:#f5f1eb;border:1px solid rgba(255,255,255,.25);margin-left:8px}small{color:#9f978c}</style></head><body><h1>Połącz AlphaVault z klientem AI</h1><p>Zalogowano jako <strong>' . $userName . '</strong>.</p>' . $noticeHtml . '<div class="card"><p><strong>' . $name . '</strong> prosi o dostęp do Twojego konta AlphaVault.</p><h2>Zakres dostępu</h2><ul>' . $scopeHtml . '</ul><h2>Co to oznacza</h2><p>Klient otrzyma dostęp do danych tradingowych zapisanych na Twoim koncie. Nie otrzyma hasła, tokenu Discord ani dostępu do bazy. Możesz w każdej chwili unieważnić dostęp na stronie <a style="color:#f1d48e" href="/oauth/connected">Połączone aplikacje</a>.</p>' . $writeNotice . '<form method="post" action="' . $actionAttr . '"><input type="hidden" name="consent_id" value="' . htmlspecialchars($consentId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><input type="hidden" name="csrf" value="' . htmlspecialchars($csrf, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"><button class="allow" type="submit" name="decision" value="allow">Zatwierdzam dostęp</button><button class="deny" type="submit" name="decision" value="deny">Odrzucam</button></form></div><p><small>AlphaVault nie przekazuje Twojego tokenu Discord klientowi AI. Token MCP jest osobny, ograniczony czasem i scope.</small></p></body></html>');
     }
 
     private function revokeRawToken(string $token, string $hint): void

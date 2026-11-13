@@ -219,13 +219,23 @@ async function finishConsent(client, verifier, challenge, sessionCookie) {
   assert.equal(auth.res.status, 200, auth.text);
   const consent = /name="consent_id" value="([^"]+)"/.exec(auth.text);
   const csrf = /name="csrf" value="([^"]+)"/.exec(auth.text);
-  assert.ok(consent && csrf);
-  const post = await req('/oauth/authorize', {
+  const formAction = /<form method="post" action="([^"]+)"/.exec(auth.text);
+  assert.ok(consent && csrf && formAction);
+  const action = formAction[1].replace(/&amp;/g, '&');
+  const formBody = new URLSearchParams({ consent_id: consent[1], csrf: csrf[1], decision: 'allow' }).toString();
+  const post = await req(action, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: sessionCookie },
-    body: new URLSearchParams({ consent_id: consent[1], csrf: csrf[1], decision: 'allow' }).toString(),
+    body: formBody,
   });
   assert.equal(post.res.status, 302, post.text);
+  const retry = await req(action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: sessionCookie },
+    body: formBody,
+  });
+  assert.equal(retry.res.status, 200, retry.text);
+  assert.match(retry.text, /odświeżona/i);
   const code = new URL(post.res.headers.get('location')).searchParams.get('code');
   assert.ok(code);
   const token = await req('/oauth/token', {
