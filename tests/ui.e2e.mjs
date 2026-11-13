@@ -75,7 +75,7 @@ try {
   log('modal logowania', await page.locator('#demoEnter').isVisible(), 'Discord niepodłączony → demo');
 
   await page.click('#demoEnter');
-  await page.waitForFunction(() => document.querySelector('#envBadge')?.textContent.includes('POŁĄCZONO Z MYSQL'), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector('#auth')?.classList.contains('hide'), null, { timeout: 15000 });
   await page.waitForFunction(() => window.AV?.ready && AV.api.authenticated);
   log('logowanie demo + sesja', await page.locator('#auth').evaluate((el) => el.classList.contains('hide')), 'cookie + sesja');
 
@@ -163,19 +163,25 @@ try {
   const calcFx = await page.locator('#rMainL').innerText();
   log('kalkulator krypto + FX', calc !== '—' && calcFx.includes('MT4'), calc + ' / ' + calcFx);
 
-  // cena live z API: bez etykiety demo i bez adnotacji planu w nagłówku
+  // cena live z API: bez etykiety demo i bez technicznych etykiet w nagłówku
   await page.click('#calcMode [data-m="crypto"]');
   await page.selectOption('#cInst', { label: 'SOL/USDT' });
   await page.waitForFunction(() => document.querySelector('#cPrice b')?.textContent === '81,48', null, { timeout: 15000 });
   const liveCalc = await page.evaluate(() => ({
     shown: document.querySelector('#cPrice b').textContent,
     label: document.querySelector('#cPrice').parentElement.querySelector('.label').textContent,
-    badge: document.querySelector('#envBadge').textContent
+    envHidden: document.querySelector('#envBadge').hidden,
+    envText: document.querySelector('#envBadge').textContent,
+    syncHidden: document.querySelector('#syncBadge').hidden,
+    syncText: document.querySelector('#syncBadge').textContent,
+    ticker: document.querySelector('#ticker').textContent
   }));
   assert.equal(liveCalc.shown, '81,48');
   assert.ok(!/demo/i.test(liveCalc.label), 'etykieta bez demo: ' + liveCalc.label);
-  assert.ok(!/Alpha \+ Akademia|zapis automatyczny/i.test(liveCalc.badge), 'nagłówek bez planu: ' + liveCalc.badge);
-  log('cena live z API + czysty nagłówek', true, 'SOL/USDT ' + liveCalc.shown + ' · ' + liveCalc.badge);
+  assert.ok(liveCalc.envHidden && !/mysql|połączono/i.test(liveCalc.envText), 'pasek bez statusu bazy: ' + liveCalc.envText);
+  assert.ok(liveCalc.syncHidden && !/brak połączeń/i.test(liveCalc.syncText), 'chip giełd ukryty bez połączeń: ' + liveCalc.syncText);
+  assert.ok(liveCalc.ticker.includes('BTC') && liveCalc.ticker.includes('NAS100'), 'ticker z API: ' + liveCalc.ticker);
+  log('cena live z API + czysty nagłówek', true, 'SOL/USDT ' + liveCalc.shown + ' · 8 notowań w tickerze');
 
   // statystyki
   await page.click('.navg button[data-v="stat"]');

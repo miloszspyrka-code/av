@@ -608,7 +608,7 @@ Zasady:
 | Timer | Akcja |
 | --- | --- |
 | 1 s | countdown blokady ochronnej |
-| 12 s | ticker |
+| 60 s | ticker notowań i ceny instrumentów (`GET /api/quotes`) |
 | 60 s | kalendarz makro, powiadomienia |
 | 300 s | `loadEvents()` |
 | 300 s | `loadMacroEvents()` |
@@ -638,6 +638,12 @@ Zasady:
 - `AV.openQuickAdd()` wybiera transakcję: wskazany `id` → najnowsza bez emocji/oceny → najnowsza zamknięta → najnowsza. Modal pokazuje prawdziwe dane, nie statyczny BTC.
 - Zapis quick add: emocja + ocena wymagane, zdjęcie opcjonalne (`capture="environment"`). Czas od otwarcia do zapisu jest mierzony w `AV.ui.qaLastSeconds`.
 - Push serwerowy: SW ma handler `push` i `notificationclick`; nie ma jeszcze serwerowego źródła zdarzeń i VAPID. Do wdrożenia z auto-importem.
+
+### 11.8. Nagłówek panelu
+
+- `#ticker` — `GET /api/quotes` co 60 s; renderuje wyłącznie symbole zwrócone przez API; błąd zachowuje ostatni dobry zestaw, brak danych zostawia pasek pusty.
+- `#envBadge` (pasek nad aplikacją) — po zalogowaniu ukryty; pokazuje się tylko przy błędzie ostatniego zapisu, a przed logowaniem lub offline informuje o logowaniu albo trybie offline. Nie zawiera technicznych nazw bazy.
+- `#syncBadge` (chip w nagłówku) — widoczny tylko przy aktywnym połączeniu giełdy albo MetaTrader: nazwa dostawcy i godzina ostatniej synchronizacji; bez połączeń ukryty.
 
 ## 12. Puste pola i stany brzegowe
 

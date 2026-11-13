@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.9.3 — 2026-11-13
+
+### Zmienione
+- Nagłówek panelu: usunięty techniczny status bazy danych z paska nad aplikacją; pasek pokazuje wyłącznie logowanie, tryb offline albo błąd ostatniego zapisu.
+- Chip giełd w nagłówku renderuje się tylko przy aktywnym połączeniu (nazwa giełdy lub MetaTrader i czas synchronizacji); bez połączeń pozostaje ukryty, zamiast „brak połączeń”. Usunięty statyczny placeholder „WEEX · 10:30”.
+- Ticker bez zmian funkcjonalnych: `GET /api/quotes` co 60 s, ostatni dobry zestaw przy błędzie.
+
+### Testy
+- UI e2e: brak statusu bazy w nagłówku, ukryty chip giełd bez połączeń, ticker z podstawionego API.
+- UI integracje e2e: chip giełd pojawia się z „OKX” po połączeniu i jest ukryty bez połączeń.
+
 ## 3.9.1 - 2026-11-13
 
 ### Zmienione
