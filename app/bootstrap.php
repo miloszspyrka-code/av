@@ -20,6 +20,7 @@ require_once $root . '/app/DiscordEvents.php';
 require_once $root . '/app/MacroEvents.php';
 require_once $root . '/app/Wearables.php';
 require_once $root . '/app/Quotes.php';
+require_once $root . '/app/DemoState.php';
 require_once $root . '/app/Integrations/IntegrationException.php';
 require_once $root . '/app/Integrations/Crypto.php';
 require_once $root . '/app/Integrations/HttpClient.php';

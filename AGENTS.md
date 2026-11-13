@@ -185,8 +185,9 @@ Wrapper `cron/sync-discord-events.sh` wykonuje kolejno:
 | Recheck roli Alpha | `bin/check-discord-roles.php` | co 5 min po sync | `health.roleRecheck` |
 | Kalendarz makro | `bin/sync-macro-events.php` | co 15 min (throttle `.runtime/macro.stamp`) | `logs/macro-sync.log` |
 | Synchronizacja urządzeń | `bin/sync-wearables.php` | co 30 min (throttle `.runtime/wearables.stamp`) | `logs/wearables-sync.log` |
+| Synchronizacja dat demo | `bin/sync-demo-state.php` | co 60 min (throttle `.runtime/demo.stamp`) | stdout Cron + `revision` w `user_states` |
 
-**Wszystkie cykliczne zadania wynikają z jednego wpisu `*/5`.** Makro i urządzenia są wywoływane przez wrapper z throttle; nie wymagają osobnych wpisów w panelu LH.
+**Wszystkie cykliczne zadania wynikają z jednego wpisu `*/5`.** Makro, urządzenia i daty demo są wywoływane przez wrapper z throttle; nie wymagają osobnych wpisów w panelu LH.
 
 **Zasada:** wszystkie automatyzacje wynikają z jednego wpisu `*/5`. Nową cykliczną czynność dopinaj do `cron/sync-discord-events.sh` z własnym throttle i wpisem w tabeli powyżej; nie dodawaj drugiego wpisu w panelu LH. `crontab` przez SSH nie jest dostępny (`/var/spool/cron` nie istnieje) — harmonogram zmienia się wyłącznie w panelu.
 
@@ -300,7 +301,7 @@ Zakres CI:
 - dokumentacja: `sync-docs --check` + `tests/docs.test.mjs`,
 - PHP lint `app/` i `public/`,
 - migracja MySQL 8.4,
-- role, Discord DB/sync, makro, notowania, prop, router, izolacja, urządzenia, API, UI, empty-state, PWA, podatki, kodowanie,
+- role, Discord DB/sync, makro, notowania, daty demo, prop, router, izolacja, urządzenia, API, UI, empty-state, PWA, podatki, kodowanie,
 - integracje giełd/MetaTrader/API i ich UI na mockach.
 
 **Definition of Done:**
@@ -361,7 +362,7 @@ node scripts/sync-docs.mjs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy (ostatni pełny CI) | prop 27/27, router 18/18, API 23/23, UI 58/58, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, tax 8/8, wearables 42/42 + config 5/5, PWA 20/20, integracje 20/20, UI integracje 13/13, izolacja 9/9 |
+| Testy (ostatni pełny CI) | prop 27/27, router 18/18, API 23/23, UI 58/58, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, demo-state 15/15, tax 8/8, wearables 42/42 + config 5/5, PWA 20/20, integracje 20/20, UI integracje 13/13, izolacja 9/9 |
 | Realny Discord API | aktualna liczba w `/api/health` → `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
 | Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 dodaje kolumnę EA i tabele MCP |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |

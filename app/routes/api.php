@@ -130,6 +130,7 @@ function av_handle_api(Config $config, Db $db, Auth $auth, ?array $user, string 
             if ($row === null && $current['isDemo'] && is_file($config->demoStateFile)) {
                 $demo = file_get_contents($config->demoStateFile);
                 if ($demo !== false) {
+                    $demo = \AlphaVault\DemoState::shiftToToday($demo) ?? $demo;
                     $db->execute(
                         'INSERT INTO user_states (user_id, state, revision, bytes) VALUES (?, ?, 1, ?) ON DUPLICATE KEY UPDATE state = VALUES(state)',
                         [$current['id'], $demo, strlen($demo)]

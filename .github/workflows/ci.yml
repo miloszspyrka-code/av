@@ -140,6 +140,9 @@ jobs:
           php tests/quotes.test.php
           node tests/quotes.e2e.mjs
 
+      - name: Demo state tests
+        run: php tests/demo-state.test.php
+
       - name: Wearables E2E
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
