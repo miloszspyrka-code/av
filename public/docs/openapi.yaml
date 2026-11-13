@@ -52,6 +52,7 @@ paths:
     get:
       tags: [API]
       summary: Pobierz stan użytkownika
+      description: Historyczny mojibake (UTF-8 odczytany jako Windows-1250) jest naprawiany przed odpowiedzią i zapisywany z powrotem do MySQL bez zmiany rewizji. Poprawne znaki pozostają bez zmian.
       security: [{ cookieAuth: [] }]
       responses:
         '200':

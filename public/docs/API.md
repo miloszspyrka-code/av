@@ -191,9 +191,11 @@ Wymaga sesji (`401` bez). Zwraca stan JSON i rewizję.
 
 Nowe konto Discord: `state=null`. Konto demo bez stanu: seed z `db/demo-state.json`. Pole `userId` wiąże odpowiedź z sesją; klient odrzuca stan, jeśli nie należy do zalogowanego konta.
 
+Historyczny mojibake (UTF-8 odczytany jako Windows-1250) jest naprawiany przy odczycie. Jeśli stan się zmieni, serwer zapisuje poprawiony JSON z powrotem do `user_states` bez podnoszenia `revision` i zapisuje `audit_log.state.repair_encoding`. Poprawny polski tekst i ASCII nie są zmieniane.
+
 ### 3.4. `PUT /api/state`
 
-Wymaga sesji i poprawnego `Origin`.
+Wymaga sesji i poprawnego `Origin`. Przed zapisem serwer naprawia historyczny mojibake w stringach stanu, więc do MySQL nie trafia podwójnie zakodowany tekst.
 
 ```json
 {

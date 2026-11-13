@@ -5,7 +5,11 @@
  * Wymaga działającego serwera: npm start
  */
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = process.env.APP_URL || 'http://127.0.0.1:4173';
 const ORIGIN = new URL(BASE).origin;
 let cookie = '';
@@ -128,11 +132,34 @@ async function main() {
   assert.equal(adminEvents.res.status, 403);
   log('admin events bez uprawnień = 403', true);
 
+  const isLocal = /^http:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(BASE);
+  if (isLocal) {
+    try {
+      execFileSync('php', [path.join(ROOT, 'tests', 'seed-corrupt-state.php'), String(me.json.user.id)], {
+        env: { ...process.env, ALPHA_VAULT_CONFIG: process.env.ALPHA_VAULT_CONFIG || 'tests/config.test.json' },
+        stdio: 'pipe'
+      });
+    } catch (err) {
+      console.error('seed stdout:', err.stdout?.toString() || '');
+      console.error('seed stderr:', err.stderr?.toString() || '');
+      throw err;
+    }
+    log('seed uszkodzonego stanu (MySQL)', true);
+  }
+
   const state = await req('/api/state');
   assert.equal(state.res.status, 200);
   assert.ok(state.json.state, 'brak stanu demo');
   assert.ok(Array.isArray(state.json.state.trades));
   assert.equal(typeof state.json.userId, 'number');
+  if (isLocal) {
+    assert.equal(
+      state.json.state.chat[0].html,
+      'Cześć {imie}. Widzę dziś 0 straty i gotowość 66/100, więc jestem w pogotowiu.'
+    );
+    assert.equal(state.json.state.user.name, 'Miłosz Spyrka');
+    log('GET /api/state naprawia mojibake z MySQL', true);
+  }
   log('GET /api/state', true, `rewizja ${state.json.revision}, transakcje ${state.json.state.trades.length}`);
 
   const originalState = state.json.state;

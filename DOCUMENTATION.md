@@ -185,7 +185,7 @@ Dane w `rate_limits` (bucket, IP, window_start, count). Przekroczenie → 429.
 4. `UPDATE user_states ... WHERE user_id = ? AND revision = ?`.
 5. Sukces → `revision + 1`, odpowiedź z nową rewizją i `userId`.
 6. Konflikt → 409; frontend pobiera świeży stan tylko wtedy, gdy `userId` zgadza się z sesją.
-7. `GET /api/state` zwraca `{ state, revision, updatedAt, userId }`.
+7. `GET /api/state` zwraca `{ state, revision, updatedAt, userId }`. Historyczny mojibake (UTF-8 odczytany jako Windows-1250) jest naprawiany przed odpowiedzią i zapisywany z powrotem do `user_states` bez zmiany rewizji; zdarzenie trafia do `audit_log` jako `state.repair_encoding`.
 8. `DELETE /api/state` czyści stan (reset).
 9. `localStorage` jest fallbackiem offline i jest namespace'owany po `user.id`; po wylogowaniu cache użytkownika jest usuwany.
 

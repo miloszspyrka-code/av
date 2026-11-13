@@ -263,9 +263,11 @@ To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu pocz�
 
 ## Kodowanie — test CI
 
-`tests/encoding.test.mjs` + `scripts/check-encoding.mjs` (`npm run test:encoding`):
+`tests/encoding.test.mjs` + `scripts/check-encoding.mjs` (`npm run test:encoding`) oraz `tests/encoding.test.php`:
 
 - wykrywa niepoprawny UTF-8 i mojibake w kodzie, testach i dokumentacji,
+- testuje naprawę UTF-8 → Windows-1250 → UTF-8 bez zmiany poprawnego tekstu i ASCII,
+- `tests/api.e2e.mjs` wstawia uszkodzony stan do MySQL (`tests/seed-corrupt-state.php`) i sprawdza, że `GET /api/state` naprawia go i zapisuje z powrotem,
 - blokuje regresje polskich znaków,
 - jest uruchamiany w CI jako krok `Encoding guard`.
 
