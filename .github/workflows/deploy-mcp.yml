@@ -106,6 +106,7 @@ jobs:
       - name: Verify deploy script guards
         run: |
           set -euo pipefail
+          bash -n scripts/deploy-mcp.sh
           grep -q -- "--exclude='.app'" scripts/deploy-mcp.sh || {
             echo "::error::deploy-mcp.sh musi wykluczać .app z publicznego rsync."
             exit 1
