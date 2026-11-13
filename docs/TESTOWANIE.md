@@ -185,7 +185,7 @@ Test używa lokalnej bazy testowej; nie pobiera feedów z sieci.
 
 Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `db/schema.sql` oraz `db/migrations/*.sql` (w tym `mcp_*`). Runner jest idempotentny.
 
-## UI - 55 scenariusze
+## UI - 58 scenariuszy
 
 `tests/ui.e2e.mjs` używa Playwright + systemowego Chrome/Edge:
 
@@ -196,6 +196,8 @@ Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `d
 - harmonogram tygodnia i strip,
 - nawigacja 15 widoków (w tym prop),
 - plan dnia, filtry dziennika, szczegóły transakcji,
+- nagłówek: brak technicznego statusu bazy, ukryty chip giełd bez połączeń, ticker z `/api/quotes`,
+- tryb ochronny: deterministyczne 2 straty dnia i obejście limitu,
 - kalkulator, statystyki, mentor, akademia,
 - prop: 9 szablonów, nowy challenge + 4 KPI,
 - prop: walidacja formularza i XSS w nazwie,
