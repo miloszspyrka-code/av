@@ -17,6 +17,9 @@ final class Encoding
     /** Znaki typowe dla UTF-8 odczytanego jako Windows-1250. */
     private const LEAD = '/[\x{0139}\x{0102}\x{00C4}\x{00C2}\x{00C5}\x{00E2}\x{00C3}]/u';
 
+    /** @var array<string,int>|null Mapa znak CP1250 -> bajt. */
+    private static ?array $cp1250 = null;
+
     public static function repairMojibake(string $text): string
     {
         if ($text === '' || preg_match('/[^\x00-\x7F]/', $text) !== 1) {
@@ -84,24 +87,29 @@ final class Encoding
 
     private static function charToCp1250(string $char): ?int
     {
-        if (function_exists('iconv')) {
-            $byte = @iconv('UTF-8', 'Windows-1250', $char);
-            if (!is_string($byte) || strlen($byte) !== 1) {
-                return null;
-            }
+        $map = self::cp1250Map();
 
-            return ord($byte);
+        return $map[$char] ?? null;
+    }
+
+    /** @return array<string,int> */
+    private static function cp1250Map(): array
+    {
+        if (self::$cp1250 !== null) {
+            return self::$cp1250;
+        }
+        if (!function_exists('iconv')) {
+            return self::$cp1250 = [];
         }
 
-        if (function_exists('mb_convert_encoding')) {
-            $byte = @mb_convert_encoding($char, 'Windows-1250', 'UTF-8');
-            if (!is_string($byte) || strlen($byte) !== 1 || ($byte === '?' && $char !== '?')) {
-                return null;
+        $map = [];
+        for ($byte = 0; $byte < 256; $byte++) {
+            $char = @iconv('CP1250', 'UTF-8', chr($byte));
+            if (is_string($char) && $char !== '' && !isset($map[$char])) {
+                $map[$char] = $byte;
             }
-
-            return ord($byte);
         }
 
-        return null;
+        return self::$cp1250 = $map;
     }
 }

@@ -19,11 +19,17 @@ function check(bool $ok, string $label, string $detail = ''): void
 /** Tworzy mojibake: bajty UTF-8 odczytane jako Windows-1250. */
 function mojibake(string $text): string
 {
-    if (function_exists('mb_convert_encoding')) {
-        return mb_convert_encoding($text, 'UTF-8', 'Windows-1250');
+    if (!function_exists('iconv')) {
+        fwrite(STDERR, "Brak rozszerzenia iconv.\n");
+        exit(1);
+    }
+    $broken = @iconv('CP1250', 'UTF-8', $text);
+    if (!is_string($broken)) {
+        fwrite(STDERR, "Nie można zbudować fixture mojibake.\n");
+        exit(1);
     }
 
-    return iconv('Windows-1250', 'UTF-8', $text);
+    return $broken;
 }
 
 $samples = [

@@ -17,9 +17,15 @@ if ($row === null) {
 $userId = (int) $row['id'];
 
 $correct = 'Cześć {imie}. Widzę dziś 0 straty i gotowość 66/100, więc jestem w pogotowiu.';
-$broken = function_exists('mb_convert_encoding')
-    ? mb_convert_encoding($correct, 'UTF-8', 'Windows-1250')
-    : iconv('Windows-1250', 'UTF-8', $correct);
+if (!function_exists('iconv')) {
+    fwrite(STDERR, "Brak rozszerzenia iconv.\n");
+    exit(1);
+}
+$broken = @iconv('CP1250', 'UTF-8', $correct);
+if (!is_string($broken)) {
+    fwrite(STDERR, "Nie można zbudować fixture mojibake.\n");
+    exit(1);
+}
 
 $existing = $db->queryOne('SELECT state FROM user_states WHERE user_id = ?', [$userId]);
 $state = $existing !== null ? json_decode((string) $existing['state'], true) : null;
