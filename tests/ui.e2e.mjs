@@ -133,6 +133,7 @@ try {
   await page.click('#addLvl');
   const afterAdd = await page.locator('#lvls .lvl').count();
   await page.locator('#lvls .lvl').last().locator('.x').click();
+  if (!(await page.locator('#planWhy').inputValue()).trim()) await page.fill('#planWhy', 'E2E: plan dnia');
   await page.click('#savePlan');
   const approved = await page.evaluate(() => !!AV.state.plans[AV.dateKey(new Date())]?.approvedAt);
   log('plan dnia: poziomy + zatwierdzenie', afterAdd === beforeLevels + 1 && approved);
@@ -424,6 +425,21 @@ try {
 
   // nowa transakcja: obejście limitu + zapis + zamknięcie
   await page.click('.navg button[data-v="nowa"]');
+  // Fixture demo ma stałą datę; wymuś 2 straty dziś, żeby tryb ochronny był deterministyczny.
+  await page.evaluate(() => {
+    const today = AV.dateKey(new Date());
+    const mk = (id) => ({
+      id, date: new Date().toISOString(), pair: 'E2E/LOCK', dir: 'l', entry: '100', exit: '99', sl: '98', tp: '104',
+      size: '1', result: -10, r: -1, grade: 'B', checklist: 6, checkTotal: 7, errors: [], emotion: 'Spokój',
+      note: '', mentor: '', setup: 'E2E', session: 'Londyn', mae: 0, mfe: 0, durationMin: 20, fee: 0,
+      plan: true, source: 'E2E', account: 'E2E', screens: {}
+    });
+    AV.state.settings.safetyEnabled = true;
+    AV.state.trades = AV.state.trades
+      .filter((t) => AV.dateKey(new Date(t.date)) !== today)
+      .concat([mk('e2e_lock_a'), mk('e2e_lock_b')]);
+    AV.renderLock();
+  });
   await page.click('#pastTrade');
   const beforeTrades = await page.evaluate(() => AV.state.trades.length);
   await page.fill('#ntPair', 'E2E/USDT');
