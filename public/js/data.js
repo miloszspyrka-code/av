@@ -428,38 +428,38 @@
   /* ---------- MCP connect guide ---------- */
   AV.MCP_URL = 'https://mcp.alphavault.pl/mcp';
   AV.MCP_CLIENTS = {
-    claude: {
-      label: 'Claude',
-      docs: 'https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp',
-      steps: [
-        'Przejdź do claude.ai → Customize → Connectors.',
-        'Kliknij + Add → Add custom connector.',
-        'Wprowadź adres serwera MCP „AlphaVault” i dodaj połączenie.',
-        'Zatwierdź logowanie Discord i włącz connector w rozmowie.'
-      ],
-      note: 'W planach Team i Enterprise connector najpierw dodaje administrator organizacji. Na koncie Free możesz mieć jeden własny connector.'
-    },
     chatgpt: {
       label: 'ChatGPT',
-      docs: 'https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt',
+      title: 'Połącz Alpha Vault z ChatGPT',
+      sub: 'Dodaj własny serwer MCP w ustawieniach integracji ChatGPT.',
       steps: [
-        'Otwórz chatgpt.com/plugins i kliknij +.',
-        'Wybierz Add custom MCP server.',
-        'Wprowadź adres serwera MCP „AlphaVault” i zatwierdź OAuth.',
-        'Utwórz plugin, zainstaluj go i włącz w rozmowie przez @.'
-      ],
-      note: 'Dostępność custom MCP zależy od planu i workspace. W Business i Enterprise może wymagać zgody administratora.'
+        { t: 'Otwórz ustawienia ChatGPT', d: 'Przejdź do sekcji aplikacji lub integracji dostępnych na Twoim koncie.' },
+        { t: 'Dodaj własny serwer MCP', d: 'Wybierz opcję dodania niestandardowego serwera lub konektora MCP.' },
+        { t: 'Wklej adres Alpha Vault', d: 'Użyj adresu {url} i dokończ proces autoryzacji.' },
+        { t: 'Włącz integrację w rozmowie', d: 'Wybierz Alpha Vault jako źródło narzędzi, gdy chcesz z niego korzystać.' }
+      ]
+    },
+    claude: {
+      label: 'Claude',
+      title: 'Połącz Alpha Vault z Claude',
+      sub: 'Dodaj zdalny konektor MCP w ustawieniach Claude.',
+      steps: [
+        { t: 'Otwórz ustawienia Claude', d: 'Przejdź do ustawień konta i sekcji konektorów lub integracji.' },
+        { t: 'Dodaj niestandardowy konektor', d: 'Wybierz możliwość dodania zdalnego serwera MCP.' },
+        { t: 'Wprowadź adres serwera', d: 'Wklej {url}, zapisz i przejdź autoryzację.' },
+        { t: 'Używaj konektora w rozmowie', d: 'Po aktywacji Claude może korzystać z udostępnionych narzędzi Alpha Vault.' }
+      ]
     },
     grok: {
       label: 'Grok',
-      docs: 'https://docs.x.ai/grok/connectors',
+      title: 'Połącz Alpha Vault z Grok',
+      sub: 'Skonfiguruj własny serwer MCP w dostępnych integracjach Grok.',
       steps: [
-        'Przejdź na grok.com/connectors.',
-        'Wybierz New Connector → Custom.',
-        'Wprowadź adres serwera MCP „AlphaVault” i dodaj połączenie.',
-        'Przeprowadź wymagane uwierzytelnianie i włącz konektor w rozmowie.'
-      ],
-      note: 'W planach Business i Enterprise dodanie niestandardowego serwera może wymagać wcześniejszej konfiguracji przez administratora.'
+        { t: 'Otwórz ustawienia Grok', d: 'Znajdź sekcję połączonych aplikacji, narzędzi lub serwerów MCP.' },
+        { t: 'Dodaj nowy serwer MCP', d: 'Wybierz opcję dodania własnego lub zewnętrznego serwera.' },
+        { t: 'Wklej adres Alpha Vault', d: 'Użyj {url} i zatwierdź połączenie.' },
+        { t: 'Aktywuj narzędzia w Grok', d: 'Włącz Alpha Vault w rozmowie, w której chcesz korzystać z integracji.' }
+      ]
     }
   };
 })();

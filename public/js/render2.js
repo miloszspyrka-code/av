@@ -176,7 +176,7 @@
     $$('#mChips .chip').forEach((c) => { c.style.pointerEvents = ''; });
   };
 
-  AV.mcpClient = AV.mcpClient || 'grok';
+  AV.mcpClient = AV.mcpClient || 'chatgpt';
   AV.renderMentor = () => {
     AV.renderMcpGuide();
   };
@@ -184,18 +184,18 @@
     const steps = $('#mcpSteps');
     if (!steps) return;
     AV.setText('#mcpUrl', AV.MCP_URL);
-    const client = AV.MCP_CLIENTS[AV.mcpClient] || AV.MCP_CLIENTS.grok;
+    const client = AV.MCP_CLIENTS[AV.mcpClient] || AV.MCP_CLIENTS.chatgpt;
     $$('#mcpTabs button').forEach((b) => {
       const on = b.dataset.mcpClient === AV.mcpClient;
-      b.classList.toggle('on', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
       b.tabIndex = on ? 0 : -1;
     });
-    AV.setHTML('#mcpSteps', client.steps.map((step, i) => '<li><span class="mcp-num">' + String(i + 1).padStart(2, '0') + '</span><span>' + AV.esc(step) + '</span></li>').join(''));
-    AV.setText('#mcpNote', client.note);
-    AV.setText('#mcpDocsLabel', client.label);
-    const docs = $('#mcpDocs');
-    if (docs) docs.href = client.docs;
+    AV.setText('#mcpSetupTitle', client.title);
+    AV.setText('#mcpSetupSub', client.sub);
+    AV.setHTML('#mcpSteps', client.steps.map((step, i) => {
+      const desc = AV.esc(step.d).replace('{url}', '<code>' + AV.esc(AV.MCP_URL) + '</code>');
+      return '<div class="mcp-step"><span class="mcp-step-number">' + String(i + 1).padStart(2, '0') + '</span><div><strong>' + AV.esc(step.t) + '</strong><p>' + desc + '</p></div></div>';
+    }).join(''));
   };
 
   AV.mentorNotes = (s) => {

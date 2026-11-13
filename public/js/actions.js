@@ -832,11 +832,26 @@
   };
 
   AV.bindMentor = () => {
+    const tabs = $$('#mcpTabs button');
     $('#mcpTabs')?.addEventListener('click', (e) => {
       const b = e.target.closest('button[data-mcp-client]');
       if (!b) return;
       AV.mcpClient = b.dataset.mcpClient;
       AV.renderMcpGuide();
+    });
+    $('#mcpTabs')?.addEventListener('keydown', (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+      const current = tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true');
+      if (current < 0) return;
+      e.preventDefault();
+      let next = current;
+      if (e.key === 'ArrowRight') next = (current + 1) % tabs.length;
+      if (e.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+      if (e.key === 'Home') next = 0;
+      if (e.key === 'End') next = tabs.length - 1;
+      AV.mcpClient = tabs[next].dataset.mcpClient;
+      AV.renderMcpGuide();
+      tabs[next].focus();
     });
     $('#mcpCopy')?.addEventListener('click', async () => {
       const url = ($('#mcpUrl')?.textContent || '').trim();
@@ -867,7 +882,11 @@
           AV.setText('#mcpCopyLabel', 'Kopiuj adres');
         }, 1800);
       }
-      AV.toast('Adres MCP skopiowany');
+      AV.toast(copied ? 'Adres serwera MCP skopiowany' : 'Skopiuj adres ręcznie');
+    });
+    $('#mcpBack')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      $('#mcpTabs')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
     $('#proClose')?.addEventListener('click', () => $('#pro').classList.remove('on'));
     $('#proGo')?.addEventListener('click', () => { $('#pro').classList.remove('on'); AV.showView('mentor'); });

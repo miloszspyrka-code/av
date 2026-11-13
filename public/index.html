@@ -390,34 +390,87 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 @media(max-width:1100px){.hero{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr}.rules4{grid-template-columns:1fr 1fr}}@media(max-width:900px){#auth{grid-template-columns:1fr}.auth-art{display:none}.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto;gap:4px;padding:10px}aside .logo,.me,.navg .gl{display:none}.navg{flex-direction:row}.navg button{white-space:nowrap}.navg button.on:before{display:none}.g3,.g4,.g2{grid-template-columns:1fr 1fr}.wrap{padding:26px 16px 110px}.top{padding:10px 16px}.ex{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero>:first-child{grid-column:auto}.lvl{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.g3,.g4,.g2,.res,.rules4,.gradepick,.biasseg{grid-template-columns:1fr}.res .big{grid-column:auto}h1{font-size:30px}h1 .serif{font-size:36px}.ev{grid-template-columns:70px 1fr auto}.ev .flag{display:none}.chipst{display:none}.mw{right:12px;bottom:12px}.mw-panel{width:calc(100vw - 24px)}.lock{flex-wrap:wrap}.cd{margin-left:0}}
 
-/* MCP connect guide (Mentor AI) */
-.mcp-connect{max-width:620px;margin:0 auto;background:#f4f7ef;border:1px solid #e3e9db;border-radius:26px;padding:34px 32px 28px;color:#2f3a2d;box-shadow:0 30px 70px -45px rgba(0,0,0,.6)}
-.mcp-perks{list-style:none;margin:0 0 26px;padding:0;display:flex;flex-direction:column;gap:13px}
-.mcp-perks li{display:flex;align-items:center;gap:11px;font-size:14.5px;line-height:1.4;color:#3d483a}
-.mcp-perk{width:22px;height:22px;border-radius:50%;background:#304a32;color:#f4f8ee;display:grid;place-items:center;flex:0 0 auto}
-.mcp-perk svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.mcp-card{background:#fbfcf8;border:1px solid #dfe6d6;border-radius:18px;padding:16px 16px 18px;box-shadow:0 18px 34px -28px rgba(40,60,36,.45)}
-.mcp-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#edf2e6;border:1px solid #e1e8d8;border-radius:12px;padding:5px}
-.mcp-tabs button{all:unset;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 6px;border-radius:9px;font-size:13px;font-weight:600;color:#6b7565;cursor:pointer;border:1px solid transparent;transition:.15s;box-sizing:border-box}
-.mcp-tabs button.on{background:#fbfcf8;color:#263124;border-color:#d7e2cb;box-shadow:0 2px 6px rgba(42,62,38,.08)}
-.mcp-tabs button:focus-visible{outline:2px solid #7d9a6e;outline-offset:2px}
-.mcp-logo{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.mcp-label{margin:18px 4px 8px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:#8b9585}
-.mcp-url{background:#edf3e6;border:1px solid #dfe7d5;border-radius:12px;padding:11px 12px 12px}
-.mcp-url code{display:block;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#33402f;word-break:break-all;text-align:center;padding:2px 4px 10px}
-.mcp-copy{all:unset;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;background:#fff;border:1px solid #dfe6d6;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;color:#33402f;cursor:pointer;transition:.15s}
-.mcp-copy:hover{border-color:#c8d6bb;background:#fdfefb}
-.mcp-copy.copied{background:#e8f1e0;border-color:#c9dbb9}
-.mcp-copy svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.mcp-steps{list-style:none;margin:18px 0 0;padding:0}
-.mcp-steps li{display:flex;align-items:flex-start;gap:12px;padding:13px 2px;border-top:1px solid #e8ede2;font-size:13.5px;line-height:1.55;color:#3d473a}
-.mcp-steps li:first-child{border-top:0}
-.mcp-num{width:26px;height:26px;border-radius:50%;background:#e5eeda;color:#6d7a66;display:grid;place-items:center;font-size:10.5px;font-weight:800;flex:0 0 auto;margin-top:-1px}
-.mcp-note{margin:16px 4px 0;font-size:12px;line-height:1.55;color:#8b9585}
-.mcp-docs{display:inline-flex;align-items:center;gap:6px;margin:18px 4px 0;font-size:13px;font-weight:800;color:#24301f;text-decoration:none}
-.mcp-docs:hover{text-decoration:underline}
-.mcp-ext{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:640px){.mcp-connect{padding:22px 16px 20px;border-radius:20px}.mcp-perks li{font-size:13.5px}.mcp-tabs button{font-size:12px;gap:5px}.mcp-logo{width:12px;height:12px}.mcp-steps li{font-size:13px}}
+/* Mentor AI — integracje MCP */
+#mentor .mcp-page{width:min(1160px,100%);margin:0 auto}
+#mentor .mcp-eyebrow{display:flex;align-items:center;gap:9px;margin-bottom:14px;color:var(--alpha);font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.24em;text-transform:uppercase}
+#mentor .mcp-eyebrow:before{content:"";width:22px;height:1px;background:var(--alpha);opacity:.8}
+#mentor .mcp-eyebrow span{opacity:.45}
+#mentor .mcp-heading-row{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:29px}
+#mentor h1{font-size:clamp(32px,4vw,48px);line-height:1.02;letter-spacing:-.055em;font-weight:760;margin:0}
+#mentor h1 em{color:var(--alpha2);font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;letter-spacing:-.035em}
+#mentor .mcp-intro{max-width:640px;margin:13px 0 0;color:#a7a196;font-size:13px;line-height:1.7}
+#mentor .mcp-server-status{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid rgba(79,207,138,.22);border-radius:999px;color:#89d8ad;background:rgba(79,207,138,.075);font:800 9px/1 'JetBrains Mono',monospace;letter-spacing:.10em}
+#mentor .mcp-dot{width:7px;height:7px;border-radius:50%;background:var(--win);box-shadow:0 0 12px rgba(79,207,138,.7)}
+#mentor .mcp-hero-grid{display:grid;grid-template-columns:1.06fr .94fr;gap:16px;margin-bottom:28px}
+#mentor .mcp-card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(25,24,21,.94),rgba(15,15,14,.96));box-shadow:0 18px 60px rgba(0,0,0,.25)}
+#mentor .mcp-endpoint-card{padding:23px 24px 21px;border-color:rgba(var(--a),.30);background:linear-gradient(140deg,rgba(39,32,21,.85),rgba(18,17,15,.97) 66%)}
+#mentor .mcp-kicker{color:#8f8879;font:700 9px/1.2 'JetBrains Mono',monospace;letter-spacing:.2em;text-transform:uppercase}
+#mentor .mcp-card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 7px}
+#mentor .mcp-card h2{margin:0;font-size:18px;font-weight:720;letter-spacing:-.025em;color:var(--cream)}
+#mentor .mcp-shared-tag{color:var(--alpha2);font:800 8px/1 'JetBrains Mono',monospace;letter-spacing:.10em;border:1px solid rgba(var(--a),.24);background:rgba(var(--a),.08);border-radius:6px;padding:6px 8px;white-space:nowrap}
+#mentor .mcp-subcopy{margin:0;color:var(--mut);font-size:11px;line-height:1.55}
+#mentor .mcp-endpoint-box{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:19px;padding:13px 13px 13px 16px;background:rgba(0,0,0,.33);border:1px solid rgba(var(--a),.20);border-radius:12px}
+#mentor .mcp-endpoint-label{display:block;margin-bottom:7px;color:#8d877b;font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.16em}
+#mentor .mcp-endpoint-url{color:#f3e6c8;font:600 13px/1.3 'JetBrains Mono',monospace;overflow-wrap:anywhere}
+#mentor .mcp-copy{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;min-height:38px;padding:0 13px;color:#201a0e;background:linear-gradient(180deg,#f0d18a,#d3aa58);border:1px solid rgba(255,238,190,.35);border-radius:9px;font-size:10px;font-weight:850;cursor:pointer;transition:transform .18s ease,filter .18s ease}
+#mentor .mcp-copy:hover{transform:translateY(-1px);filter:brightness(1.07)}
+#mentor .mcp-copy:active{transform:translateY(0)}
+#mentor .mcp-copy.copied{filter:brightness(1.08)}
+#mentor .mcp-endpoint-foot{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;color:#858075;font-size:10px}
+#mentor .mcp-endpoint-foot span{display:inline-flex;align-items:center;gap:6px}
+#mentor .mcp-check{color:var(--win);font-weight:900}
+#mentor .mcp-how-card{padding:23px 24px;overflow:hidden;position:relative}
+#mentor .mcp-how-card:after{content:"";position:absolute;right:-52px;top:-90px;width:230px;height:230px;border-radius:50%;border:1px solid rgba(var(--a),.10);box-shadow:0 0 0 25px rgba(var(--a),.018),0 0 0 50px rgba(var(--a),.012);pointer-events:none}
+#mentor .mcp-how-title{margin:11px 0 17px;font-size:17px;font-weight:700;letter-spacing:-.025em;color:var(--cream)}
+#mentor .mcp-flow{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;align-items:center;gap:5px;position:relative;z-index:1}
+#mentor .mcp-flow-node{min-width:0;min-height:88px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.22);border-radius:12px}
+#mentor .mcp-flow-icon{display:grid;place-items:center;width:27px;height:27px;margin-bottom:9px;border-radius:8px;color:var(--alpha2);background:rgba(var(--a),.12);font-size:13px}
+#mentor .mcp-flow-node strong{font-size:10px;line-height:1.3;color:var(--cream)}
+#mentor .mcp-flow-node small{margin-top:4px;color:#858075;font-size:9px;line-height:1.3}
+#mentor .mcp-flow-arrow{color:#776a4c;text-align:center;font-size:17px}
+#mentor .mcp-how-note{margin:14px 0 0;color:#918b80;font-size:10px;line-height:1.55;position:relative;z-index:1}
+#mentor .mcp-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:32px 0 13px}
+#mentor .mcp-section-head h2{font-size:20px;margin:8px 0 0;color:var(--cream);letter-spacing:-.025em}
+#mentor .mcp-section-head p{margin:6px 0 0;color:var(--mut);font-size:11px}
+#mentor .mcp-section-index{color:#6e675b;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.15em}
+#mentor .mcp-provider-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(275px,.75fr);gap:16px;align-items:stretch}
+#mentor .mcp-setup-card{padding:20px 22px 22px}
+#mentor .mcp-provider-tabs{display:flex;gap:6px;padding:5px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(0,0,0,.26)}
+#mentor .mcp-provider-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;min-height:43px;padding:0 12px;color:#999387;background:transparent;border:1px solid transparent;border-radius:8px;cursor:pointer;font-size:11px;font-weight:750;transition:.18s ease}
+#mentor .mcp-provider-tab:hover{color:#eee5d2;background:rgba(255,255,255,.035)}
+#mentor .mcp-provider-tab[aria-selected="true"]{color:#f5e7c8;background:linear-gradient(180deg,rgba(var(--a),.17),rgba(var(--a),.07));border-color:rgba(var(--a),.25);box-shadow:0 4px 15px rgba(0,0,0,.2)}
+#mentor .mcp-provider-logo{display:grid;place-items:center;width:21px;height:21px;color:#e2c37d;border:1px solid rgba(var(--a),.28);border-radius:6px;font-size:11px;font-weight:900}
+#mentor .mcp-provider-tab[data-mcp-client="claude"] .mcp-provider-logo{color:#e6a77b;border-color:rgba(230,167,123,.28)}
+#mentor .mcp-provider-tab[data-mcp-client="grok"] .mcp-provider-logo{color:#d7d7d7;border-color:rgba(215,215,215,.25)}
+#mentor .mcp-setup-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:21px 0 17px}
+#mentor .mcp-setup-top h3{margin:0 0 6px;font-size:17px;letter-spacing:-.025em;color:var(--cream)}
+#mentor .mcp-setup-top p{margin:0;color:var(--mut);font-size:10px;line-height:1.5}
+#mentor .mcp-time-tag{flex:0 0 auto;color:#a59b88;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;font:700 8px/1 'JetBrains Mono',monospace}
+#mentor .mcp-steps{display:grid;gap:0}
+#mentor .mcp-step{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:13px 0;border-top:1px solid rgba(255,255,255,.065)}
+#mentor .mcp-step-number{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;color:var(--alpha2);background:rgba(var(--a),.10);border:1px solid rgba(var(--a),.15);font:800 9px/1 'JetBrains Mono',monospace}
+#mentor .mcp-step strong{display:block;margin:1px 0 4px;color:#e7e2d8;font-size:11px}
+#mentor .mcp-step p{margin:0;color:#918b80;font-size:10px;line-height:1.55}
+#mentor .mcp-step code{color:#e7cd95;font:10px 'JetBrains Mono',monospace}
+#mentor .mcp-side-stack{display:grid;gap:16px;grid-template-rows:auto 1fr}
+#mentor .mcp-benefits-card{padding:21px 21px 18px}
+#mentor .mcp-benefits-card h3,#mentor .mcp-permission-card h3{margin:10px 0 14px;font-size:15px;letter-spacing:-.02em;color:var(--cream)}
+#mentor .mcp-benefit{display:grid;grid-template-columns:29px 1fr;gap:10px;padding:11px 0;border-top:1px solid rgba(255,255,255,.06)}
+#mentor .mcp-benefit-icon{display:grid;place-items:center;width:27px;height:27px;color:var(--alpha2);background:rgba(var(--a),.09);border-radius:8px;font-size:12px}
+#mentor .mcp-benefit strong{display:block;margin:1px 0 4px;font-size:10px;color:var(--cream)}
+#mentor .mcp-benefit p{margin:0;color:#8f897f;font-size:9px;line-height:1.5}
+#mentor .mcp-permission-card{padding:20px 21px;border-color:rgba(79,207,138,.16);background:linear-gradient(145deg,rgba(16,29,22,.62),rgba(16,17,15,.96))}
+#mentor .mcp-permission-card h3{margin-bottom:8px}
+#mentor .mcp-permission-card>p{margin:0;color:#9b9d91;font-size:10px;line-height:1.6}
+#mentor .mcp-permission-rule{display:flex;align-items:flex-start;gap:8px;margin-top:13px;color:#c2c5b8;font-size:9px;line-height:1.45}
+#mentor .mcp-permission-rule .mcp-check{flex:0 0 auto}
+#mentor .mcp-bottom-note{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:17px 20px;margin-top:18px;border:1px solid rgba(255,255,255,.075);border-radius:13px;background:rgba(255,255,255,.018)}
+#mentor .mcp-bottom-note strong{display:block;margin-bottom:4px;font-size:10px;color:var(--cream)}
+#mentor .mcp-bottom-note p{margin:0;color:#8c867c;font-size:9px;line-height:1.5}
+#mentor .mcp-text-link{color:var(--alpha2);font-size:10px;font-weight:800;text-decoration:none;white-space:nowrap;cursor:pointer}
+#mentor .mcp-text-link:hover{text-decoration:underline}
+@media(max-width:1050px){#mentor .mcp-hero-grid{grid-template-columns:1fr}#mentor .mcp-provider-layout{grid-template-columns:1fr}#mentor .mcp-side-stack{grid-template-columns:1fr 1fr;grid-template-rows:auto}}
+@media(max-width:720px){#mentor .mcp-heading-row{align-items:flex-start;flex-direction:column;margin-bottom:22px}#mentor .mcp-server-status{align-self:flex-start}#mentor .mcp-endpoint-card,#mentor .mcp-how-card,#mentor .mcp-setup-card{padding:18px 16px}#mentor .mcp-endpoint-box{align-items:flex-start;flex-direction:column}#mentor .mcp-copy{width:100%}#mentor .mcp-flow{grid-template-columns:1fr;gap:7px}#mentor .mcp-flow-node{min-height:65px;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px}#mentor .mcp-flow-icon{margin:0;flex:0 0 auto}#mentor .mcp-flow-arrow{transform:rotate(90deg);line-height:12px}#mentor .mcp-side-stack{grid-template-columns:1fr}#mentor .mcp-provider-tabs{gap:3px}#mentor .mcp-provider-tab{gap:6px;padding:0 6px;font-size:10px}#mentor .mcp-provider-logo{width:19px;height:19px}#mentor .mcp-setup-top{flex-direction:column}#mentor .mcp-bottom-note{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -819,26 +872,96 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= MENTOR ================= -->
 <section class="view" id="mentor">
-  <div class="mcp-connect">
-    <ul class="mcp-perks">
-      <li><span class="mcp-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Jeden adres MCP dla trzech asystentów</li>
-      <li><span class="mcp-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Bezpieczne połączenie HTTPS</li>
-      <li><span class="mcp-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Dostęp zgodny z uprawnieniami Twojego konta</li>
-    </ul>
-    <div class="mcp-card">
-      <div class="mcp-tabs" id="mcpTabs" role="tablist" aria-label="Wybierz asystenta AI">
-        <button type="button" role="tab" data-mcp-client="claude" aria-selected="false"><svg class="mcp-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M3.4 7l17.2 10M20.6 7L3.4 17"/></svg>Claude</button>
-        <button type="button" role="tab" data-mcp-client="chatgpt" aria-selected="false"><svg class="mcp-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8 5v9l-8 5-8-5v-9z"/><path d="M12 2.5v19M4 7.5l16 9M20 7.5l-16 9"/></svg>ChatGPT</button>
-        <button type="button" role="tab" data-mcp-client="grok" class="on" aria-selected="true"><svg class="mcp-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>Grok</button>
+  <div class="mcp-page">
+    <div class="mcp-eyebrow">MENTOR AI <span>/</span> INTEGRACJE</div>
+    <div class="mcp-heading-row">
+      <div>
+        <h1>Alpha Vault w Twoim <em>AI.</em></h1>
+        <p class="mcp-intro">Połącz swoje konto z ChatGPT, Claude lub Grok. Jeden serwer MCP udostępnia asystentowi funkcje Alpha Vault — bez potrzeby konfigurowania osobnego adresu dla każdej platformy.</p>
       </div>
-      <div class="mcp-label">Adres serwera MCP</div>
-      <div class="mcp-url">
-        <code id="mcpUrl">https://mcp.alphavault.pl/mcp</code>
-        <button type="button" class="mcp-copy" id="mcpCopy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="mcpCopyLabel">Kopiuj adres</span></button>
+      <div class="mcp-server-status"><span class="mcp-dot"></span>SERWER MCP GOTOWY</div>
+    </div>
+
+    <section class="mcp-hero-grid" aria-label="Adres i sposób działania serwera MCP">
+      <div class="mcp-card mcp-endpoint-card">
+        <div class="mcp-kicker">01 / PUNKT POŁĄCZENIA</div>
+        <div class="mcp-card-heading">
+          <h2>Jeden adres. Trzy integracje.</h2>
+          <span class="mcp-shared-tag">WSPÓLNY ENDPOINT</span>
+        </div>
+        <p class="mcp-subcopy">Ten sam adres wpisujesz podczas konfiguracji każdego asystenta. Połączenie z wybraną platformą autoryzujesz osobno.</p>
+        <div class="mcp-endpoint-box">
+          <div style="min-width:0">
+            <span class="mcp-endpoint-label">ADRES SERWERA MCP</span>
+            <div class="mcp-endpoint-url" id="mcpUrl">https://mcp.alphavault.pl/mcp</div>
+          </div>
+          <button class="mcp-copy" id="mcpCopy" type="button"><span aria-hidden="true">▣</span> <span id="mcpCopyLabel">Kopiuj adres</span></button>
+        </div>
+        <div class="mcp-endpoint-foot">
+          <span><b class="mcp-check">✓</b> Połączenie HTTPS</span>
+          <span><b class="mcp-check">✓</b> Jeden adres dla 3 asystentów</span>
+          <span><b class="mcp-check">✓</b> Autoryzacja konta</span>
+        </div>
       </div>
-      <ol class="mcp-steps" id="mcpSteps"></ol>
-      <p class="mcp-note" id="mcpNote"></p>
-      <a class="mcp-docs" id="mcpDocs" href="https://docs.x.ai/grok/connectors" target="_blank" rel="noopener">Oficjalna instrukcja <span id="mcpDocsLabel">Grok</span><svg class="mcp-ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg></a>
+
+      <div class="mcp-card mcp-how-card">
+        <div class="mcp-kicker">JAK TO DZIAŁA</div>
+        <div class="mcp-how-title">Od Twojego konta do asystenta AI</div>
+        <div class="mcp-flow">
+          <div class="mcp-flow-node"><span class="mcp-flow-icon">◈</span><div><strong>Alpha Vault</strong><small>Twoje konto i dane</small></div></div>
+          <div class="mcp-flow-arrow">›</div>
+          <div class="mcp-flow-node"><span class="mcp-flow-icon">⌘</span><div><strong>Serwer MCP</strong><small>Warstwa połączenia</small></div></div>
+          <div class="mcp-flow-arrow">›</div>
+          <div class="mcp-flow-node"><span class="mcp-flow-icon">✧</span><div><strong>Asystent AI</strong><small>ChatGPT · Claude · Grok</small></div></div>
+        </div>
+        <p class="mcp-how-note">MCP jest standardem komunikacji między asystentem AI a zewnętrznymi narzędziami. Nie tworzysz trzech oddzielnych integracji po stronie Alpha Vault.</p>
+      </div>
+    </section>
+
+    <div class="mcp-section-head">
+      <div>
+        <div class="mcp-kicker">02 / WYBIERZ ASYSTENTA</div>
+        <h2>Skonfiguruj połączenie</h2>
+        <p>Wybierz platformę, z której korzystasz, i wykonaj instrukcję.</p>
+      </div>
+      <div class="mcp-section-index">3 DOSTĘPNE PLATFORMY</div>
+    </div>
+
+    <section class="mcp-provider-layout" aria-label="Instrukcja konfiguracji asystenta">
+      <div class="mcp-card mcp-setup-card">
+        <div class="mcp-provider-tabs" id="mcpTabs" role="tablist" aria-label="Wybierz asystenta AI">
+          <button class="mcp-provider-tab" type="button" role="tab" data-mcp-client="chatgpt" aria-selected="true"><span class="mcp-provider-logo">✳</span>ChatGPT</button>
+          <button class="mcp-provider-tab" type="button" role="tab" data-mcp-client="claude" aria-selected="false"><span class="mcp-provider-logo">✴</span>Claude</button>
+          <button class="mcp-provider-tab" type="button" role="tab" data-mcp-client="grok" aria-selected="false"><span class="mcp-provider-logo">𝕏</span>Grok</button>
+        </div>
+        <div class="mcp-setup-top">
+          <div><h3 id="mcpSetupTitle">Połącz Alpha Vault z ChatGPT</h3><p id="mcpSetupSub">Dodaj własny serwer MCP w ustawieniach integracji ChatGPT.</p></div>
+          <span class="mcp-time-tag">4 KROKI</span>
+        </div>
+        <div class="mcp-steps" id="mcpSteps"></div>
+      </div>
+
+      <div class="mcp-side-stack">
+        <div class="mcp-card mcp-benefits-card">
+          <div class="mcp-kicker">CO DAJE INTEGRACJA</div>
+          <h3>Twój asystent, z kontekstem Alpha Vault.</h3>
+          <div class="mcp-benefit"><span class="mcp-benefit-icon">⌁</span><div><strong>Praca na kontekście konta</strong><p>Asystent może korzystać z funkcji i informacji udostępnionych przez serwer MCP.</p></div></div>
+          <div class="mcp-benefit"><span class="mcp-benefit-icon">⇄</span><div><strong>Ten sam punkt połączenia</strong><p>Nie musisz generować osobnego adresu dla ChatGPT, Claude i Grok.</p></div></div>
+          <div class="mcp-benefit"><span class="mcp-benefit-icon">◉</span><div><strong>Osobna konfiguracja platform</strong><p>Każdego asystenta podłączasz i autoryzujesz niezależnie.</p></div></div>
+        </div>
+        <div class="mcp-card mcp-permission-card">
+          <div class="mcp-kicker">DOSTĘP I BEZPIECZEŃSTWO</div>
+          <h3>Twoje konto wyznacza zakres dostępu.</h3>
+          <p>Połączenie MCP nie powinno być traktowane jako dostęp do całego systemu. Asystent korzysta z narzędzi udostępnionych przez serwer, w zakresie wynikającym z konfiguracji i uprawnień konta.</p>
+          <div class="mcp-permission-rule"><span class="mcp-check">✓</span><span>Nie udostępniasz asystentowi hasła do Alpha Vault.</span></div>
+          <div class="mcp-permission-rule"><span class="mcp-check">✓</span><span>Zakres funkcji zależy od dostępnych narzędzi i uprawnień.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="mcp-bottom-note">
+      <div><strong>Nie widzisz opcji dodania własnego serwera MCP?</strong><p>Dostępność integracji może zależeć od planu, typu konta, ustawień workspace lub włączenia funkcji dla deweloperów u danego dostawcy AI.</p></div>
+      <a class="mcp-text-link" href="#" id="mcpBack">Wróć do konfiguracji ↑</a>
     </div>
   </div>
 </section>
