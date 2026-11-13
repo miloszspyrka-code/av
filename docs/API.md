@@ -504,6 +504,32 @@ Publiczny, read-only pasek notowań i ceny instrumentów w kalkulatorze. Dane po
 Symbole tickera: `BTC`, `ETH`, `SOL`, `NAS100`, `US500`, `XAUUSD`, `EUR/USD`, `OIL`.
 Instrumenty kalkulatora: `BTC/USDT`, `ETH/USDT`, `SOL/USDT`, `XRP/USDT`, `BNB/USDT`, `DOGE/USDT`, `LINK/USDT`, `AVAX/USDT`, `GBP/USD`, `USD/JPY`, `AUD/USD`, `USD/CHF`, `USD/CAD`, `NZD/USD`, `EUR/GBP`, `US30`, `GER40`, `UK100`, `JPN225`, `XAGUSD`.
 
+### 3.21. `GET /api/mcp`
+
+Panel MCP: status, scope i oczekujące propozycje zmian.
+
+- Wymaga sesji panelu (`401` bez logowania).
+- Zwraca `{endpoint, enabled, writesEnabled, scopes, proposals[], proposalCount, audit[]}`.
+- `proposals` zawiera `id`, `kind`, `target`, `baseRevision`, `before`, `after`, `diff`, `status`,
+  `createdAt`, `expiresAt`, `clientName`.
+- Propozycje wygasłe są oznaczane jako `expired` przy odczycie.
+
+### 3.22. `POST /api/mcp/proposals/decide`
+
+Zatwierdzenie lub odrzucenie propozycji MCP.
+
+```json
+{ "id": "uuid", "action": "approve" }
+```
+
+- Wymaga sesji panelu, `Origin` zgodnego z aplikacją i rate limitu 60/min.
+- `approve` wykonuje transakcję MySQL z `SELECT ... FOR UPDATE`, sprawdza `base_revision`,
+  target, TTL i rozmiar stanu, inkrementuje `revision` i zapisuje audyt.
+- `reject` nie zmienia `user_states`.
+- Błędy: `not_found` (404), `proposal_closed` (409), `proposal_expired` (409),
+  `revision_conflict` (409), `state_too_large` (413).
+- Endpoint nie jest dostępny przez MCP i nie ma odpowiednika w narzędziach agenta.
+
 ## 4. Bezpieczeństwo
 
 - brak haseł użytkowników; tylko Discord OAuth2,

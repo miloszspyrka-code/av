@@ -249,6 +249,20 @@ Migracje: `php app/db/migrate.php` na czystej bazie tworzy wszystkie tabele z `d
 
 To emulacja Chromium. Instalacja na fizycznym iPhone (Safari → Do ekranu początkowego) i powiadomienia iOS wymagają testu ręcznego; patrz „Czego testy nie obejmują”.
 
+## MCP 2.0 — OAuth, narzędzia, propozycje, panel
+
+| Test | Zakres |
+| --- | --- |
+| `php tests/mcp.test.php` | propozycje, idempotencja, konflikt rewizji, TTL, ochrona danych giełdowych, izolacja, audyt |
+| `node tests/mcp.e2e.mjs` | OAuth 2.1 + PKCE, DCR, consent, token/refresh/revoke, 15 narzędzi odczytu, 7 propozycji, prompts, `MCP_WRITES_ENABLED=false/true` |
+| `node tests/mcp-login.e2e.mjs` | logowanie Discord na mocku: rola OK, brak roli, brak członkostwa, duplikat konta |
+| `node tests/mcp-ui.e2e.mjs` | panel: dwie propozycje, diff, approve, reject, reload, trwałość i brak błędów JS |
+| `node tests/prop-parity.mjs` | parytet `PropChallengeService.php` z `public/js/prop.js` na wspólnych fixtures |
+| `php tests/mcp-user-service.php` | idempotentne dopasowanie konta wyłącznie po Discord ID |
+
+Wymagania CI: `composer install`, rozszerzenia `openssl`, `sodium`, `json`, MySQL 8.4 i `tests/config.test.json`.
+Testy MCP nie używają produkcyjnego Discorda ani giełd; logowanie Discord jest mockowane lokalnym serwerem HTTP.
+
 ## Dokumentacja — 16 scenariuszy
 
 `tests/docs.test.mjs` sprawdza:

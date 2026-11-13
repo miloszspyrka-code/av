@@ -36,6 +36,7 @@ final class Config
         public readonly string $quotesBase,
         public readonly int $quotesTtl,
         public readonly string $quotesCacheFile,
+        public readonly array $mcp,
         public readonly string $version,
     ) {
     }
@@ -112,6 +113,8 @@ final class Config
             'requiredRoleId' => (string) $env('DISCORD_REQUIRED_ROLE_ID', ''),
             'botToken' => (string) $env('DISCORD_BOT_TOKEN', ''),
             'apiBase' => rtrim((string) $env('DISCORD_API_BASE', 'https://discord.com/api/v10'), '/'),
+            'oauthBase' => rtrim((string) $env('DISCORD_OAUTH_BASE', 'https://discord.com/api'), '/'),
+            'userBase' => rtrim((string) $env('DISCORD_USER_BASE', 'https://discord.com'), '/'),
             'roleRecheckSeconds' => max(300, $parseInt($env('DISCORD_ROLE_RECHECK_SECONDS'), 300)),
             'defaultPlan' => $env('DISCORD_DEFAULT_PLAN') === 'solo' ? 'solo' : 'full',
             'trialDays' => $parseInt($env('DISCORD_TRIAL_DAYS'), 0),
@@ -193,6 +196,28 @@ final class Config
             'metaapi_client' => (string) $env('METAAPI_CLIENT_BASE', 'https://mt-client-api-v1.{region}.agiliumtrade.agiliumtrade.ai'),
         ];
 
+        $mcp = [
+            'enabled' => $parseBool($env('MCP_ENABLED'), false),
+            'writesEnabled' => $parseBool($env('MCP_WRITES_ENABLED'), false),
+            'issuer' => rtrim((string) $env('MCP_ISSUER', $appUrl), '/'),
+            'resource' => rtrim((string) $env('MCP_RESOURCE', $appUrl . '/mcp'), '/'),
+            'privateKeyPath' => (string) $env('MCP_PRIVATE_KEY_PATH', $root . '/keys/oauth-private.pem'),
+            'publicKeyPath' => (string) $env('MCP_PUBLIC_KEY_PATH', $root . '/keys/oauth-public.pem'),
+            'encryptionKeyPath' => (string) $env('MCP_ENCRYPTION_KEY_PATH', $root . '/keys/oauth-encryption.key'),
+            'accessTokenTtl' => $parseInt($env('MCP_ACCESS_TOKEN_TTL'), 3600),
+            'refreshTokenTtl' => $parseInt($env('MCP_REFRESH_TOKEN_TTL'), 2592000),
+            'authCodeTtl' => $parseInt($env('MCP_AUTH_CODE_TTL'), 300),
+            'bodyLimit' => $parseInt($env('MCP_BODY_LIMIT'), 65536),
+            'allowedRedirectHosts' => array_values(array_filter(array_map(
+                static fn (string $value): string => strtolower(trim($value)),
+                explode(',', (string) $env(
+                    'MCP_ALLOWED_REDIRECT_HOSTS',
+                    'chatgpt.com,chat.openai.com,platform.openai.com,claude.ai,grok.com,x.ai,localhost,127.0.0.1'
+                ))
+            ), static fn (string $value): bool => $value !== '')),
+            'logFile' => (string) $env('MCP_LOG_FILE', $root . '/logs/mcp.log'),
+        ];
+
         return new self(
             root: $root,
             appUrl: $appUrl,
@@ -200,7 +225,7 @@ final class Config
             isProd: $isProd,
             secureCookies: str_starts_with($appUrl, 'https://'),
             sessionSecret: $sessionSecret,
-            sessionCookie: 'av_session',
+            sessionCookie: (string) $env('SESSION_COOKIE', 'av_session'),
             oauthCookie: 'av_oauth',
             demoCookie: 'av_demo',
             trustProxy: $parseBool($env('TRUST_PROXY'), false),
@@ -224,7 +249,8 @@ final class Config
             quotesBase: rtrim((string) $env('QUOTES_BASE', 'https://query1.finance.yahoo.com'), '/'),
             quotesTtl: max(0, min(3600, $parseInt($env('QUOTES_TTL'), 60))),
             quotesCacheFile: (string) $env('QUOTES_CACHE', $root . '/cache/quotes.json'),
-            version: '3.9.5',
+            mcp: $mcp,
+            version: '4.0.0',
         );
     }
 }

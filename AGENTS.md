@@ -301,7 +301,9 @@ gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<br
 gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<branch> -f dry_run=false
 ```
 
-Workflow używa tych samych sekretów SSH/DB/Discord co `alphavault.pl`, uruchamia `scripts/deploy-mcp.sh` i nie dotyka innych domen. Deploy jest poprawny dopiero po zielonym runie i health checku `https://mcp.alphavault.pl/health`.
+Workflow używa tych samych sekretów SSH/DB/Discord co `alphavault.pl`, uruchamia `composer install` i `scripts/deploy-mcp.sh`, wykonuje migrację, klucze OAuth, health check i nie dotyka innych domen. Deploy jest poprawny dopiero po zielonym runie, health checku `https://mcp.alphavault.pl/health` i discovery `/.well-known/oauth-protected-resource`.
+
+MCP 2.0: 15 narzędzi odczytu zawsze; 7 narzędzi `propose_*` tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write`. Produkcja pozostaje na `MCP_WRITES_ENABLED=false`. Zatwierdzanie propozycji wyłącznie w panelu `https://alphavault.pl`; MCP nie ma narzędzia approve.
 
 ## 7. Testy i Definition of Done
 
@@ -373,9 +375,9 @@ node scripts/sync-docs.mjs
 | Element | Stan |
 | --- | --- |
 | Kod w `main` | gotowy (PHP 8.3, Discord events) |
-| Testy (ostatni pełny CI) | prop 27/27, router 18/18, API 23/23, UI 58/58, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, demo-state 15/15, tax 8/8, wearables 42/42 + config 5/5, PWA 20/20, integracje 20/20, UI integracje 13/13, izolacja 9/9 |
+| Testy (ostatni pełny CI) | prop 27/27, prop parity, router 18/18, API 23/23, UI 58/58, empty 12/12, events 24/24, roles 18/18, macro 21/21, quotes 14/14, demo-state 15/15, tax 8/8, wearables 42/42 + config 5/5, PWA 20/20, integracje 20/20, UI integracje 13/13, izolacja 9/9, MCP PHP 17/17, MCP E2E read+writes, MCP login, MCP panel |
 | Realny Discord API | aktualna liczba w `/api/health` → `sync.eventsCount` (2026-11-12 21:49 UTC: 2) |
-| Baza LH | tabele utworzone (18), w tym 4 `wearable_*` i 4 `exchange_*`, login OK; migracja 20261113 dodaje kolumnę EA i tabele MCP |
+| Baza LH | tabele utworzone (27), w tym 4 `wearable_*`, 4 `exchange_*` i 9 `mcp_*`; migracja `20261114_mcp2.sql` dodaje `payload_hash` i rozszerza `mcp_proposals.kind` |
 | Integracje | `configured=true` (`INTEGRATIONS_KEY`); `metaApiConfigured=false` (brak `METAAPI_TOKEN`); 0 połączeń |
 | Cron integracji | `success` (health `integrations.sync`), 0 połączeń, 0 importów; wewnątrz 5-min wrappera, realny sync max co 25 min |
 | Kalendarz makro | `macro_events` + `/api/macro-events`, sync FF/TradingView; wrapper `*/5` uruchamia sync co 15 min (throttle, bez osobnego wpisu) |

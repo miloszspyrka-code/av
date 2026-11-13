@@ -73,6 +73,34 @@ Bez frameworka: `index.html`, `js/core.js`, `js/data.js`, `js/state.js`, `js/ren
 
 Puste pola i stany brzegowe: [DOCUMENTATION.md §12](DOCUMENTATION.md#12-puste-pola-i-stany-brzegowe).
 
+## MCP 2.0
+
+MCP działa jako osobny front controller `mcp/public/index.php` na `mcp.alphavault.pl`, z tym samym MySQL i tym samym kontem LH.pl. Kod PHP w `app/Mcp/` jest ładowany przez Composer PSR-4 wyłącznie na domenie MCP; `alphavault.pl` nie wdraża `vendor/`.
+
+```text
+app/Mcp/
+  Http/OAuthController.php   OAuth 2.1 AS: discovery, DCR, authorize, token, revoke, login Discord
+  Http/McpController.php     JSON-RPC, rejestracja 15+7 narzędzi, prompts, scope policy
+  OAuth/                     league/oauth2-server: encje, repozytoria, OAuthServer, TokenValidator
+  Support/                   StateRepository, TradeService, StatsService, DashboardService,
+                             EventsService, MacroService, CapitalService, ConnectionsService,
+                             PropChallengeService, TradeContextService
+  Proposals/                 ProposalService (mcp_proposals, FOR UPDATE, revision), ProposalBuilder
+  Tools/                     Tools (handlery), Schemas (input/output), Prompts
+```
+
+Przepływ zapisu:
+
+```text
+agent → propose_* → walidacja → mcp_proposals pending
+panel AlphaVault → POST /api/mcp/proposals/decide
+→ SELECT ... FOR UPDATE → sprawdzenie base_revision → user_states.revision+1 → audit
+```
+
+Zasady: brak bezpośredniego zapisu z MCP, brak narzędzia approve, dane giełdowe niezmienne,
+`MCP_WRITES_ENABLED=false` ukrywa narzędzia zapisujące i scope `alphavault.write`.
+Szczegóły: [MCP.md](https://github.com/miloszspyrka-code/av/blob/main/docs/MCP.md).
+
 ## Deployment
 
 `main` → GitHub Actions → SSH/rsync → `~/public_html/alphavault.pl` + `~/public_html/alphavault.pl/.app` → migracja PHP → health check. `config.json` jest generowany z sekretów na serwerze. Deploy uruchamia wyłącznie GitHub Actions; nie ma lokalnej alternatywy.

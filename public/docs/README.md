@@ -18,7 +18,7 @@
 | [TESTOWANIE.md](TESTOWANIE.md) | testy prop, API i UI, checklisty | tak |
 | [DISCORD.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DISCORD.md) | konfiguracja aplikacji i roli Alpha | nie |
 | [DEPLOY.md](https://github.com/miloszspyrka-code/av/blob/main/docs/DEPLOY.md) | produkcja, reverse proxy, backup | nie |
-| [MCP.md](https://github.com/miloszspyrka-code/av/blob/main/docs/MCP.md) | MCP: OAuth 2.1, 8 narzędzi read-only, walidacje, wdrożenie | nie |
+| [MCP.md](https://github.com/miloszspyrka-code/av/blob/main/docs/MCP.md) | MCP 2.0: OAuth 2.1, 15 narzędzi odczytu, 7 propozycji, panel, wdrożenie | nie |
 | [CHANGELOG.md](https://github.com/miloszspyrka-code/av/blob/main/CHANGELOG.md) | historia zmian | nie |
 
 Dokumentacja publiczna jest serwowana pod `/docs/`. Katalog `public/docs/` jest generowany z `docs/` oraz dokumentów głównych:

@@ -1683,7 +1683,7 @@
     AV.renderAll();
     AV.bindMisc(); AV.bindPlan(); AV.bindJournal(); AV.bindPlaybook(); AV.bindNewTrade();
     AV.bindCalc(); AV.bindMentor(); AV.bindAcademy(); AV.bindTax(); AV.bindCalendar();
-    AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats();
+    AV.bindBody(); AV.bindExchanges(); AV.bindSettings(); AV.bindDocs(); AV.bindStats(); AV.bindMcp();
     if (AV.bindProp) AV.bindProp();
     AV.renderTicker(); AV.tickCountdowns();
     if (AV.api.authenticated) { AV.loadQuotes(); AV.loadMcpStatus(); }

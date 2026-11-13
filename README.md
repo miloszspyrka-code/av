@@ -65,6 +65,10 @@ npm run test:quotes      # notowania rynkowe: 14 scenariuszy
 npm run test:demo-state  # daty fixture demo: 15 scenariuszy
 npm run test:roles       # rola: login + cron recheck: 18 scenariuszy
 npm run test:wearables   # urządzenia zdrowotne API + UI: 42 scenariusze
+npm run test:mcp          # MCP 2.0: OAuth, 15 read + 7 propose (MySQL + PHP)
+npm run test:mcp:login    # mock Discord: rola, brak roli, duplikat konta
+npm run test:mcp:ui       # panel propozycji: diff, approve, reject, reload
+npm run test:mcp:prop     # parytet PHP ↔ JS silnika prop challenge
 npm run test:docs        # linki i spójność dokumentacji
 ```
 

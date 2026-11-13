@@ -5,6 +5,11 @@
 config.json
 config/discord_event_rules.json
 tests/config.test.json
+keys/
+tests/mcp-keys/
+tests/mcp-test-sessions.json
+tests/config.mcp-login.json
+tests/mcp.log
 legacy/node_modules/
 node_modules/
 vendor/

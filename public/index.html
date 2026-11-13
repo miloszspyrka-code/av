@@ -497,6 +497,25 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 #mentor .mcp-text-link:hover{text-decoration:underline}
 @media(max-width:1050px){#mentor .mcp-hero-grid{grid-template-columns:1fr}#mentor .mcp-provider-layout{grid-template-columns:1fr}#mentor .mcp-side-stack{grid-template-columns:1fr 1fr;grid-template-rows:auto}}
 @media(max-width:720px){#mentor .mcp-heading-row{align-items:flex-start;flex-direction:column;margin-bottom:22px}#mentor .mcp-server-status{align-self:flex-start}#mentor .mcp-endpoint-card,#mentor .mcp-how-card,#mentor .mcp-setup-card{padding:18px 16px}#mentor .mcp-endpoint-box{align-items:flex-start;flex-direction:column}#mentor .mcp-copy{width:100%}#mentor .mcp-flow{grid-template-columns:1fr;gap:7px}#mentor .mcp-flow-node{min-height:65px;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px}#mentor .mcp-flow-icon{margin:0;flex:0 0 auto}#mentor .mcp-flow-arrow{transform:rotate(90deg);line-height:12px}#mentor .mcp-side-stack{grid-template-columns:1fr}#mentor .mcp-provider-tabs{gap:3px}#mentor .mcp-provider-tab{gap:6px;padding:0 6px;font-size:10px}#mentor .mcp-provider-logo{width:19px;height:19px}#mentor .mcp-setup-top{flex-direction:column}#mentor .mcp-bottom-note{align-items:flex-start;flex-direction:column}}
+#mentor .mcp-proposals{display:grid;gap:12px}
+#mentor .mcp-proposal{border:1px solid rgba(var(--a),.22);border-radius:16px;background:linear-gradient(145deg,rgba(30,27,21,.9),rgba(15,15,14,.96));padding:18px 20px}
+#mentor .mcp-proposal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#mentor .mcp-proposal-kind{color:var(--alpha2);font:800 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+#mentor .mcp-proposal-title{margin:7px 0 3px;font-size:16px;font-weight:760;color:var(--cream)}
+#mentor .mcp-proposal-meta{color:#8e887c;font:600 9px/1.5 'JetBrains Mono',monospace}
+#mentor .mcp-proposal-actions{display:flex;gap:8px;flex-wrap:wrap}
+#mentor .mcp-proposal-actions button{border:0;border-radius:99px;padding:9px 14px;font-size:10px;font-weight:850;cursor:pointer}
+#mentor .mcp-proposal-actions .approve{background:var(--win);color:#07130c}
+#mentor .mcp-proposal-actions .reject{background:transparent;color:var(--loss);border:1px solid rgba(214,92,92,.45)}
+#mentor .mcp-diff{margin-top:14px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px;display:grid;gap:6px}
+#mentor .mcp-diff-row{display:grid;grid-template-columns:150px 1fr;gap:12px;font-size:10px;line-height:1.5}
+#mentor .mcp-diff-field{color:#8e887c;font-family:'JetBrains Mono',monospace;font-size:9px;overflow-wrap:anywhere}
+#mentor .mcp-diff-values{color:#d8d3c6;overflow-wrap:anywhere}
+#mentor .mcp-diff-before{color:#d67a7a;text-decoration:line-through;opacity:.75}
+#mentor .mcp-diff-after{color:#8bd8a8}
+#mentor .mcp-proposal-status{margin-top:12px;font-size:10px;color:#9c968a}
+#mentor .mcp-proposal-error{margin-top:10px;padding:10px 12px;border-left:3px solid var(--loss);background:rgba(214,92,92,.08);color:#e8b4b4;font-size:10px;line-height:1.5}
+@media(max-width:720px){#mentor .mcp-diff-row{grid-template-columns:1fr}#mentor .mcp-proposal-actions{width:100%}#mentor .mcp-proposal-actions button{flex:1}}
 </style>
 </head>
 <body>
@@ -945,9 +964,25 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
       </div>
     </section>
 
+    <section class="mcp-pending-section" id="mcpPendingSection" aria-label="Oczekujące propozycje zmian" style="display:none">
+      <div class="mcp-section-head">
+        <div>
+          <div class="mcp-kicker">02 / PROPOZYCJE ZMIAN</div>
+          <h2>Do Twojej decyzji</h2>
+          <p>Agent przygotował zmiany. Nic nie zostało zapisane. Zatwierdź lub odrzuć każdą propozycję osobno.</p>
+        </div>
+        <div class="mcp-section-index" id="mcpPendingCount">0 OCZEKUJĄCYCH</div>
+      </div>
+      <div class="mcp-card" style="padding:18px 20px">
+        <div class="mcp-proposals" id="mcpProposals"></div>
+        <div class="mcp-proposal-status" id="mcpPendingEmpty">Brak oczekujących propozycji.</div>
+        <div class="mcp-proposal-error" id="mcpPendingError" style="display:none"></div>
+      </div>
+    </section>
+
     <div class="mcp-section-head">
       <div>
-        <div class="mcp-kicker">02 / WYBIERZ ASYSTENTA</div>
+        <div class="mcp-kicker">03 / WYBIERZ ASYSTENTA</div>
         <h2>Skonfiguruj połączenie</h2>
         <p>Wybierz platformę, z której korzystasz, i wykonaj instrukcję.</p>
       </div>
