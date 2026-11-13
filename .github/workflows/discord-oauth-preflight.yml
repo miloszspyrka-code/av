@@ -1,0 +1,108 @@
+name: Discord OAuth preflight
+
+# Sprawdza bez logowania, czy logowanie MCP przez Discord ma szansę zadziałać:
+# - redirect_uri aplikacji Discord zawiera callback alphavault.pl i mcp.alphavault.pl,
+# - DISCORD_CLIENT_SECRET jest prawidłowy (Discord zwraca invalid_grant, nie invalid_client).
+# Nie wypisuje tokenów ani sekretów.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Redirect URIs + client secret
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+      DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+      MAIN_REDIRECT_URI: https://alphavault.pl/auth/discord/callback
+      MCP_REDIRECT_URI: https://mcp.alphavault.pl/oauth/discord/callback
+    steps:
+      - name: Validate secrets
+        run: |
+          set -euo pipefail
+          for name in DISCORD_BOT_TOKEN DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Brak sekretu ${name}."
+              exit 1
+            fi
+          done
+          echo "Sekrety obecne."
+
+      - name: Check Discord application redirect URIs
+        id: uris
+        run: |
+          set -euo pipefail
+          app="$(curl -fsS -H "Authorization: Bot ${DISCORD_BOT_TOKEN}" https://discord.com/api/v10/applications/@me)"
+          app_id="$(jq -r '.id' <<<"$app")"
+          echo "application id: ${app_id}"
+          echo "application name: $(jq -r '.name' <<<"$app")"
+          if [ "$app_id" != "$DISCORD_CLIENT_ID" ]; then
+            echo "::error::Bot należy do aplikacji ${app_id}, a DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}."
+            echo "missing=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mapfile -t uris < <(jq -r '.redirect_uris // [] | .[]' <<<"$app")
+          for uri in "${uris[@]}"; do
+            echo "registered redirect_uri: ${uri}"
+          done
+          missing=0
+          for required in "$MAIN_REDIRECT_URI" "$MCP_REDIRECT_URI"; do
+            found=0
+            for uri in "${uris[@]}"; do
+              if [ "$uri" = "$required" ]; then found=1; fi
+            done
+            if [ "$found" -eq 0 ]; then
+              echo "::error::Brak redirect_uri w aplikacji Discord: ${required}"
+              missing=1
+            fi
+          done
+          echo "missing=${missing}" >> "$GITHUB_OUTPUT"
+
+      - name: Check client secret against Discord token endpoint
+        id: secret
+        run: |
+          set -euo pipefail
+          status="$(curl -sS -o token-response.json -w '%{http_code}' \
+            -X POST https://discord.com/api/oauth2/token \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'grant_type=authorization_code' \
+            --data-urlencode 'code=alphavault-preflight-invalid-code' \
+            --data-urlencode "redirect_uri=${MCP_REDIRECT_URI}" \
+            --data-urlencode "client_id=${DISCORD_CLIENT_ID}" \
+            --data-urlencode "client_secret=${DISCORD_CLIENT_SECRET}")"
+          error="$(jq -r '.error // "none"' token-response.json)"
+          echo "token endpoint status: ${status}"
+          echo "token endpoint error: ${error}"
+          rm -f token-response.json
+          ok=0
+          if [ "$error" = "invalid_client" ]; then
+            echo "::error::DISCORD_CLIENT_SECRET jest nieprawidłowy dla DISCORD_CLIENT_ID ${DISCORD_CLIENT_ID}."
+          elif [ "$error" = "invalid_grant" ]; then
+            echo "Client secret prawidłowy (invalid_grant dla nieistniejącego kodu)."
+            ok=1
+          else
+            echo "::error::Nieoczekiwana odpowiedź Discorda; nie można potwierdzić sekretu."
+          fi
+          echo "ok=${ok}" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize
+        if: always()
+        run: |
+          set -euo pipefail
+          missing="${{ steps.uris.outputs.missing }}"
+          secret_ok="${{ steps.secret.outputs.ok }}"
+          echo "missing redirect_uri: ${missing}"
+          echo "client secret ok: ${secret_ok}"
+          if [ "${missing:-1}" != "0" ] || [ "${secret_ok:-0}" != "1" ]; then
+            echo "::error::Preflight OAuth Discord nie przeszedł."
+            exit 1
+          fi
+          echo "OAuth Discord gotowy do logowania MCP."
