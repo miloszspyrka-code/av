@@ -346,3 +346,4 @@ Plik `integrations/mt5/AlphaVault.mq5` kompiluje się w MetaEditorze. Wymaga:
 - Workflow sprawdza sekrety, uruchamia `php -l` i `scripts/deploy-mcp.sh`: backup, rsync, migracja, klucze OAuth, health check.
 - `MCP_WRITES_ENABLED=false` jest wymuszone przez skrypt.
 - Workflow nie dotyka `alphavault.pl` ani WordPressa; environment `alphavault-production`.
+- Diagnostyka: workflow `MCP logs` (`mcp-logs.yml`) wypisuje ostatnie linie `.app/logs/mcp.log` i `php-error.log`; uruchamiaj z `main`.

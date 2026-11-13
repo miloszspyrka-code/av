@@ -1,0 +1,59 @@
+name: MCP logs
+
+# Czyta diagnostykę MCP z serwera (tylko odczyt). Uruchamiaj z main.
+# Log zawiera zdarzenia zgody OAuth: session, wiersz DB, CSRF, token, błąd.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lines:
+        description: "Liczba linii mcp.log"
+        required: false
+        default: "200"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  logs:
+    name: Read MCP logs
+    runs-on: ubuntu-latest
+    environment: alphavault-production
+    timeout-minutes: 10
+
+    steps:
+      - name: Prepare SSH
+        env:
+          LH_SSH_PRIVATE_KEY: ${{ secrets.LH_SSH_PRIVATE_KEY }}
+          LH_SSH_KNOWN_HOSTS: ${{ secrets.LH_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$LH_SSH_PRIVATE_KEY" | sed 's/\r$//' > ~/.ssh/lh_mcp_logs_key
+          chmod 600 ~/.ssh/lh_mcp_logs_key
+          printf '%s\n' "$LH_SSH_KNOWN_HOSTS" | sed 's/\r$//' > ~/.ssh/lh_mcp_logs_known_hosts
+          chmod 600 ~/.ssh/lh_mcp_logs_known_hosts
+          ssh-keygen -y -P "" -f ~/.ssh/lh_mcp_logs_key > /dev/null
+          echo "SSH material prepared."
+
+      - name: Read logs
+        env:
+          LH_SSH_HOST: ${{ secrets.LH_SSH_HOST }}
+          LH_SSH_USER: ${{ secrets.LH_SSH_USER }}
+          LH_SSH_PORT: ${{ secrets.LH_SSH_PORT || '40022' }}
+          LINES: ${{ inputs.lines }}
+        run: |
+          set -euo pipefail
+          lines="${LINES//[^0-9]/}"
+          if [ -z "$lines" ]; then lines=200; fi
+          ssh -p "$LH_SSH_PORT" -i ~/.ssh/lh_mcp_logs_key \
+            -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/lh_mcp_logs_known_hosts \
+            "$LH_SSH_USER@$LH_SSH_HOST" \
+            "LOG=\"\$HOME/public_html/mcp.alphavault.pl/.app/logs/mcp.log\"; \
+             if [ -f \"\$LOG\" ]; then tail -n $lines \"\$LOG\"; else echo 'brak mcp.log'; fi; \
+             echo '--- php-error.log ---'; \
+             ERR=\"\$HOME/public_html/mcp.alphavault.pl/.app/logs/php-error.log\"; \
+             if [ -f \"\$ERR\" ]; then tail -n 80 \"\$ERR\"; else echo 'brak php-error.log'; fi"
