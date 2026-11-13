@@ -33,6 +33,13 @@ function check(string $name, bool $ok, string $info = ''): void
     }
 }
 
+$mcpFront = (string) file_get_contents(__DIR__ . '/../mcp/public/index.php');
+check(
+    '0. allowlista originów Claude w MCP',
+    str_contains($mcpFront, "'https://claude.ai'") && str_contains($mcpFront, "'https://claude.com'"),
+    'claude.ai + claude.com'
+);
+
 function tool(Mcp $mcp, array $auth, string $name, array $args): array
 {
     return $mcp->callTool($name, $args, $auth);
