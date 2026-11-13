@@ -1,7 +1,7 @@
 name: MCP tests
 
 # Testy OAuth/tools dla serwera MCP z wybranego refu.
-# Uruchamiaj z main: workflow_dispatch + ref (np. fix/mcp-consent).
+# Uruchamiaj z main: workflow_dispatch + ref (np. main).
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
       ref:
         description: "Ref do testów MCP (branch/tag)"
         required: true
-        default: "fix/mcp-consent"
+        default: "main"
         type: string
 
 permissions:

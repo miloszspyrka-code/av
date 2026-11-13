@@ -179,6 +179,8 @@
   AV.mcpClient = AV.mcpClient || 'chatgpt';
   AV.renderMentor = () => {
     AV.renderMcpGuide();
+    AV.renderMcpProposals();
+    if (AV.api.authenticated && !AV.api.mcpLoaded) AV.loadMcpProposals();
   };
   AV.renderMcpGuide = () => {
     const steps = $('#mcpSteps');
@@ -197,6 +199,121 @@
       return '<div class="mcp-step"><span class="mcp-step-number">' + String(i + 1).padStart(2, '0') + '</span><div><strong>' + AV.esc(step.t) + '</strong><p>' + desc + '</p></div></div>';
     }).join(''));
   };
+
+  /* ---------- MCP: propozycje zmian ---------- */
+  AV.mcpKindLabel = (kind) => ({
+    manual_trade: 'Nowa transakcja',
+    close_trade: 'Zamknięcie pozycji',
+    trade_review: 'Recenzja transakcji',
+    day_plan: 'Plan dnia',
+    checkin: 'Check-in',
+    setup: 'Setup w Playbooku',
+    prop_challenge: 'Prop challenge'
+  }[kind] || kind);
+
+  AV.mcpValue = (value) => {
+    if (value === null || value === undefined || value === '') return '—';
+    if (Array.isArray(value)) return value.map((v) => AV.mcpValue(v)).join(', ');
+    if (typeof value === 'object') {
+      const text = JSON.stringify(value);
+      return text.length > 240 ? text.slice(0, 237) + '…' : text;
+    }
+    const text = String(value);
+    return text.length > 240 ? text.slice(0, 237) + '…' : text;
+  };
+
+  AV.renderMcpProposals = () => {
+    const section = $('#mcpPendingSection');
+    const list = $('#mcpProposals');
+    if (!section || !list) return;
+    const data = AV.api.mcp;
+    const proposals = Array.isArray(data?.proposals) ? data.proposals : [];
+    section.style.display = '';
+    AV.setText('#mcpPendingCount', proposals.length + ' ' + (proposals.length === 1 ? 'OCZEKUJĄCA' : 'OCZEKUJĄCYCH'));
+    AV.show('#mcpPendingEmpty', proposals.length === 0);
+    const error = $('#mcpPendingError');
+    if (error) {
+      error.style.display = data?.error ? 'block' : 'none';
+      error.textContent = data?.error || '';
+    }
+    list.innerHTML = proposals.map((p) => {
+      const diff = Array.isArray(p.diff) ? p.diff.slice(0, 12) : [];
+      const rows = diff.map((row) => {
+        const before = row.before === null || row.before === undefined ? '—' : AV.mcpValue(row.before);
+        return '<div class="mcp-diff-row"><span class="mcp-diff-field">' + AV.esc(row.field) + '</span><span class="mcp-diff-values"><span class="mcp-diff-before">' + AV.esc(before) + '</span> → <span class="mcp-diff-after">' + AV.esc(AV.mcpValue(row.after)) + '</span></span></div>';
+      }).join('');
+      const created = p.createdAt ? new Date(p.createdAt.replace(' ', 'T') + 'Z').toLocaleString('pl-PL') : '';
+      const expires = p.expiresAt ? new Date(p.expiresAt.replace(' ', 'T') + 'Z').toLocaleString('pl-PL') : '';
+      return '<div class="mcp-proposal" data-proposal="' + AV.attr(p.id) + '">'
+        + '<div class="mcp-proposal-head"><div><div class="mcp-proposal-kind">' + AV.esc(AV.mcpKindLabel(p.kind)) + '</div>'
+        + '<div class="mcp-proposal-title">' + AV.esc(p.target || p.kind) + '</div>'
+        + '<div class="mcp-proposal-meta">' + AV.esc(p.clientName || 'Agent MCP') + ' · utworzono ' + AV.esc(created) + ' · wygasa ' + AV.esc(expires) + '</div></div>'
+        + '<div class="mcp-proposal-actions"><button type="button" class="approve" data-mcp-decide="approve" data-id="' + AV.attr(p.id) + '">Zatwierdź</button>'
+        + '<button type="button" class="reject" data-mcp-decide="reject" data-id="' + AV.attr(p.id) + '">Odrzuć</button></div></div>'
+        + (rows ? '<div class="mcp-diff">' + rows + '</div>' : '')
+        + '</div>';
+    }).join('');
+  };
+
+  AV.loadMcpProposals = async () => {
+    if (!AV.api.online || !AV.api.authenticated) return false;
+    try {
+      const res = await AV.apiFetch('/api/mcp');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Nie udało się pobrać propozycji.');
+      AV.api.mcp = data;
+      AV.api.mcpLoaded = true;
+      AV.api.mcpError = null;
+      AV.renderMcpProposals();
+      return true;
+    } catch (err) {
+      AV.api.mcpError = err.message;
+      const error = $('#mcpPendingError');
+      if (error) {
+        error.style.display = 'block';
+        error.textContent = err.message;
+      }
+      return false;
+    }
+  };
+
+  AV.decideProposal = async (id, action) => {
+    if (!id || !action) return false;
+    const buttons = $$('[data-mcp-decide][data-id="' + id + '"]');
+    buttons.forEach((b) => { b.disabled = true; });
+    try {
+      const res = await AV.apiFetch('/api/mcp/proposals/decide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Nie udało się rozstrzygnąć propozycji.');
+      AV.toast(action === 'approve' ? 'Propozycja zatwierdzona. Zapisano w bazie.' : 'Propozycja odrzucona. Dane bez zmian.');
+      if (action === 'approve') await AV.reloadStateFromServer();
+      await AV.loadMcpProposals();
+      return true;
+    } catch (err) {
+      const error = $('#mcpPendingError');
+      if (error) {
+        error.style.display = 'block';
+        error.textContent = err.message + (String(err.message).includes('Dane zmieniły') ? ' Poproś agenta o przygotowanie nowej propozycji.' : '');
+      }
+      AV.toast(err.message, 7000);
+      buttons.forEach((b) => { b.disabled = false; });
+      return false;
+    }
+  };
+
+  AV.bindMcp = () => {
+    $('#mcpProposals')?.addEventListener('click', (e) => {
+      const button = e.target.closest('[data-mcp-decide]');
+      if (!button) return;
+      e.preventDefault();
+      AV.decideProposal(button.dataset.id, button.dataset.mcpDecide);
+    });
+  };
+
 
   AV.mentorNotes = (s) => {
     const notes = [];

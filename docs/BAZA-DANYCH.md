@@ -24,9 +24,15 @@ Schemat: `db/schema.sql`. Migracja: `php app/db/migrate.php`.
 | `wearable_daily_metrics` | dzienne metryki zdrowotne: sen, HRV, tętno, Body Battery, wynik dostawcy, surowa odpowiedź |
 | `wearable_oauth_states` | jednorazowe stany OAuth2 dla Oura (10 min) wraz z `code_verifier` dla PKCE; Garmin/Whoop wyłączone |
 | `wearable_pair_codes` | jednorazowe kody parowania Apple (hash, 15 min) |
-| `mcp_tokens` | tokeny MCP (hash, zakresy, TTL 90 dni, unieważnienie) |
-| `mcp_proposals` | propozycje zmian od agenta oczekujące na decyzję użytkownika |
-| `mcp_audit` | audyt operacji MCP |
+| `mcp_clients` | klienci OAuth 2.1 (DCR): `client_id`, redirect URI, metoda auth |
+| `mcp_auth_codes` | jednorazowe kody autoryzacyjne (PKCE, TTL 5 min) |
+| `mcp_access_tokens` | access tokeny JWT: `jti`, user, client, scope, audience, TTL 1 h |
+| `mcp_refresh_tokens` | refresh tokeny 30 dni z rotacją i unieważnianiem rodziny |
+| `mcp_login_requests` | stan logowania Discord na domenie MCP |
+| `mcp_consents` | ekran zgody OAuth: CSRF, scope, resource, TTL 30 min |
+| `mcp_proposals` | propozycje zmian od agenta oczekujące na decyzję użytkownika; `payload_hash`, `base_revision`, TTL 30 min |
+| `mcp_audit` | audyt operacji MCP (agent, użytkownik, system) |
+| `mcp_idempotency` | rezerwa pod przyszłe operacje bezpośrednie |
 | `schema_migrations` | wersje migracji |
 | `exchange_connections` | połączenia giełd/brokerów, szyfrowane poświadczenia, maska, status, kursor backfillu; kod EA ważny 15 min przed pierwszym użyciem i 90 dni od ostatniej synchronizacji |
 | `exchange_imports` | deduplikacja transakcji po `(user_id, provider, external_id)` |

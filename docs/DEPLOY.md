@@ -343,6 +343,9 @@ Plik `integrations/mt5/AlphaVault.mq5` kompiluje się w MetaEditorze. Wymaga:
   gh workflow run deploy-mcp.yml --repo miloszspyrka-code/av --ref main -f ref=<branch> -f dry_run=false
   ```
 
+- MCP 2.0 używa Composer (`league/oauth2-server`, `mcp/sdk`); deploy uruchamia `composer install`, jeśli `vendor/autoload.php` nie istnieje na runnerze.
+- Migracje MCP są addytywne: `db/schema.sql` tworzy tabele `mcp_*`, a `db/migrations/20261114_mcp2.sql` dodaje `payload_hash` i rozszerza `mcp_proposals.kind`.
+- Domyślnie działa 15 narzędzi odczytu; 7 narzędzi `propose_*` pojawia się tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write`. Skrypt deployu wymusza `MCP_WRITES_ENABLED=false` w fazie 1.
 - Workflow sprawdza sekrety, uruchamia `php -l` i `scripts/deploy-mcp.sh`: backup, rsync, migracja, klucze OAuth, health check.
 - `MCP_WRITES_ENABLED=false` jest wymuszone przez skrypt.
 - Workflow nie dotyka `alphavault.pl` ani WordPressa; environment `alphavault-production`.

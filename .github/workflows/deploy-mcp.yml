@@ -1,7 +1,7 @@
 name: Deploy AlphaVault MCP
 
 # Wdraża serwer MCP na mcp.alphavault.pl z wybranego refu.
-# Uruchamiaj z main: workflow_dispatch + ref (np. fix/mcp-consent).
+# Uruchamiaj z main: workflow_dispatch + ref (np. main).
 # Nie dotyka alphavault.pl ani WordPressa.
 
 on:
@@ -10,7 +10,7 @@ on:
       ref:
         description: "Ref do wdrożenia MCP (branch/tag)"
         required: true
-        default: "fix/mcp-consent"
+        default: "main"
         type: string
       dry_run:
         description: "Dry run - pokaż zmiany bez zapisu"

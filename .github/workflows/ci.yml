@@ -48,7 +48,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_mysql, curl, mbstring
+          extensions: pdo_mysql, curl, mbstring, openssl, sodium, json
+          tools: composer:v2
           coverage: none
 
       - name: Setup Node.js
@@ -58,7 +59,9 @@ jobs:
           cache: npm
 
       - name: Install test dependencies
-        run: npm ci
+        run: |
+          npm ci
+          composer install --no-interaction --prefer-dist --no-progress
 
       - name: Documentation
         run: |
@@ -118,6 +121,23 @@ jobs:
         env:
           ALPHA_VAULT_CONFIG: tests/config.test.json
         run: php tests/mcp.test.php
+
+      - name: MCP prop parity
+        run: node tests/prop-parity.mjs
+
+      - name: MCP E2E
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+          PHP_BIN: php
+          MCP_TEST_PORT: "4176"
+        run: node tests/mcp.e2e.mjs
+
+      - name: MCP login E2E
+        env:
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+          PHP_BIN: php
+          MCP_LOGIN_PORT: "4178"
+        run: node tests/mcp-login.e2e.mjs
 
       - name: Prop challenge unit tests
         run: node tests/prop.unit.mjs
@@ -223,6 +243,13 @@ jobs:
           APP_URL: http://127.0.0.1:4173
           CHROME_PATH: /usr/bin/google-chrome
         run: node tests/ui.e2e.mjs
+
+      - name: MCP panel E2E
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+          ALPHA_VAULT_CONFIG: tests/config.test.json
+        run: node tests/mcp-ui.e2e.mjs
 
       - name: Tax E2E
         env:

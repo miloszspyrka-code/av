@@ -39,7 +39,10 @@
     wearablesLoaded: false,
     wearablesError: null,
     integrationsConfigured: false,
-    metaApiConfigured: false
+    metaApiConfigured: false,
+    mcp: null,
+    mcpLoaded: false,
+    mcpError: null
   };
 
   const scopedKey = (suffix, userId = AV.currentUserId) => {

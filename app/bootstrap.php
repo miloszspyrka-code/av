@@ -13,6 +13,7 @@ require_once $root . '/app/HttpException.php';
 require_once $root . '/app/Encoding.php';
 require_once $root . '/app/Http.php';
 require_once $root . '/app/Auth.php';
+require_once $root . '/app/UserService.php';
 require_once $root . '/app/Discord.php';
 require_once $root . '/app/RoleGuard.php';
 require_once $root . '/app/DiscordApiException.php';
@@ -36,6 +37,13 @@ require_once $root . '/app/Integrations/ConnectionStore.php';
 require_once $root . '/app/Integrations/ExchangeSync.php';
 require_once $root . '/app/Integrations/MtEa.php';
 require_once $root . '/app/Integrations/Integrations.php';
+
+// Composer jest wymagany tylko na domenie MCP. Na alphavault.pl katalog
+// vendor/ nie jest wdrażany, więc aplikacja działa bez autoloadera PSR-4.
+$vendorAutoload = $root . '/vendor/autoload.php';
+if (is_file($vendorAutoload)) {
+    require_once $vendorAutoload;
+}
 
 $config = \AlphaVault\Config::load($root);
 $db = new \AlphaVault\Db($config->db);

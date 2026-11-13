@@ -143,9 +143,11 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 |---|---|---|
 | Adres serwera MCP | ✅ | `https://mcp.alphavault.pl/mcp` z przyciskiem „Kopiuj adres” |
 | Jak to działa | ✅ | przepływ Alpha Vault → Serwer MCP → Asystent AI |
-| Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji |
+| Zakładki klientów | ✅ | ChatGPT, Claude, Grok — po 4 krokach konfiguracji; Claude przez `https://claude.ai/api/mcp/auth_callback` |
 | Korzyści i bezpieczeństwo | ✅ | kontekst konta, wspólny endpoint, zakres uprawnień |
-| Status serwera MCP | ✅ | statyczny pill „SERWER MCP GOTOWY” |
+| Status serwera MCP | ✅ | pill „MCP · TYLKO ODCZYT” w produkcji (`MCP_WRITES_ENABLED=false`) |
+| Oczekujące propozycje | ✅ | lista zmian od agenta z diffem, przyciskami Zatwierdź/Odrzuć i statusem po decyzji |
+| Zakres MCP 2.0 | ✅/— | 15 narzędzi odczytu zawsze; 7 narzędzi `propose_*` tylko przy `MCP_WRITES_ENABLED=true` i scope `alphavault.write` |
 | Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do integracji MCP |
 
 Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko stronę integracji zewnętrznego asystenta z MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne.
@@ -203,7 +205,7 @@ Szczegóły techniczne: [DOCUMENTATION.md §7](DOCUMENTATION.md#7-discord-schedu
 | Nadwyżka kosztów z poprzedniego roku | ✅ | edycja w panelu („zmień”), zapis w stanie; nowe konto = 0,00 zł |
 | Zdarzenia podatkowe | ✅ | tabela; waluty obce wymagają kursu NBP |
 | Eksport CSV | ✅ | zdarzenia, podsumowanie, transakcje neutralne/MT4-MT5, rok w nazwie |
-| „PDF dla księgowej” | 🟡 | otwiera okno wydruku (Zapisz jako PDF); fallback HTML; rok i podsumowanie |
+| „Drukuj / zapisz PDF” | 🟡 | otwiera okno wydruku (Zapisz jako PDF); fallback HTML; rok i podsumowanie |
 | Wpłaty/wypłaty | ✅ | dodawanie, usuwanie, wpływ na saldo konta; walidacja kursu NBP |
 | Neutralne podatkowo | ✅ | liczba transakcji z dziennika roku (futures/krypto, bez MT4/MT5) |
 | Forex i CFD (MT4/MT5) | ✅ | liczba transakcji roku rozpoznana po koncie/źródle MT4/MT5 |
@@ -274,8 +276,7 @@ Poświadczenia są szyfrowane po stronie serwera (`INTEGRATIONS_KEY`) i nigdy ni
 | Konta i kapitał | ✅ | dodawanie/usuwanie, włączanie do statystyk |
 | Wpłaty/wypłaty | ✅ | saldo + PIT |
 | Odznaki | ✅ | 8 progów liczbowych z realnych danych; licznik „X z 8” i poziom wyliczane z liczby zdobytych; data zdobycia lub pozostała wartość w podpowiedzi |
-| Bezpieczeństwo i sesje | ✅ | wylogowanie innych (lokalna lista), eksport, usunięcie konta |
-| 2FA Discord | ⚪ | informacja; egzekwowane po stronie Discorda |
+| Bezpieczeństwo i dane | ✅ | prawdziwa sesja serwerowa, wylogowanie, eksport, usunięcie konta; bez deklaracji 2FA i listy sesji |
 | Aplikacja na telefonie (PWA) | ✅ | manifest, service worker, instalacja bez App Store; szczegóły w §17 |
 
 ---
@@ -313,7 +314,7 @@ To celowy fallback, nie drugi równoległy backend.
 | Manifest | ✅ | `/manifest.webmanifest`: `display: standalone`, ikony 192/512/maskable, skrót `/?qa=1` |
 | Instalacja bez App Store | ✅ | Chrome/Edge: `beforeinstallprompt`; iPhone: Safari → Udostępnij → Do ekranu początkowego |
 | Service worker | ✅ | `/sw.js`: cache powłoki, offline fallback, `notificationclick` → `/?qa=<id>` |
-| Powiadomienie po zamknięciu | ✅ | po zamknięciu pozycji w panelu i zapisie stanu; treść: para, kierunek, wynik; klik otwiera szybkie dodanie |
+| Powiadomienie lokalne po zamknięciu w panelu | ✅ | po zamknięciu pozycji w panelu i zapisie stanu; treść: para, kierunek, wynik; klik otwiera szybkie dodanie |
 | Szybkie dodanie | ✅ | emocja + ocena + zdjęcie wykresu (`capture="environment"`), zapis do stanu i MySQL; E2E 0,6–0,7 s |
 | Push serwerowy | ⛔ | brak serwerowego źródła zdarzeń o zamknięciu transakcji; handler `push` w service workerze jest gotowy i testowany przez CDP. Wdrożyć razem z auto-importem z giełd. |
 

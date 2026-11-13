@@ -1,0 +1,62 @@
+{
+  "now": "2026-11-12T12:00:00+01:00",
+  "accountNames": ["WEEX", "OKX", "MT5 demo"],
+  "cases": [
+    {
+      "name": "static-empty",
+      "challenge": {
+        "id": "c-empty", "name": "Empty", "account": "WEEX", "currency": "USD",
+        "accountSize": 10000, "startBalance": 10000, "targetPct": 10,
+        "dailyLossPct": 5, "maxLossPct": 10, "drawdownType": "static",
+        "dailyBasis": "initial", "minDays": 0,
+        "startDate": "2026-10-13", "endDate": "2026-11-22"
+      },
+      "trades": []
+    },
+    {
+      "name": "trailing-trades",
+      "challenge": {
+        "id": "c-trail", "name": "Trail", "account": "WEEX", "currency": "USD",
+        "accountSize": 10000, "startBalance": 10000, "targetPct": 10,
+        "dailyLossPct": 5, "maxLossPct": 10, "drawdownType": "trailing",
+        "dailyBasis": "initial", "minDays": 4,
+        "startDate": "2026-11-01", "endDate": "2026-11-30"
+      },
+      "trades": [
+        {"id": "t1", "date": "2026-11-03T10:00:00Z", "result": 500, "r": 2, "account": "WEEX"},
+        {"id": "t2", "date": "2026-11-04T10:00:00Z", "result": -1200, "r": -3, "account": "WEEX"},
+        {"id": "t3", "date": "2026-11-05T10:00:00Z", "result": 300, "r": 1, "account": "OKX"},
+        {"id": "t4", "date": "2026-11-06T10:00:00Z", "result": null, "r": null, "account": "WEEX"}
+      ]
+    },
+    {
+      "name": "day-start",
+      "challenge": {
+        "id": "c-day", "name": "DayStart", "account": "WEEX", "currency": "EUR",
+        "accountSize": 50000, "startBalance": 50000, "targetPct": 8,
+        "dailyLossPct": 3, "maxLossPct": 6, "drawdownType": "static",
+        "dailyBasis": "dayStart", "minDays": 5,
+        "startDate": "2026-11-01", "endDate": "2026-11-30"
+      },
+      "trades": [
+        {"id": "t5", "date": "2026-11-10T10:00:00Z", "result": 2000, "r": 2, "account": "WEEX"},
+        {"id": "t6", "date": "2026-11-11T10:00:00Z", "result": -800, "r": -1, "account": "WEEX"},
+        {"id": "t7", "date": "2026-11-12T09:00:00Z", "result": -900, "r": -1.5, "account": "WEEX"}
+      ]
+    },
+    {
+      "name": "deadline-passed",
+      "challenge": {
+        "id": "c-dead", "name": "Deadline", "account": "OKX", "currency": "USDT",
+        "accountSize": 10000, "startBalance": 10000, "targetPct": 5,
+        "dailyLossPct": 4, "maxLossPct": 8, "drawdownType": "static",
+        "dailyBasis": "initial", "minDays": 3,
+        "startDate": "2026-10-01", "endDate": "2026-10-31"
+      },
+      "trades": [
+        {"id": "t8", "date": "2026-10-05T10:00:00Z", "result": 100, "r": 0.5, "account": "OKX"},
+        {"id": "t9", "date": "2026-10-06T10:00:00Z", "result": -50, "r": -0.25, "account": "OKX"}
+      ]
+    }
+  ]
+}
