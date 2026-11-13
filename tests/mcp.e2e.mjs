@@ -29,7 +29,7 @@ const LOCAL_ENV = REMOTE ? {} : {
   MCP_WRITES_ENABLED: 'false',
   MCP_ISSUER: BASE,
   MCP_RESOURCE: BASE + '/mcp',
-  MCP_ALLOWED_REDIRECT_HOSTS: 'chatgpt.com,localhost,127.0.0.1',
+  MCP_ALLOWED_REDIRECT_HOSTS: 'chatgpt.com,claude.ai,claude.com,localhost,127.0.0.1',
 };
 
 function runPhp(script) {
@@ -188,6 +188,9 @@ async function main() {
   const a = sessions['mcp-e2e-a'];
   const b = sessions['mcp-e2e-b'];
   const client = await register();
+  const claude = await register('MCP E2E Claude', 'https://claude.ai/api/mcp/auth_callback');
+  assert.equal(claude.redirect_uris[0], 'https://claude.ai/api/mcp/auth_callback');
+  console.log('PASS  DCR Claude: callback claude.ai');
 
   const noToken = await rpc('', 'tools/list', {});
   assert.equal(noToken.res.status, 401);
