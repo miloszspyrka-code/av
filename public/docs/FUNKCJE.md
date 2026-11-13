@@ -135,19 +135,16 @@ Wyniki kalkulatora nie są zapisywane jako transakcja — to narzędzie pomocnic
 
 ---
 
-## 8. Mentor AI
+## 8. Mentor AI — podłączenie MCP
 
 | Funkcja | Stan | Opis |
 |---|---|---|
-| 5 tematów rozmowy | ✅ | gotowe odpowiedzi (bez API LLM) |
-| Uwagi mentora | ✅ | generowane z danych (limit strat, odgrywanie, MFE, ocena A, sesja) |
-| Analiza rynku | ✅ | najbliższe ★★★, instrument, ryzyko tygodnia |
-| Raport tygodnia | ✅ | z ostatnich 7 dni |
-| Odświeżenie analizy | ✅ | |
-| Proaktywna wiadomość przy limicie strat | ✅ | po zalogowaniu |
-| Krok „plan dnia przed pierwszą transakcją” | ✅ | klik prowadzi do zakładki Plan dnia (pulpit i czat mentora) |
+| Adres serwera MCP | ✅ | `https://mcp.alphavault.pl/mcp` z przyciskiem „Kopiuj adres” |
+| Zakładki klientów | ✅ | Claude, ChatGPT, Grok — osobne kroki i oficjalna instrukcja |
+| Bezpieczeństwo | ✅ | HTTPS, OAuth 2.1 + Discord, dostęp zgodny z uprawnieniami konta |
+| Proaktywna wiadomość przy limicie strat | ✅ | przycisk prowadzi do karty podłączenia |
 
-Mentor jest **regułowy** — nie wysyła danych do OpenAI/Anthropic. Podłączenie LLM to przyszły krok.
+Widok `#/mentor-ai` nie zawiera czatu ani analiz — tylko instrukcję podłączenia zewnętrznego asystenta do MCP. Karta nie wysyła danych użytkownika; adres i kroki są statyczne.
 
 ---
 

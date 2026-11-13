@@ -389,6 +389,35 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 @media(max-width:760px){.modal{padding:18px 10px}#qa .mbox{padding:20px 16px 92px;border-radius:18px}.qa-grid{grid-template-columns:1fr;gap:20px}.qa-grid .phone{width:100%;height:auto;border-width:6px;border-radius:28px;margin:0;box-shadow:0 20px 40px -24px #000}.qa-grid .phone:before{display:none}.qa-grid .phone .scr{height:auto;padding:18px 14px 20px}.qa-float{display:block;position:fixed;left:14px;right:14px;bottom:14px;z-index:70;box-shadow:0 12px 30px rgba(0,0,0,.6)}.qa-float:disabled{opacity:.55}}
 @media(max-width:1100px){.hero{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr}.rules4{grid-template-columns:1fr 1fr}}@media(max-width:900px){#auth{grid-template-columns:1fr}.auth-art{display:none}.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto;gap:4px;padding:10px}aside .logo,.me,.navg .gl{display:none}.navg{flex-direction:row}.navg button{white-space:nowrap}.navg button.on:before{display:none}.g3,.g4,.g2{grid-template-columns:1fr 1fr}.wrap{padding:26px 16px 110px}.top{padding:10px 16px}.ex{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero>:first-child{grid-column:auto}.lvl{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.g3,.g4,.g2,.res,.rules4,.gradepick,.biasseg{grid-template-columns:1fr}.res .big{grid-column:auto}h1{font-size:30px}h1 .serif{font-size:36px}.ev{grid-template-columns:70px 1fr auto}.ev .flag{display:none}.chipst{display:none}.mw{right:12px;bottom:12px}.mw-panel{width:calc(100vw - 24px)}.lock{flex-wrap:wrap}.cd{margin-left:0}}
+
+/* MCP connect guide (Mentor AI) */
+.mcp-connect{max-width:620px;margin:0 auto;background:#f4f7ef;border:1px solid #e3e9db;border-radius:26px;padding:34px 32px 28px;color:#2f3a2d;box-shadow:0 30px 70px -45px rgba(0,0,0,.6)}
+.mcp-perks{list-style:none;margin:0 0 26px;padding:0;display:flex;flex-direction:column;gap:13px}
+.mcp-perks li{display:flex;align-items:center;gap:11px;font-size:14.5px;line-height:1.4;color:#3d483a}
+.mcp-perk{width:22px;height:22px;border-radius:50%;background:#304a32;color:#f4f8ee;display:grid;place-items:center;flex:0 0 auto}
+.mcp-perk svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.mcp-card{background:#fbfcf8;border:1px solid #dfe6d6;border-radius:18px;padding:16px 16px 18px;box-shadow:0 18px 34px -28px rgba(40,60,36,.45)}
+.mcp-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#edf2e6;border:1px solid #e1e8d8;border-radius:12px;padding:5px}
+.mcp-tabs button{all:unset;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 6px;border-radius:9px;font-size:13px;font-weight:600;color:#6b7565;cursor:pointer;border:1px solid transparent;transition:.15s;box-sizing:border-box}
+.mcp-tabs button.on{background:#fbfcf8;color:#263124;border-color:#d7e2cb;box-shadow:0 2px 6px rgba(42,62,38,.08)}
+.mcp-tabs button:focus-visible{outline:2px solid #7d9a6e;outline-offset:2px}
+.mcp-logo{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mcp-label{margin:18px 4px 8px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:#8b9585}
+.mcp-url{background:#edf3e6;border:1px solid #dfe7d5;border-radius:12px;padding:11px 12px 12px}
+.mcp-url code{display:block;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#33402f;word-break:break-all;text-align:center;padding:2px 4px 10px}
+.mcp-copy{all:unset;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;background:#fff;border:1px solid #dfe6d6;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;color:#33402f;cursor:pointer;transition:.15s}
+.mcp-copy:hover{border-color:#c8d6bb;background:#fdfefb}
+.mcp-copy.copied{background:#e8f1e0;border-color:#c9dbb9}
+.mcp-copy svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mcp-steps{list-style:none;margin:18px 0 0;padding:0}
+.mcp-steps li{display:flex;align-items:flex-start;gap:12px;padding:13px 2px;border-top:1px solid #e8ede2;font-size:13.5px;line-height:1.55;color:#3d473a}
+.mcp-steps li:first-child{border-top:0}
+.mcp-num{width:26px;height:26px;border-radius:50%;background:#e5eeda;color:#6d7a66;display:grid;place-items:center;font-size:10.5px;font-weight:800;flex:0 0 auto;margin-top:-1px}
+.mcp-note{margin:16px 4px 0;font-size:12px;line-height:1.55;color:#8b9585}
+.mcp-docs{display:inline-flex;align-items:center;gap:6px;margin:18px 4px 0;font-size:13px;font-weight:800;color:#24301f;text-decoration:none}
+.mcp-docs:hover{text-decoration:underline}
+.mcp-ext{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:640px){.mcp-connect{padding:22px 16px 20px;border-radius:20px}.mcp-perks li{font-size:13.5px}.mcp-tabs button{font-size:12px;gap:5px}.mcp-logo{width:12px;height:12px}.mcp-steps li{font-size:13px}}
 </style>
 </head>
 <body>
@@ -485,7 +514,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
     <div class="gl">ANALIZA</div>
     <button data-v="stat"><svg class="i"><use href="#i-stats"/></svg>Statystyki</button>
     <button data-v="tax"><svg class="i"><use href="#i-tax"/></svg>Podatki PIT-38</button>
-    <button data-v="mentor"><svg class="i"><use href="#i-spark"/></svg>Mentor AI<span class="badge">3</span></button>
+    <button data-v="mentor"><svg class="i"><use href="#i-spark"/></svg>Mentor AI</button>
     <button data-v="kal"><svg class="i"><use href="#i-cal"/></svg>Kalendarz makro</button>
   </div>
   <div class="navg">
@@ -790,44 +819,27 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 
 <!-- ================= MENTOR ================= -->
 <section class="view" id="mentor">
-  <div class="head"><div><div class="eyebrow">Mentor AI</div><h1>Twój <span class="serif">mentor.</span></h1><p>Zna Twoje transakcje, plan, emocje, sen i zasady. Wyłapuje wzorce, analizuje rynek i mówi wprost, co zmienić. Nie daje sygnałów.</p></div>
-    <div class="seg" id="mTabs"><button class="on" data-t="m1">Rozmowa</button><button data-t="m2">Uwagi · <span id="notesCount">3</span></button><button data-t="m3">Analiza rynku</button><button data-t="m4">Raport tygodnia</button></div></div>
-
-  <div class="mt" id="m1">
-    <div class="grid" style="grid-template-columns:1.6fr 1fr;align-items:start">
-      <div class="card">
-        <div class="msgs" id="msgs"></div>
-        <div class="lbl" style="margin-top:20px">Napisz do mentora</div>
-        <div class="chips" style="margin-top:10px" id="mChips"></div>
+  <div class="mcp-connect">
+    <ul class="mcp-perks">
+      <li><span class="mcp-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Jeden adres MCP dla trzech asystentów</li>
+      <li><span class="mcp-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Bezpieczne połączenie HTTPS</li>
+      <li><span class="mcp-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Dostęp zgodny z uprawnieniami Twojego konta</li>
+    </ul>
+    <div class="mcp-card">
+      <div class="mcp-tabs" id="mcpTabs" role="tablist" aria-label="Wybierz asystenta AI">
+        <button type="button" role="tab" data-mcp-client="claude" aria-selected="false"><svg class="mcp-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M3.4 7l17.2 10M20.6 7L3.4 17"/></svg>Claude</button>
+        <button type="button" role="tab" data-mcp-client="chatgpt" aria-selected="false"><svg class="mcp-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8 5v9l-8 5-8-5v-9z"/><path d="M12 2.5v19M4 7.5l16 9M20 7.5l-16 9"/></svg>ChatGPT</button>
+        <button type="button" role="tab" data-mcp-client="grok" class="on" aria-selected="true"><svg class="mcp-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>Grok</button>
       </div>
-      <div class="grid">
-        <div class="card"><div class="lbl">Mentor widzi</div>
-          <div id="mentorSees"></div></div>
-        <div class="card"><div class="lbl">Na skróty</div>
-          <div class="grid" style="margin-top:12px;gap:8px"><button class="btn g sm" data-ask="2">Co psuje moje wyniki</button><button class="btn g sm" data-ask="3">Oceń mój dzień</button><button class="btn g sm" data-ask="4">Co dziś na rynku</button></div></div>
+      <div class="mcp-label">Adres serwera MCP</div>
+      <div class="mcp-url">
+        <code id="mcpUrl">https://mcp.alphavault.pl/mcp</code>
+        <button type="button" class="mcp-copy" id="mcpCopy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="mcpCopyLabel">Kopiuj adres</span></button>
       </div>
+      <ol class="mcp-steps" id="mcpSteps"></ol>
+      <p class="mcp-note" id="mcpNote"></p>
+      <a class="mcp-docs" id="mcpDocs" href="https://docs.x.ai/grok/connectors" target="_blank" rel="noopener">Oficjalna instrukcja <span id="mcpDocsLabel">Grok</span><svg class="mcp-ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg></a>
     </div>
-  </div>
-
-  <div class="mt" id="m2" style="display:none">
-    <div class="grid g2" id="notesList"></div>
-  </div>
-
-  <div class="mt" id="m3" style="display:none">
-    <div class="grid" style="grid-template-columns:1.5fr 1fr;align-items:start">
-      <div class="card"><div class="sech"><div><span class="tag al">Analiza AI</span> <span class="mono dim" style="font-size:11.5px;margin-left:6px" id="analysisWhen">czw 12.11 · 14:10</span></div><button class="btn g sm" id="reAn"><svg class="i"><use href="#i-sync"/></svg>Odśwież</button></div>
-        <div id="marketAnalysis"></div>
-      </div>
-      <div class="grid" id="marketSide">
-        <div class="card"><div class="lbl">Instrument</div><div class="chips sel" style="margin-top:12px" id="mktInst"><span class="chip on" data-i="BTC">BTC</span><span class="chip" data-i="ETH">ETH</span><span class="chip" data-i="SOL">SOL</span><span class="chip" data-i="NAS100">NAS100</span><span class="chip" data-i="XAUUSD">XAUUSD</span></div>
-          <div id="marketInstStats"></div></div>
-        <div class="card"><div class="lbl">Ryzyko tygodnia</div><div class="val warnc" id="weekRisk">Wysokie</div><div class="hint" id="weekRiskHint">8 wydarzeń ★★★. Mniejsze pozycje w dni publikacji.</div></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="mt" id="m4" style="display:none">
-    <div class="card" style="max-width:880px" id="weeklyReport"></div>
   </div>
 </section>
 
@@ -1129,7 +1141,7 @@ footer.ft .lk{display:flex;flex-wrap:wrap;gap:6px 18px}footer.ft .lk span,footer
 <p class="mut" style="margin-top:16px;line-height:1.6">Prowadzą: <b style="color:var(--cream)">Albert, Marcin i Hubert</b>. Akademia ma charakter edukacyjny i nie jest doradztwem inwestycyjnym.</p>
 <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><a class="btn p" href="https://www.alphamoves.pl" target="_blank" rel="noopener">Wejdź na www.alphamoves.pl <svg class="i"><use href="#i-arrow"/></svg></a><span class="btn g" data-buy="full">Dołącz do Akademii · 168 $ / mies.</span></div><div style="display:flex;gap:14px;justify-content:flex-start;flex-wrap:wrap;margin-top:18px;font-size:12.5px"><a href="/polityka-prywatnosci" target="_blank" rel="noopener" style="color:var(--alpha)">Polityka prywatności</a><a href="/regulamin" target="_blank" rel="noopener" style="color:var(--alpha)">Regulamin</a><a href="mailto:kontakt@alphamoves.pl" style="color:var(--alpha)">Kontakt</a></div><div class="dim" style="font-size:11.5px;line-height:1.6;margin-top:10px">Materiały edukacyjne, nie porada inwestycyjna. Handel, zwłaszcza z dźwignią, wiąże się z ryzykiem utraty kapitału. © 2026 Hubert Rzekieć Business Corporation · Akademia Alpha Moves</div></template>
 <div class="modal" id="tm"><div class="mbox" id="tmBody"></div></div>
-<div class="pro" id="pro"><div style="display:flex;gap:12px;align-items:flex-start"><span class="pm">α</span><div style="flex:1"><div class="who">α MENTOR · teraz</div><div id="proTxt" style="font-size:14px;line-height:1.55;margin-top:4px"></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn p sm" id="proGo">Porozmawiaj</button><button class="btn g sm" id="proClose">Rozumiem</button></div></div></div></div>
+<div class="pro" id="pro"><div style="display:flex;gap:12px;align-items:flex-start"><span class="pm">α</span><div style="flex:1"><div class="who">α MENTOR · teraz</div><div id="proTxt" style="font-size:14px;line-height:1.55;margin-top:4px"></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn p sm" id="proGo">Podłącz Mentora AI</button><button class="btn g sm" id="proClose">Rozumiem</button></div></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script src="js/core.js" defer></script>

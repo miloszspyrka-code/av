@@ -124,6 +124,21 @@ try {
   }
   log('nawigacja wszystkich widoków', true, views.length + ' widoków');
 
+  // Mentor AI: karta podłączenia MCP
+  await page.click('.navg button[data-v="mentor"]');
+  await page.waitForSelector('.mcp-card');
+  assert.equal((await page.locator('#mcpUrl').innerText()).trim(), 'https://mcp.alphavault.pl/mcp');
+  assert.equal(await page.locator('#mcpTabs button.on').getAttribute('data-mcp-client'), 'grok');
+  assert.equal(await page.locator('#msgs').count(), 0);
+  await page.click('#mcpTabs button[data-mcp-client="claude"]');
+  assert.match(await page.locator('#mcpSteps').innerText(), /Customize → Connectors/);
+  assert.equal((await page.locator('#mcpDocsLabel').innerText()).trim(), 'Claude');
+  assert.match(await page.locator('#mcpDocs').getAttribute('href'), /support\.claude\.com/);
+  await page.click('#mcpCopy');
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('#toast').innerText(), /skopiowany/i);
+  log('Mentor AI: karta MCP + zakładki + kopiowanie', true);
+
   // backup stanu po stronie klienta (do przywrócenia po testach zapisu)
   const backup = await page.evaluate(() => JSON.stringify(AV.state));
 

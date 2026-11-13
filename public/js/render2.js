@@ -176,6 +176,28 @@
     $$('#mChips .chip').forEach((c) => { c.style.pointerEvents = ''; });
   };
 
+  AV.mcpClient = AV.mcpClient || 'grok';
+  AV.renderMentor = () => {
+    AV.renderMcpGuide();
+  };
+  AV.renderMcpGuide = () => {
+    const steps = $('#mcpSteps');
+    if (!steps) return;
+    AV.setText('#mcpUrl', AV.MCP_URL);
+    const client = AV.MCP_CLIENTS[AV.mcpClient] || AV.MCP_CLIENTS.grok;
+    $$('#mcpTabs button').forEach((b) => {
+      const on = b.dataset.mcpClient === AV.mcpClient;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+    });
+    AV.setHTML('#mcpSteps', client.steps.map((step, i) => '<li><span class="mcp-num">' + String(i + 1).padStart(2, '0') + '</span><span>' + AV.esc(step) + '</span></li>').join(''));
+    AV.setText('#mcpNote', client.note);
+    AV.setText('#mcpDocsLabel', client.label);
+    const docs = $('#mcpDocs');
+    if (docs) docs.href = client.docs;
+  };
+
   AV.mentorNotes = (s) => {
     const notes = [];
     const today = AV.todayStats(s), L = AV.lockInfo(s);
